@@ -1,0 +1,138 @@
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;  
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+  font-synthesis: none;
+}
+
+body {
+  margin: 0;
+  padding: 1.25rem;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+
+a:hover {
+  color: #535bf2;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 600;
+  font-family: inherit;
+  transition: border-color 0.25s;
+  padding: 0.25rem 0.625rem;
+}
+
+button:not(:disabled) {
+  cursor: pointer;
+  background-color: #3d3d3d;
+  color: #ffffff;
+}
+
+button:not(:disabled):hover {
+  background-color: #464646;
+  border-color: #646cff;
+  color: #ffffff;
+}
+
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+
+button.highlighted {
+  background-color: #ff0000;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 100% {
+    background-color: #800000;
+  }
+  50% {
+    background-color: #9f9f00;
+  }
+}
+
+
+.app {
+  padding-inline: 2rem;
+  margin: 0 auto;
+}
+
+.timer {
+  font-size: 1rem;
+  font-weight: bold;
+  display: grid;
+  height: 3rem;
+  background-color: skyblue;
+  margin-bottom: 2rem;
+}
+
+.period {
+  position: relative;
+  color: white;
+  text-align: right;
+  border-right: 1px solid #ffffff;
+  padding-right: 0.25rem;
+  
+  background-color: var(--period-bg, #fff);
+
+  &:has(~.period--active) { /* elapsed period*/
+    background-color: color-mix(in srgb, var(--period-bg, #fff) 50%, #eeeeee 50%);
+  }
+  
+}
+
+.period--work { --period-bg: #4CAF50;}
+.period--break { --period-bg: #00bfff; }
+.period--lunch { --period-bg: #2196F3; }   
+
+.period--active { 
+  outline: 2px solid #ffffff;
+  outline-offset: -2px;
+}
+
+.current-time {
+  --line-overshoot: 8px;
+  position: absolute;
+  top: calc(-1 * var(--line-overshoot));
+  bottom: calc(-1 * var(--line-overshoot));
+  left: 0;
+  background-color: #eeeeee80;
+  box-sizing: border-box;
+  padding-block: var(--line-overshoot);
+  background-clip: content-box;
+  border-right: 4px solid #ffffff;
+}
+
+.controls {
+  display: flex;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.totals {
+  background-color: #888888;
+  color: black;
+  padding: 0.625rem;
+  border-radius: 0.3125rem;
+}
