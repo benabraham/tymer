@@ -28,11 +28,7 @@ export const initializeTimer = () => {
   if (timerState.value.hasFinished) return; // nothing more to do if timer has finished
 
   if (timerState.value.runningIntervalId) { // continue the timer if it was running
-    timerState.value = {
-      ...timerState.value,
-      runningIntervalId: setInterval(tick, updatePeriod), // by starting new interval
-    };
-    log('continuing timer', timerState.value, 'darkgreen', 'white');
+    startTimer();
   } else if (!timerState.value.timePaused) { // Fresh timer (not paused)
     timerState.value = {
       ...timerState.value,
@@ -43,18 +39,27 @@ export const initializeTimer = () => {
 
 // Starts the timer
 export const startTimer = () => {
-  if (timerState.value.runningIntervalId) return; // do nothing if timer is already running
+  // if fresh, set start time to now 
+  let timeStarted = Date.now(); 
+
+  // if paused, adjust start time by pause duration
+  if (timerState.value.timePaused) { 
+    timeStarted += timerState.value.timeStarted - timerState.value.timePaused;
+  }
+
+  // if continuing, use existing start time
+  if (timerState.value.runningIntervalId) { 
+    timeStarted = timerState.value.timeStarted; 
+  }
 
   timerState.value = {
     ...timerState.value,
     hasStarted: true,
     runningIntervalId: setInterval(tick, updatePeriod),
-    timePaused: null,  // Clear pause timestamp
-    timeStarted: timerState.value.timePaused
-      ? timerState.value.timeStarted + (Date.now() - timerState.value.timePaused) // Adjust start time by pause duration
-      : Date.now(),
+    timePaused: null,
+    timeStarted,
   };
-  log('start Timer', timerState.value, 'green', 'white');
+  log('(re)starting timer', timerState.value, 'green', 'white');
 };
 
 // Resets timer to initial state
