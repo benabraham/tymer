@@ -29,7 +29,7 @@ export const initializeTimer = () => {
 
   if (timerState.value.runningIntervalId) { // continue the timer if it was running
     startTimer();
-  } else if (!timerState.value.timePaused) { // Fresh timer (not paused)
+  } else if (!timerState.value.timePaused) { // set up fresh timer
     timerState.value = {
       ...timerState.value,
       durationRemaining: timerState.value.durationTotal, // set to full duration
@@ -73,17 +73,6 @@ export const resetTimer = () => {
   log('timer reset', timerState.value, 'orange', 'black');
 };
 
-// Converts milliseconds to human-readable format
-export const formattedTime = computed(() => {
-  const totalSeconds = Math.ceil(timerState.value.durationRemaining / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  
-  const pad = (num) => num.toString().padStart(2, '0');
-  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)} 
-  (${timerState.value.durationRemaining} ms)`;
-});
 
 // Pauses the timer
 export const pauseTimer = () => {
@@ -123,6 +112,18 @@ const tick = () => {
   };
   log('tick', timerState.value, 'skyblue', 'black');
 };
+
+// Converts milliseconds to human-readable format
+export const formattedTime = computed(() => {
+  const totalSeconds = Math.ceil(timerState.value.durationRemaining / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  
+  const pad = (num) => num.toString().padStart(2, '0');
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)} 
+  (${timerState.value.durationRemaining} ms)`;
+});
 
 // Persists timer state to localStorage on every state change
 effect(() => {
