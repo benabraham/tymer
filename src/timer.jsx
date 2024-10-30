@@ -34,7 +34,7 @@ export function Timer() {
       <p>
         {timerState.value.hasFinished
           ? `Finished!`
-          : `Time remaining: ${formattedTime.value}`}
+          : `Time remaining ${formattedTime.value}`}
       </p>
       <button
         onClick={handleStartPause}

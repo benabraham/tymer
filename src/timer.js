@@ -70,8 +70,14 @@ export const resetTimer = () => {
 
 // Converts milliseconds to human-readable format
 export const formattedTime = computed(() => {
-  const seconds = Math.ceil(timerState.value.durationRemaining / 1000);
-  return `${timerState.value.durationRemaining} (${seconds} s)`;
+  const totalSeconds = Math.ceil(timerState.value.durationRemaining / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  
+  const pad = (num) => num.toString().padStart(2, '0');
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)} 
+  (${timerState.value.durationRemaining} ms)`;
 });
 
 // Pauses the timer
