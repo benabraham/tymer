@@ -4,7 +4,8 @@ import {
   formattedTime,
   startTimer,
   resetTimer,
-  initializeTimer
+  initializeTimer,
+  pauseTimer
 } from './timer';
 
 export function Timer() {
@@ -13,9 +14,13 @@ export function Timer() {
     initializeTimer();
   }, []);
 
-  // Starts timer if not already running
-  const handleStart = () => {
-    startTimer();
+  // Combined handler for start/pause/resume
+  const handleStartPause = () => {
+    if (timerState.value.runningIntervalId) {
+      pauseTimer();
+    } else {
+      startTimer();
+    }
   };
 
   // Resets timer to initial state
@@ -32,10 +37,10 @@ export function Timer() {
           : `Time remaining: ${formattedTime.value}`}
       </p>
       <button
-        onClick={handleStart}
-        disabled={timerState.value.hasStarted}
+        onClick={handleStartPause}
+        disabled={timerState.value.hasFinished}
       >
-        Start
+        {timerState.value.runningIntervalId ? 'Pause' : (timerState.value.isPaused ? 'Resume' : 'Start')}
       </button>
       <button
         onClick={handleReset}
