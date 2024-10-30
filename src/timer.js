@@ -73,7 +73,6 @@ export const resetTimer = () => {
   log('timer reset', timerState.value, 'orange', 'black');
 };
 
-
 // Pauses the timer
 export const pauseTimer = () => {
   if (!timerState.value.runningIntervalId) return;
