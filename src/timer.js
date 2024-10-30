@@ -12,7 +12,6 @@ const initialState = {
   durationTotal: 30 * 1000, // total duration of timer in milliseconds
   hasFinished: false,       // if timer has completed
   hasStarted: false,        // if timer has been started
-  isPaused: false,          // paused state
   runningIntervalId: null,  // ID of the interval timer, null when not running
   timePaused: null,         // timestamp when timer was paused
   timeStarted: null,        // timestamp when timer was started
@@ -49,10 +48,9 @@ export const startTimer = () => {
   timerState.value = {
     ...timerState.value,
     hasStarted: true,
-    isPaused: false,
     runningIntervalId: setInterval(tick, updatePeriod),
     timePaused: null,  // Clear pause timestamp
-    timeStarted: timerState.value.isPaused
+    timeStarted: timerState.value.timePaused
       ? timerState.value.timeStarted + (Date.now() - timerState.value.timePaused) // Adjust start time by pause duration
       : Date.now(),
   };
@@ -110,7 +108,6 @@ export const pauseTimer = () => {
 
   timerState.value = {
     ...timerState.value,
-    isPaused: true,
     runningIntervalId: null,
     timePaused: Date.now(),  // Store when we paused
   };
