@@ -1,5 +1,5 @@
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;  
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   font-variant-numeric: tabular-nums;
   line-height: 1.5;
   color-scheme: light dark;
@@ -26,6 +26,7 @@ a:hover {
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
+  margin-top: 0;
 }
 
 button {
@@ -37,8 +38,8 @@ button {
   font-family: inherit;
   transition: border-color 0.25s;
   padding: 0.25rem 0.625rem;
-
-  margin-right: 0.5rem;
+  min-width: 9ch;
+  user-select: none;
 }
 
 button:not(:disabled) {
@@ -65,9 +66,12 @@ button.highlighted {
 }
 
 @keyframes blink {
-  0%, 100% {
+
+  0%,
+  100% {
     background-color: #800000;
   }
+
   50% {
     background-color: #9f9f00;
   }
@@ -94,20 +98,36 @@ button.highlighted {
   text-align: right;
   border-right: 1px solid #ffffff;
   padding-right: 0.25rem;
-  
+
   background-color: var(--period-bg, #fff);
 
-  &:has(~.period--active) { /* elapsed period*/
+  &:has(~.period--active) {
+    /* elapsed period*/
     background-color: color-mix(in srgb, var(--period-bg, #fff) 50%, #eeeeee 50%);
   }
-  
+
 }
 
-.period--work { --period-bg: #4CAF50;}
-.period--break { --period-bg: #00bfff; }
-.period--lunch { --period-bg: #2196F3; }   
+.period-text {
+  margin-left: auto;
+  font-size: 0.5rem;
+  width: min-content;
+  text-align: right;
+}
 
-.period--active { 
+.period--work {
+  --period-bg: #4CAF50;
+}
+
+.period--break {
+  --period-bg: #00bfff;
+}
+
+.period--lunch {
+  --period-bg: #2196F3;
+}
+
+.period--active {
   outline: 2px solid #ffffff;
   outline-offset: -2px;
 }
@@ -137,4 +157,29 @@ button.highlighted {
   color: black;
   padding: 0.625rem;
   border-radius: 0.3125rem;
+}
+
+.tempPeriods {
+  display: grid;
+  grid-template-columns: min-content repeat(4, min-content);
+  gap: 0.25rem 2rem;
+}
+
+.tempPeriod {
+  display: contents;
+}
+
+.tempPeriod__data {
+  padding: 0.25rem;
+  font-size: 0.7rem;
+  text-wrap: nowrap;
+
+  .tempPeriod--current & {
+    outline: 2px solid #ffffff;
+  }
+
+  .tempPeriod--finished & {
+    background-color: rgb(0, 70, 0);
+    color: #ffffff;
+  }
 }

@@ -29,10 +29,19 @@ export default defineConfig({
       }
     })
   ],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.js',
+    coverage: {
+      reporter: ['text', 'json', 'html'],
+    },
+  },
   server: {
     host: true,
     port: 3000,
     strictPort: true,
     cors: true,
   },
+  base: '/tymer/',
 })
