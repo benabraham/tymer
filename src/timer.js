@@ -74,32 +74,6 @@ export const formattedTime = computed(() => {
   return `${timerState.value.durationRemaining} (${seconds} s)`;
 });
 
-// Calculates remaining time based on start time and current time
-const updateRemainingTime = () => {
-  const newTimeRemaining = Math.max(
-    0,
-    timerState.value.timeStarted + timerState.value.durationTotal - Date.now()
-  );
-  log('newTimeRemaining', newTimeRemaining, 'gray', 'black');
-
-  timerState.value = {
-    ...timerState.value,
-    durationRemaining: newTimeRemaining
-  };
-};
-
-// Handles timer completion
-const finishTimer = () => {
-  clearInterval(timerState.value.runningIntervalId);
-
-  timerState.value = {
-    ...timerState.value,
-    hasFinished: true,
-    runningIntervalId: null,
-  };
-  log('timer finished', timerState.value, 'red', 'black');
-};
-
 // Pauses the timer
 export const pauseTimer = () => {
   if (!timerState.value.runningIntervalId) return;
@@ -116,13 +90,27 @@ export const pauseTimer = () => {
 
 // Update function called by interval timer
 const tick = () => {
-  updateRemainingTime();
-
-  log('tick', timerState.value, 'skyblue', 'black');
-
-  if (timerState.value.durationRemaining === 0) {
-    finishTimer();
+  // Update remaining time based on start time and current time
+  timerState.value = {
+    ...timerState.value,
+    durationRemaining: Math.max(
+      0,
+      timerState.value.timeStarted + timerState.value.durationTotal - Date.now()
+    )
   };
+  
+  // Handle timer completion
+  if (timerState.value.durationRemaining === 0) {
+    clearInterval(timerState.value.runningIntervalId);
+
+    timerState.value = {
+      ...timerState.value,
+      hasFinished: true,
+      runningIntervalId: null,
+    };
+    log('timer finished', timerState.value, 'red', 'black');
+  };
+  log('tick', timerState.value, 'skyblue', 'black');
 };
 
 // Persists timer state to localStorage on every state change
