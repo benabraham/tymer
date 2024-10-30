@@ -1,5 +1,5 @@
 import { render } from 'preact'
 import './index.css'
-import { App } from './app.jsx'
-
-render(<App />, document.getElementById('app'))
+import { Timer } from './timer.jsx'
+import "preact/debug";
+render(<Timer />, document.getElementById('app'))

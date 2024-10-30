@@ -37,6 +37,8 @@ button {
   font-family: inherit;
   transition: border-color 0.25s;
   padding: 0.25rem 0.625rem;
+
+  margin-right: 0.5rem;
 }
 
 button:not(:disabled) {

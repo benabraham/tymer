@@ -17,6 +17,14 @@ self.addEventListener('install', (event) => {
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request)
-      .then((response) => response || fetch(event.request))
+      .then((response) => {
+        if (response) {
+          return response; // If found in cache, return the cached version
+        }
+        return fetch(event.request).catch((error) => {
+          console.error('Fetch error:', error);
+          // You could return a custom offline page or a fallback response here
+        });
+      })
   );
 });
