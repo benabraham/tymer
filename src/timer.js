@@ -40,16 +40,16 @@ export const initializeTimer = () => {
 // Starts the timer
 export const startTimer = () => {
   // if fresh, set start time to now 
-  let timeStarted = Date.now(); 
+  let timeStarted = Date.now();
 
   // if paused, adjust start time by pause duration
-  if (timerState.value.timePaused) { 
+  if (timerState.value.timePaused) {
     timeStarted += timerState.value.timeStarted - timerState.value.timePaused;
   }
 
   // if continuing, use existing start time
-  if (timerState.value.runningIntervalId) { 
-    timeStarted = timerState.value.timeStarted; 
+  if (timerState.value.runningIntervalId) {
+    timeStarted = timerState.value.timeStarted;
   }
 
   timerState.value = {
@@ -97,7 +97,7 @@ const tick = () => {
       timerState.value.timeStarted + timerState.value.durationTotal - Date.now()
     )
   };
-  
+
   // Handle timer completion
   if (timerState.value.durationRemaining === 0) {
     clearInterval(timerState.value.runningIntervalId);
@@ -118,7 +118,7 @@ export const formattedTime = computed(() => {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
-  
+
   const pad = (num) => num.toString().padStart(2, '0');
   return `${pad(hours)}:${pad(minutes)}:${pad(seconds)} 
   (${timerState.value.durationRemaining} ms)`;
