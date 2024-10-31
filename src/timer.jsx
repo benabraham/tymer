@@ -4,7 +4,8 @@ import {
   startTimer,
   resetTimer,
   initializeTimer,
-  pauseTimer
+  pauseTimer,
+  adjustDuration,
 } from './timer';
 
 export function Timer() {
@@ -47,6 +48,7 @@ export function Timer() {
           ? `Finished!`
           : `Time remaining ${formatTime(timerState.value.durationRemaining)}`}
       </p>
+
       <button
         onClick={handleStartPause}
         disabled={timerState.value.hasFinished}
@@ -58,6 +60,30 @@ export function Timer() {
         disabled={!timerState.value.timeStarted}
       >
         Reset
+      </button>
+      <button
+        onClick={() => adjustDuration(-6 * 60 * 1000)}
+        disabled={timerState.value.hasFinished || !timerState.value.durationRemaining}
+      >
+        -6 min
+      </button>
+      <button
+        onClick={() => adjustDuration(-60 * 1000)}
+        disabled={timerState.value.hasFinished || !timerState.value.durationRemaining}
+      >
+        -1 min
+      </button>
+      <button
+        onClick={() => adjustDuration(60 * 1000)}
+        disabled={timerState.value.hasFinished}
+      >
+        +1 min
+      </button>
+      <button
+        onClick={() => adjustDuration(6 * 60 * 1000)}
+        disabled={timerState.value.hasFinished}
+      >
+        +6 min
       </button>
     </>
   );

@@ -111,7 +111,18 @@ export const pauseTimer = () => {
   log('timer paused', timerState.value, 'goldenrod', 'black');
 };
 
+// Adjusts the total duration of the timer
+export const adjustDuration = (durationDelta) => {
+  timerState.value = {
+    ...timerState.value,
+    durationTotal: Math.max(0, timerState.value.durationTotal + durationDelta),
+    durationRemaining: Math.max(0, timerState.value.durationRemaining + durationDelta),
+  };
+  log('duration adjusted', timerState.value, 'purple', 'white');
+};
+
 // Persists timer state to localStorage on every state change
 effect(() => {
   saveState(timerState.value);
 });
+
