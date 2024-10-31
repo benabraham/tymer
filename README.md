@@ -24,3 +24,7 @@ Builds the app for production to the `dist` folder.
 ```bash
 npm run build
 ```
+## Deployment
+
+The app is deployed to GitHub Pages.
+https://benabraham.github.io/tymer/
