@@ -111,9 +111,6 @@ export const pauseTimer = () => {
   log('timer paused', timerState.value, 'goldenrod', 'black');
 };
 
-
-
-
 // Persists timer state to localStorage on every state change
 effect(() => {
   saveState(timerState.value);
