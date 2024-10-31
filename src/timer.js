@@ -18,7 +18,7 @@ const initialState = {
 };
 
 // Main timer state signal, initialized from localStorage or defaults
-export const timerState = signal(loadState(initialState));
+export const timerState = signal(saveState(loadState(initialState)));
 
 // Prepares timer for use, either continuing existing timer or setting up new one
 export const initializeTimer = () => {

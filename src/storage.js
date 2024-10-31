@@ -5,6 +5,7 @@ export const saveState = (state) => {
   // Convert the state object to a JSON string and store it in localStorage
   localStorage.setItem('timerState', JSON.stringify(state));
   log('state saved', state, 'black', 'gold');
+  return state;
 };
 
 // Function to load the timer state from localStorage
@@ -23,16 +24,12 @@ export const loadState = (initialState) => {
       log('state loaded successfully', loadedState, 'lime', 'black');
       return loadedState;
     } else {
-      // If the loaded state is invalid, 
-      // save and return the initial state
-      saveState(initialState);
-      log('initial state saved, loaded state was invalid', initialState, 'orange', 'black');
+      // If the loaded state is invalid, return the initial state
+      log('loaded state was invalid, initial state returned', initialState, 'orange', 'black');
       return initialState;
     }
   } catch (error) {
-    // If there's an error (e.g., parsing JSON), 
-    // save and return the initial state
-    saveState(initialState);
+    // If there's an error (e.g., parsing JSON), return the initial state
     log('initial state saved (there was an error loading the state)', initialState, 'red', 'white');
     return initialState;
   }
