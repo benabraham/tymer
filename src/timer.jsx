@@ -90,6 +90,7 @@ export function Timer() {
       >
         +6 min
       </button>
+      <p>Total elapsed {formatTime(timerState.value.timeElapsed)}</p>
     </>
   );
 }

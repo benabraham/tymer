@@ -12,6 +12,7 @@ export const initialState = {
   durationTotal: 3 * 1000,  // total duration of timer in milliseconds
   hasFinished: false,       // if timer has completed
   runningIntervalId: null,  // ID of the interval timer, null when not running
+  timeElapsed: 0,           // milliseconds elapsed on timer
   timePaused: null,         // timestamp when timer was paused
   timeStarted: null,        // timestamp when timer was started
 };
@@ -64,13 +65,16 @@ export const startTimer = () => {
 
 // Update function called by interval timer
 const tick = () => {
-  // Update remaining time based on start time and current time
+  const now = Date.now();
+  
+  // Update remaining time and elapsed time
   timerState.value = {
     ...timerState.value,
     durationRemaining: Math.max(
       0,
-      timerState.value.timeStarted + timerState.value.durationTotal - Date.now()
-    )
+      timerState.value.timeStarted + timerState.value.durationTotal - now
+    ),
+    timeElapsed: now - timerState.value.timeStarted
   };
 
   // Handle timer completion
@@ -93,7 +97,8 @@ export const resetTimer = () => {
 
   timerState.value = {
     ...initialState,
-    durationRemaining: initialState.durationTotal
+    durationRemaining: initialState.durationTotal,
+    timeElapsed: 0
   };
   log('timer reset', timerState.value, 'orange', 'black');
 };
