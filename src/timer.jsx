@@ -6,6 +6,7 @@ import {
   initializeTimer,
   pauseTimer,
   adjustDuration,
+  initialState,
 } from './timer';
 
 export function Timer() {
@@ -57,7 +58,11 @@ export function Timer() {
       </button>
       <button
         onClick={handleReset}
-        disabled={!timerState.value.timeStarted && timerState.value.durationRemaining !== 0}
+        disabled={
+          initialState.durationTotal === timerState.value.durationTotal
+          && !timerState.value.timeStarted 
+          && timerState.value.durationRemaining !== 0
+        }
       >
         Reset
       </button>

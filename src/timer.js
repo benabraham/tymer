@@ -7,7 +7,7 @@ import { log } from './util';
 const updatePeriod = 500;
 
 // Default timer configuration
-const initialState = {
+export const initialState = {
   durationRemaining: null,  // milliseconds remaining on timer
   durationTotal: 3 * 1000,  // total duration of timer in milliseconds
   hasFinished: false,       // if timer has completed
