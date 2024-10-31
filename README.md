@@ -15,3 +15,11 @@ It's a countdown timer that can be
 - reset (after it has started or after it finishes)
 
 It uses localStorage to “keep running” after closing the page and opening it again.
+
+## Build
+
+Builds the app for production to the `dist` folder.
+
+```bash
+npm run build
+```
