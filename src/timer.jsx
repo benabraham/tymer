@@ -51,13 +51,13 @@ export function Timer() {
 
       <button
         onClick={handleStartPause}
-        disabled={timerState.value.hasFinished}
+        disabled={timerState.value.hasFinished || !timerState.value.durationRemaining}
       >
         {timerState.value.runningIntervalId ? 'Pause' : (timerState.value.timePaused ? 'Resume' : 'Start')}
       </button>
       <button
         onClick={handleReset}
-        disabled={!timerState.value.timeStarted}
+        disabled={!timerState.value.timeStarted && timerState.value.durationRemaining !== 0}
       >
         Reset
       </button>

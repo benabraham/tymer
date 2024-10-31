@@ -39,6 +39,7 @@ export const initializeTimer = () => {
 
 // Starts the timer
 export const startTimer = () => {
+  if (timerState.value.durationRemaining === 0) return; // nothing to do if no remaining duration
   // if fresh, set start time to now 
   let timeStarted = Date.now();
 
