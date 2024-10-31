@@ -24,12 +24,13 @@ export const timerState = signal(saveState(loadState(initialState)));
 export const initializeTimer = () => {
   console.clear();
   log('initializeTimer', timerState.value, 'black', 'white');
-
-  if (timerState.value.hasFinished) return; // nothing more to do if timer has finished
+  
+  // nothing more to do if timer has finished or is paused
+  if (timerState.value.hasFinished || timerState.value.timePaused) return; 
 
   if (timerState.value.runningIntervalId) { // continue the timer if it was running
     startTimer();
-  } else if (!timerState.value.timePaused) { // set up fresh timer
+  } else { // set up fresh timer
     timerState.value = {
       ...timerState.value,
       durationRemaining: timerState.value.durationTotal, // set to full duration
