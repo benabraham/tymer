@@ -1,4 +1,4 @@
-import { signal, computed, effect } from '@preact/signals';
+import { signal, effect } from '@preact/signals';
 import { saveState, loadState } from './storage';
 import { log } from './util';
 
@@ -112,17 +112,7 @@ export const pauseTimer = () => {
 };
 
 
-// Converts milliseconds to human-readable format
-export const formattedTime = computed(() => {
-  const totalSeconds = Math.ceil(timerState.value.durationRemaining / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
 
-  const pad = (num) => num.toString().padStart(2, '0');
-  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)} 
-  (${timerState.value.durationRemaining} ms)`;
-});
 
 // Persists timer state to localStorage on every state change
 effect(() => {
