@@ -113,6 +113,7 @@ export const pauseTimer = () => {
 
 // Adjusts the total duration of the timer
 export const adjustDuration = (durationDelta) => {
+  if (timerState.value.hasFinished) return; // nothing to do if timer has finished
   timerState.value = {
     ...timerState.value,
     durationTotal: Math.max(0, timerState.value.durationTotal + durationDelta),

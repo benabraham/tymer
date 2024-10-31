@@ -8,11 +8,12 @@ npm run dev
 ```
 
 ## What it does
-It's a countdown timer that can be
-- started
-- paused (after it has started)
-- resumed (after it has been paused)
-- reset (after it has started or after it finishes)
+It's a countdown timer that can
+- be started
+- be paused (after it has started)
+- be resumed (after it has been paused)
+- be reset (after it has started or after it finishes)
+- have its duration adjusted
 
 It uses localStorage to “keep running” after closing the page and opening it again.
 
