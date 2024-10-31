@@ -9,7 +9,7 @@ const updatePeriod = 500;
 // Default timer configuration
 const initialState = {
   durationRemaining: null,  // milliseconds remaining on timer
-  durationTotal: 30 * 1000, // total duration of timer in milliseconds
+  durationTotal: 3 * 1000,  // total duration of timer in milliseconds
   hasFinished: false,       // if timer has completed
   runningIntervalId: null,  // ID of the interval timer, null when not running
   timePaused: null,         // timestamp when timer was paused
