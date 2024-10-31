@@ -55,7 +55,7 @@ export const startTimer = () => {
   timerState.value = {
     ...timerState.value,
     runningIntervalId: setInterval(tick, updatePeriod),
-    timePaused: null,
+    timePaused: null, // only needed when resuming (starting from paused state)
     timeStarted,
   };
   log('(re)starting timer', timerState.value, 'green', 'white');
