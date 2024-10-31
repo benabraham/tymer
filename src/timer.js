@@ -47,7 +47,7 @@ export const startTimer = () => {
     timeStarted += timerState.value.timeStarted - timerState.value.timePaused;
   }
 
-  // if continuing, use existing start time
+  // if continuing running timer after page load, use existing start time
   if (timerState.value.runningIntervalId) {
     timeStarted = timerState.value.timeStarted;
   }
