@@ -44,7 +44,7 @@ export function Timer() {
       </button>
       <button
         onClick={handleReset}
-        disabled={!timerState.value.hasStarted}
+        disabled={!timerState.value.timeStarted}
       >
         Reset
       </button>

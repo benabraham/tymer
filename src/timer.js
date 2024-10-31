@@ -11,7 +11,6 @@ const initialState = {
   durationRemaining: null,  // milliseconds remaining on timer
   durationTotal: 30 * 1000, // total duration of timer in milliseconds
   hasFinished: false,       // if timer has completed
-  hasStarted: false,        // if timer has been started
   runningIntervalId: null,  // ID of the interval timer, null when not running
   timePaused: null,         // timestamp when timer was paused
   timeStarted: null,        // timestamp when timer was started
@@ -55,7 +54,6 @@ export const startTimer = () => {
 
   timerState.value = {
     ...timerState.value,
-    hasStarted: true,
     runningIntervalId: setInterval(tick, updatePeriod),
     timePaused: null,
     timeStarted,
