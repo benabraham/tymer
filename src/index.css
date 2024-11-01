@@ -142,8 +142,8 @@ button.highlighted {
 
 .tempPeriods {
   display: grid;
-  grid-template-columns: min-content repeat(3, auto);
-  gap: 0.5rem;
+  grid-template-columns: min-content repeat(3, min-content);
+  gap: 0.5rem 2rem;
 }
 
 .tempPeriod {
@@ -152,4 +152,5 @@ button.highlighted {
 
 .tempPeriod__data {
   font-size: 0.7rem;
+  text-wrap: nowrap;
 }
