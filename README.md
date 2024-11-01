@@ -15,6 +15,7 @@ It's a countdown timer that can
 - be reset (after it has started or after it finishes)
 - have its duration adjusted
 - show the total time elapsed while it was running
+- have multiple periods
 
 It uses localStorage to “keep running” after closing the page and opening it again.
 
