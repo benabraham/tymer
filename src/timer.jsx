@@ -30,8 +30,8 @@ export function Timer() {
   };
 
   // Converts milliseconds to human-readable format
-  const formatTime = (ms) => {
-    const totalSeconds = Math.ceil(ms / 1000);
+  const formatTime = (ms, floor) => {
+    const totalSeconds = floor ? Math.floor(ms / 1000) : Math.ceil(ms / 1000);
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
@@ -90,7 +90,7 @@ export function Timer() {
       >
         +6 min
       </button>
-      <p>Total elapsed {formatTime(timerState.value.timeElapsed)}</p>
+      <p>Total elapsed {formatTime(timerState.value.timeElapsed, true)}</p>
     </>
   );
 }
