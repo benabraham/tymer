@@ -41,7 +41,7 @@ export const initializeTimer = () => {
     const timerDuration = timerState.value.periods.reduce((sum, period) => sum + period.periodDuration, 0);
     timerState.value = {
       ...timerState.value,
-      timerDuration,
+      timerDuration: timerDuration,
       timerDurationRemaining: timerDuration, // set to full duration
     };
   }
