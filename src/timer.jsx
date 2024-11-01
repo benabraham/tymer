@@ -7,6 +7,10 @@ import {
   pauseTimer,
   adjustDuration,
   initialState,
+  timerDurationRemaining,
+  timerDuration,
+  timerDurationElapsed,
+  timerHasFinished,
 } from './timer';
 
 export function Timer() {
@@ -33,84 +37,93 @@ export function Timer() {
   const formatTime = (ms, floor) => {
     // Handle null/undefined input
     if (ms == null) return '–––';
-    
+
     const totalSeconds = floor ? Math.floor(ms / 1000) : Math.ceil(ms / 1000);
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
 
-    const pad = (num, places = 2, fillChar = '0') => 
+    const pad = (num, places = 2, fillChar = '0') =>
       num.toString().padStart(places, fillChar);
-    
+
     return `${pad(hours)}:${pad(minutes)}:${pad(seconds)} ${pad(ms, 6, ' ')} ms`;
   }
 
   return (
     <>
-      <h1>Linear Pomodoro Timer</h1>
       <p>
-        {timerState.value.timerHasFinished
+        <code>timerDuration          </code> {formatTime(timerDuration.value)}<br />
+        <code>timerDurationElapsed   </code> {formatTime(timerDurationElapsed.value, true)}<br />
+        <code>timerDurationRemaining </code> {formatTime(timerDurationRemaining.value)}<br />
+        <code>currentPeriodIndex     </code> {timerState.value.currentPeriodIndex}
+      </p>
+      <p>
+        {timerHasFinished.value
           ? `Finished!`
-          : `Time remaining ${formatTime(timerState.value.timerDurationRemaining)}`}
+          : `Time remaining ${formatTime(timerDurationRemaining.value)}`}
       </p>
 
       <button
         onClick={handleStartPause}
-        disabled={timerState.value.timerHasFinished || !timerState.value.timerDurationRemaining}
+        disabled={timerHasFinished.value || !timerDurationRemaining.value}
       >
         {timerState.value.runningIntervalId ? 'Pause' : (timerState.value.timePaused ? 'Resume' : 'Start')}
       </button>
       <button
         onClick={handleReset}
         disabled={
-          initialState.timerDuration === timerState.value.timerDuration
+          initialState.timerDuration === timerDuration.value
           && !timerState.value.timeStarted
-          && timerState.value.timerDurationRemaining !== 0
+          && timerDurationRemaining.value !== 0
         }
       >
         Reset
       </button>
       <button
         onClick={() => adjustDuration(-6 * 60 * 1000)}
-        disabled={timerState.value.timerHasFinished || !timerState.value.timerDurationRemaining}
+        disabled={timerHasFinished.value || !timerDurationRemaining.value}
       >
         -6 min
       </button>
       <button
         onClick={() => adjustDuration(-60 * 1000)}
-        disabled={timerState.value.timerHasFinished || !timerState.value.timerDurationRemaining}
+        disabled={timerHasFinished.value || !timerDurationRemaining.value}
       >
         -1 min
       </button>
       <button
         onClick={() => adjustDuration(60 * 1000)}
-        disabled={timerState.value.timerHasFinished}
+        disabled={timerHasFinished.value}
       >
         +1 min
       </button>
       <button
         onClick={() => adjustDuration(6 * 60 * 1000)}
-        disabled={timerState.value.timerHasFinished}
+        disabled={timerHasFinished.value}
       >
         +6 min
       </button>
-
-      <p>Total elapsed {formatTime(timerState.value.timerDurationElapsed, true)}</p>
 
       <div class="tempPeriods">
         <div class="tempPeriod">
           <div class="tempPeriod__data">Type</div>
           <div class="tempPeriod__data">Duration</div>
+          <div class="tempPeriod__data">Remaining</div>
           <div class="tempPeriod__data">Elapsed</div>
           <div class="tempPeriod__data">Finished</div>
         </div>
         {timerState.value.periods.map((period, index) => (
-          <div 
-            key={index} 
-            class={`tempPeriod ${index === timerState.value.currentPeriodIndex ? 'tempPeriod--current' : ''}`}
+          <div
+            key={index}
+            class={`
+              tempPeriod 
+              ${index === timerState.value.currentPeriodIndex ? 'tempPeriod--current' : ''}
+              ${period.periodHasFinished ? 'tempPeriod--finished' : ''}
+              `}
           >
             <div class="tempPeriod__data">{period.type}</div>
             <div class="tempPeriod__data">{formatTime(period.periodDuration)}</div>
+            <div class="tempPeriod__data">{formatTime(period.periodDurationRemaining)}</div>
             <div class="tempPeriod__data">{formatTime(period.periodDurationElapsed, true)}</div>
             <div class="tempPeriod__data">{period.periodHasFinished ? 'yes' : 'no'}</div>
           </div>

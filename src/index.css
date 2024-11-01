@@ -142,8 +142,8 @@ button.highlighted {
 
 .tempPeriods {
   display: grid;
-  grid-template-columns: min-content repeat(3, min-content);
-  gap: 0.5rem 2rem;
+  grid-template-columns: min-content repeat(4, min-content);
+  gap: 0.25rem 2rem;
 }
 
 .tempPeriod {
@@ -156,8 +156,11 @@ button.highlighted {
   text-wrap: nowrap;
 
   .tempPeriod--current & {
-    background-color: #ffffff;
-    color: black;
+    outline: 2px solid #ffffff;
   }
-  
+
+  .tempPeriod--finished & {
+    background-color: rgb(0, 70, 0);
+    color: #ffffff;
+  }
 }
