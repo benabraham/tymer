@@ -4,7 +4,7 @@ import { log } from './util';
 
 
 // Time in milliseconds between timer updates
-const updatePeriod = 250;
+const UPDATE_PERIOD = 250;
 
 // Default timer configuration
 export const initialState = {
@@ -40,12 +40,8 @@ export const initializeTimer = () => {
   if (timerState.value.runningIntervalId) { // continue the timer if it was running
     startTimer();
   } else { // set up fresh timer
-    const timerDuration = timerState.value.periods.reduce((sum, period) => sum + period.periodDuration, 0);
     timerState.value = {
       ...timerState.value,
-      // timerDuration: timerDuration,
-      //timerDurationRemaining: timerDuration, // set to full duration
-
       periods: timerState.value.periods.map(period => ({
         ...period,
         periodDurationRemaining: period.periodDuration
@@ -76,7 +72,7 @@ export const startTimer = () => {
   timerState.value = {
     ...timerState.value,
     currentPeriodIndex,
-    runningIntervalId: setInterval(tick, updatePeriod),
+    runningIntervalId: setInterval(tick, UPDATE_PERIOD),
     timePaused: null, // only needed when resuming (starting from paused state)
     timeStarted,
   };
@@ -90,13 +86,14 @@ const tick = () => {
   // Update remaining time and elapsed time
   timerState.value = {
     ...timerState.value,
-    periods: timerState.value.periods.map((period, i) => i === timerState.value.currentPeriodIndex
-      ? { // current period
+    periods: timerState.value.periods.map((period, index) => {
+      if (index !== timerState.value.currentPeriodIndex) return period
+      return {
         ...period,
         periodDurationElapsed: now - timerState.value.timeStarted,
-        periodDurationRemaining: Math.max(0, timerState.value.timeStarted + period.periodDuration - now),
-      } : period
-    ),
+        periodDurationRemaining: Math.max(0, timerState.value.timeStarted + period.periodDuration - now)
+      }
+    }),
   };
 
   // Handle period completion
@@ -105,12 +102,13 @@ const tick = () => {
       ...timerState.value,
       currentPeriodIndex: Math.min(timerState.value.currentPeriodIndex + 1, timerState.value.periods.length - 1),
       timeStarted: Date.now(),
-      periods: timerState.value.periods.map((period, i) => i === timerState.value.currentPeriodIndex
-        ? { // current period
+      periods: timerState.value.periods.map((period, index) => {
+        if (index !== timerState.value.currentPeriodIndex) return period
+        return {
           ...period,
           periodHasFinished: true,
-        } : period
-      ),
+        }
+      }),
     };
     log('period completed', timerState.value, 'orange', 'green');
   }
@@ -132,8 +130,6 @@ const tick = () => {
 // Resets timer to initial state
 export const resetTimer = () => {
   clearInterval(timerState.value.runningIntervalId);
-
-  const timerDuration = timerState.value.periods.reduce((sum, period) => sum + period.periodDuration, 0); // todo: deduplicate
 
   timerState.value = {
     ...initialState,
@@ -162,15 +158,23 @@ export const pauseTimer = () => {
 
 // Adjusts the total duration of the timer
 export const adjustDuration = (durationDelta) => {
-  if (timerHasFinished.value) return; // nothing to do if timer has finished
+  // nothing to do if timer has finished or there is no current period
+  if (timerHasFinished.value || timerState.value.currentPeriodIndex === null) return
+
   timerState.value = {
     ...timerState.value,
-    // todo: adjust periods
-    // timerDuration: Math.max(0, timerState.value.timerDuration + durationDelta),
-    // timerDurationRemaining: Math.max(0, timerState.value.timerDurationRemaining + durationDelta),
-  };
-  log('duration adjusted', timerState.value, 'purple', 'white');
-};
+    periods: timerState.value.periods.map((period, index) => {
+      if (index !== timerState.value.currentPeriodIndex) return period
+      return {
+        ...period,
+        periodDuration: Math.max(0, period.periodDuration + durationDelta),
+        periodDurationRemaining: Math.max(0, period.periodDurationRemaining + durationDelta)
+      }
+    })
+  }
+
+  log('duration adjusted', timerState.value, 'purple', 'white')
+}
 
 // Persists timer state to localStorage on every state change
 effect(() => {

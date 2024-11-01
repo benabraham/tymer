@@ -81,25 +81,25 @@ export function Timer() {
       </button>
       <button
         onClick={() => adjustDuration(-6 * 60 * 1000)}
-        disabled={timerHasFinished.value || !timerDurationRemaining.value}
+        disabled={timerHasFinished.value || timerState.value.currentPeriodIndex === null || !timerDurationRemaining.value}
       >
         -6 min
       </button>
       <button
         onClick={() => adjustDuration(-60 * 1000)}
-        disabled={timerHasFinished.value || !timerDurationRemaining.value}
+        disabled={timerHasFinished.value || timerState.value.currentPeriodIndex === null || !timerDurationRemaining.value}
       >
         -1 min
       </button>
       <button
         onClick={() => adjustDuration(60 * 1000)}
-        disabled={timerHasFinished.value}
+        disabled={timerHasFinished.value || timerState.value.currentPeriodIndex === null}
       >
         +1 min
       </button>
       <button
         onClick={() => adjustDuration(6 * 60 * 1000)}
-        disabled={timerHasFinished.value}
+        disabled={timerHasFinished.value || timerState.value.currentPeriodIndex === null}
       >
         +6 min
       </button>
