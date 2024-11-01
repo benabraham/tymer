@@ -9,13 +9,19 @@ const updatePeriod = 500;
 // Default timer configuration
 export const initialState = {
   durationRemaining: null,  // milliseconds remaining on timer
-  durationTotal: 3 * 1000,  // total duration of timer in milliseconds
+  durationTotal: null,  // total duration of timer in milliseconds
   hasFinished: false,       // if timer has completed
   runningIntervalId: null,  // ID of the interval timer, null when not running
   timeElapsed: 0,           // milliseconds elapsed on timer
   timePaused: null,         // timestamp when timer was paused
   timeStarted: null,        // timestamp when timer was started
+  periods: [
+    { type: 'work',  durationTotal: 4 * 1000, timeElapsed: 0, hasFinished: false },
+    { type: 'break', durationTotal: 2 * 1000, timeElapsed: 0, hasFinished: false },
+    { type: 'work',  durationTotal: 4 * 1000, timeElapsed: 0, hasFinished: false },
+  ],
 };
+
 
 // Main timer state signal, initialized from localStorage or defaults
 export const timerState = signal(saveState(loadState(initialState)));
@@ -31,9 +37,11 @@ export const initializeTimer = () => {
   if (timerState.value.runningIntervalId) { // continue the timer if it was running
     startTimer();
   } else { // set up fresh timer
+    const durationTotal = timerState.value.periods.reduce((sum, period) => sum + period.durationTotal, 0);
     timerState.value = {
       ...timerState.value,
-      durationRemaining: timerState.value.durationTotal, // set to full duration
+      durationTotal: durationTotal,
+      durationRemaining: durationTotal, // set to full duration
     };
   }
 };
@@ -95,11 +103,15 @@ const tick = () => {
 export const resetTimer = () => {
   clearInterval(timerState.value.runningIntervalId);
 
+  const durationTotal = timerState.value.periods.reduce((sum, period) => sum + period.durationTotal, 0); // todo: deduplicate
+
   timerState.value = {
     ...initialState,
-    durationRemaining: initialState.durationTotal,
-    timeElapsed: 0
+    durationTotal: durationTotal,
+    durationRemaining: durationTotal, // set to full duration
+    timeElapsed: 0,
   };
+
   log('timer reset', timerState.value, 'orange', 'black');
 };
 

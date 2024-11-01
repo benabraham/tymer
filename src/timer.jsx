@@ -89,7 +89,25 @@ export function Timer() {
       >
         +6 min
       </button>
+
       <p>Total elapsed {formatTime(timerState.value.timeElapsed, true)}</p>
+
+      <div class="tempPeriods">
+        <div class="tempPeriod">
+          <div class="tempPeriod__data">Type</div>
+          <div class="tempPeriod__data">Duration</div>
+          <div class="tempPeriod__data">Elapsed</div>
+          <div class="tempPeriod__data">Status</div>
+        </div>
+        {timerState.value.periods.map((period, index) => (
+          <div key={index} class="tempPeriod">
+            <div class="tempPeriod__data">{period.type} </div>
+            <div class="tempPeriod__data">{formatTime(period.durationTotal)}</div>
+            <div class="tempPeriod__data">{formatTime(period.timeElapsed, true)}</div>
+            <div class="tempPeriod__data">{period.hasFinished ? 'Finished' : 'Not Finished'}</div>
+          </div>
+        ))}
+      </div>
     </>
   );
 }
