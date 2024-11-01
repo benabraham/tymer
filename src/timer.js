@@ -53,28 +53,17 @@ export const initializeTimer = () => {
 // Starts the timer
 export const startTimer = () => {
   if (timerDurationRemaining.value === 0) return; // nothing to do if no remaining duration
-  // if fresh, set start time to now 
-  let timeStarted = Date.now();
-  let currentPeriodIndex = 0;
-
-  // if paused, adjust start time by pause duration
-  if (timerState.value.timePaused) {
-    timeStarted += timerState.value.timeStarted - timerState.value.timePaused;
-    currentPeriodIndex = timerState.value.currentPeriodIndex;
-  }
-
-  // if continuing running timer after page load, use existing start time
-  if (timerState.value.runningIntervalId) {
-    timeStarted = timerState.value.timeStarted;
-    currentPeriodIndex = timerState.value.currentPeriodIndex;
-  }
 
   timerState.value = {
     ...timerState.value,
-    currentPeriodIndex,
+    currentPeriodIndex: timerState.value.currentPeriodIndex || 0,
     runningIntervalId: setInterval(tick, UPDATE_PERIOD),
     timePaused: null, // only needed when resuming (starting from paused state)
-    timeStarted,
+    timeStarted: timerState.value.timePaused // if was paused
+      // resuming so adjust start time to account for the paused duration
+      ? Date.now() + timerState.value.timeStarted - timerState.value.timePaused
+      // starting fresh so use the original start time or the current time if not previously started
+      : timerState.value.timeStarted || Date.now(),
   };
   log('(re)starting timer', timerState.value, 'green', 'white');
 };
@@ -100,8 +89,9 @@ const tick = () => {
   if (timerState.value.periods[timerState.value.currentPeriodIndex].periodDurationRemaining === 0) {
     timerState.value = {
       ...timerState.value,
+      // current period index is incremented by 1, or stays the same if it's the last period
       currentPeriodIndex: Math.min(timerState.value.currentPeriodIndex + 1, timerState.value.periods.length - 1),
-      timeStarted: Date.now(),
+      timeStarted: Date.now(), // reset start time for the new period
       periods: timerState.value.periods.map((period, index) => {
         if (index !== timerState.value.currentPeriodIndex) return period
         return {
