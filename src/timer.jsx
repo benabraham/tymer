@@ -102,7 +102,7 @@ export function Timer() {
           <div class="tempPeriod__data">Type</div>
           <div class="tempPeriod__data">Duration</div>
           <div class="tempPeriod__data">Elapsed</div>
-          <div class="tempPeriod__data">Status</div>
+          <div class="tempPeriod__data">Finished</div>
         </div>
         {timerState.value.periods.map((period, index) => (
           <div 
@@ -112,7 +112,7 @@ export function Timer() {
             <div class="tempPeriod__data">{period.type}</div>
             <div class="tempPeriod__data">{formatTime(period.periodDuration)}</div>
             <div class="tempPeriod__data">{formatTime(period.periodDurationElapsed, true)}</div>
-            <div class="tempPeriod__data">{period.periodHasFinished ? 'Finished' : 'Not Finished'}</div>
+            <div class="tempPeriod__data">{period.periodHasFinished ? 'yes' : 'no'}</div>
           </div>
         ))}
       </div>
