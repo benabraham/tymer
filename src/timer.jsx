@@ -36,9 +36,8 @@ export function Timer() {
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
 
-    const pad = (num) => num.toString().padStart(2, '0');
-    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)} 
-    (${ms} ms)`;
+    const pad = (num, places = 2, fillChar = '0') => num.toString().padStart(places, fillChar);
+    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)} ${pad(ms, 6, ' ')} ms`;
   }
 
   return (
