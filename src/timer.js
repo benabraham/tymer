@@ -1,4 +1,4 @@
-import { signal, effect } from '@preact/signals';
+import { signal, effect, computed } from '@preact/signals';
 import { saveState, loadState } from './storage';
 import { log } from './util';
 
@@ -8,24 +8,36 @@ const updatePeriod = 500;
 
 // Default timer configuration
 export const initialState = {
-  currentPeriodIndex: null,     // track current period
   timerDurationRemaining: null, // milliseconds remaining on timer
   timerDuration: null,          // total duration of timer in milliseconds
   timerDurationElapsed: 0,      // milliseconds elapsed on timer
   timerHasFinished: false,      // if timer has completed
+  
+  currentPeriodIndex: null,     // track current period
   runningIntervalId: null,      // ID of the interval timer, null when not running
   timePaused: null,             // timestamp when timer was paused
   timeStarted: null,            // timestamp when timer was started
   periods: [
-    { type: 'work',  periodDuration: 4 * 1000, periodDurationElapsed: 0, hasFinished: false },
-    { type: 'break', periodDuration: 2 * 1000, periodDurationElapsed: 0, hasFinished: false },
-    { type: 'work',  periodDuration: 4 * 1000, periodDurationElapsed: 0, hasFinished: false },
+    { periodDurationRemaining: null, periodDuration: 4 * 1000, periodDurationElapsed: 0, periodHasFinished: false, type: 'work', },
+    { periodDurationRemaining: null, periodDuration: 2 * 1000, periodDurationElapsed: 0, periodHasFinished: false, type: 'break', },
+    { periodDurationRemaining: null, periodDuration: 4 * 1000, periodDurationElapsed: 0, periodHasFinished: false, type: 'work', },
   ],
 };
 
-
 // Main timer state signal, initialized from localStorage or defaults
 export const timerState = signal(saveState(loadState(initialState)));
+
+// Computed signals
+export const timerDurationRemaining = computed(() => timerState.value.periods.reduce((sum, period) => sum + period.periodDurationRemaining, 0));
+
+export const timerDuration = computed(() => timerState.value.periods.reduce((sum, period) => sum + period.periodDuration, 0));
+
+export const timerDurationElapsed = computed(() => timerState.value.periods.reduce((sum, period) => sum + period.periodDurationElapsed, 0));
+
+export const timerHasFinished = computed(() => timerState.value.periods[timerState.value.periods.length - 1].hasFinished);
+
+// shorthand for current period
+export const currentPeriod = computed(() => timerState.value.periods[timerState.value.currentPeriodIndex]);
 
 // Prepares timer for use, either continuing existing timer or setting up new one
 export const initializeTimer = () => {
@@ -79,7 +91,7 @@ export const startTimer = () => {
 // Update function called by interval timer
 const tick = () => {
   const now = Date.now();
-  
+
   // Update remaining time and elapsed time
   timerState.value = {
     ...timerState.value,
