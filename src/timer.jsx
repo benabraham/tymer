@@ -59,7 +59,7 @@ export function Timer() {
         onClick={handleReset}
         disabled={
           initialState.durationTotal === timerState.value.durationTotal
-          && !timerState.value.timeStarted 
+          && !timerState.value.timeStarted
           && timerState.value.durationRemaining !== 0
         }
       >
