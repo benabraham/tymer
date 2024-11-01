@@ -151,6 +151,13 @@ button.highlighted {
 }
 
 .tempPeriod__data {
+  padding: 0.25rem;
   font-size: 0.7rem;
   text-wrap: nowrap;
+
+  .tempPeriod--current & {
+    background-color: #ffffff;
+    color: black;
+  }
+  
 }

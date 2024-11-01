@@ -8,17 +8,18 @@ const updatePeriod = 500;
 
 // Default timer configuration
 export const initialState = {
-  durationRemaining: null,  // milliseconds remaining on timer
-  durationTotal: null,      // total duration of timer in milliseconds
-  hasFinished: false,       // if timer has completed
-  runningIntervalId: null,  // ID of the interval timer, null when not running
-  timeElapsed: 0,           // milliseconds elapsed on timer
-  timePaused: null,         // timestamp when timer was paused
-  timeStarted: null,        // timestamp when timer was started
+  currentPeriodIndex: null,     // track current period
+  timerDurationRemaining: null, // milliseconds remaining on timer
+  timerDuration: null,          // total duration of timer in milliseconds
+  timerDurationElapsed: 0,      // milliseconds elapsed on timer
+  timerHasFinished: false,      // if timer has completed
+  runningIntervalId: null,      // ID of the interval timer, null when not running
+  timePaused: null,             // timestamp when timer was paused
+  timeStarted: null,            // timestamp when timer was started
   periods: [
-    { type: 'work',  durationTotal: 4 * 1000, timeElapsed: 0, hasFinished: false },
-    { type: 'break', durationTotal: 2 * 1000, timeElapsed: 0, hasFinished: false },
-    { type: 'work',  durationTotal: 4 * 1000, timeElapsed: 0, hasFinished: false },
+    { type: 'work',  periodDuration: 4 * 1000, periodDurationElapsed: 0, hasFinished: false },
+    { type: 'break', periodDuration: 2 * 1000, periodDurationElapsed: 0, hasFinished: false },
+    { type: 'work',  periodDuration: 4 * 1000, periodDurationElapsed: 0, hasFinished: false },
   ],
 };
 
@@ -32,38 +33,42 @@ export const initializeTimer = () => {
   log('initializeTimer', timerState.value, 'black', 'white');
 
   // nothing more to do if timer has finished or is paused
-  if (timerState.value.hasFinished || timerState.value.timePaused) return;
+  if (timerState.value.timerHasFinished || timerState.value.timePaused) return;
 
   if (timerState.value.runningIntervalId) { // continue the timer if it was running
     startTimer();
   } else { // set up fresh timer
-    const durationTotal = timerState.value.periods.reduce((sum, period) => sum + period.durationTotal, 0);
+    const timerDuration = timerState.value.periods.reduce((sum, period) => sum + period.periodDuration, 0);
     timerState.value = {
       ...timerState.value,
-      durationTotal: durationTotal,
-      durationRemaining: durationTotal, // set to full duration
+      timerDuration,
+      timerDurationRemaining: timerDuration, // set to full duration
     };
   }
 };
 
 // Starts the timer
 export const startTimer = () => {
-  if (timerState.value.durationRemaining === 0) return; // nothing to do if no remaining duration
+  if (timerState.value.timerDurationRemaining === 0) return; // nothing to do if no remaining duration
   // if fresh, set start time to now 
   let timeStarted = Date.now();
+  let currentPeriodIndex = 0;
 
   // if paused, adjust start time by pause duration
   if (timerState.value.timePaused) {
     timeStarted += timerState.value.timeStarted - timerState.value.timePaused;
+    currentPeriodIndex = timerState.value.currentPeriodIndex;
   }
 
   // if continuing running timer after page load, use existing start time
   if (timerState.value.runningIntervalId) {
     timeStarted = timerState.value.timeStarted;
+    currentPeriodIndex = timerState.value.currentPeriodIndex;
   }
 
   timerState.value = {
     ...timerState.value,
+    currentPeriodIndex,
     runningIntervalId: setInterval(tick, updatePeriod),
     timePaused: null, // only needed when resuming (starting from paused state)
     timeStarted,
@@ -78,20 +83,20 @@ const tick = () => {
   // Update remaining time and elapsed time
   timerState.value = {
     ...timerState.value,
-    durationRemaining: Math.max(
+    timerDurationRemaining: Math.max(
       0,
-      timerState.value.timeStarted + timerState.value.durationTotal - now
+      timerState.value.timeStarted + timerState.value.timerDuration - now
     ),
-    timeElapsed: now - timerState.value.timeStarted
+    timerDurationElapsed: now - timerState.value.timeStarted
   };
 
   // Handle timer completion
-  if (timerState.value.durationRemaining === 0) {
+  if (timerState.value.timerDurationRemaining === 0) {
     clearInterval(timerState.value.runningIntervalId);
 
     timerState.value = {
       ...timerState.value,
-      hasFinished: true,
+      timerHasFinished: true,
       runningIntervalId: null,
     };
     log('timer finished', timerState.value, 'red', 'black');
@@ -103,13 +108,13 @@ const tick = () => {
 export const resetTimer = () => {
   clearInterval(timerState.value.runningIntervalId);
 
-  const durationTotal = timerState.value.periods.reduce((sum, period) => sum + period.durationTotal, 0); // todo: deduplicate
+  const timerDuration = timerState.value.periods.reduce((sum, period) => sum + period.periodDuration, 0); // todo: deduplicate
 
   timerState.value = {
     ...initialState,
-    durationTotal: durationTotal,
-    durationRemaining: durationTotal, // set to full duration
-    timeElapsed: 0,
+    timerDuration: timerDuration,
+    timerDurationRemaining: timerDuration, // set to full duration
+    timerDurationElapsed: 0,
   };
 
   log('timer reset', timerState.value, 'orange', 'black');
@@ -131,11 +136,11 @@ export const pauseTimer = () => {
 
 // Adjusts the total duration of the timer
 export const adjustDuration = (durationDelta) => {
-  if (timerState.value.hasFinished) return; // nothing to do if timer has finished
+  if (timerState.value.timerHasFinished) return; // nothing to do if timer has finished
   timerState.value = {
     ...timerState.value,
-    durationTotal: Math.max(0, timerState.value.durationTotal + durationDelta),
-    durationRemaining: Math.max(0, timerState.value.durationRemaining + durationDelta),
+    timerDuration: Math.max(0, timerState.value.timerDuration + durationDelta),
+    timerDurationRemaining: Math.max(0, timerState.value.timerDurationRemaining + durationDelta),
   };
   log('duration adjusted', timerState.value, 'purple', 'white');
 };
