@@ -26,6 +26,7 @@ a:hover {
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
+  margin-top: 0;
 }
 
 button {
@@ -37,7 +38,7 @@ button {
   font-family: inherit;
   transition: border-color 0.25s;
   padding: 0.25rem 0.625rem;
-
+  min-width: 9ch;
   margin-right: 0.5rem;
 }
 
