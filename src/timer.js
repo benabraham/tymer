@@ -6,18 +6,30 @@ import { log } from './util';
 // Time in milliseconds between timer updates
 const UPDATE_PERIOD = 250;
 
+// Period configuration
+const PERIOD_CONFIG = [
+  { duration: 3 * 1000, type: 'work' },
+  { duration: 2 * 1000, type: 'break' },
+  { duration: 3 * 1000, type: 'work' },
+  { duration: 2 * 1000, type: 'break' }
+]
+
+// function to create a period from a period config
+const createPeriod = ({ type, duration }) => ({
+  type,
+  periodDuration: duration,
+  periodDurationRemaining: duration, // initialize with full duration
+  periodDurationElapsed: 0,
+  periodHasFinished: false
+})
+
 // Default timer configuration
 export const initialState = {
   currentPeriodIndex: null, // track current period
   runningIntervalId: null,  // ID of the interval timer, null when not running
   timePaused: null,         // timestamp when timer was paused
   timeStarted: null,        // timestamp when timer was started
-  periods: [
-    { periodDurationRemaining: null, periodDuration: 3 * 1000, periodDurationElapsed: 0, periodHasFinished: false, type: 'work', },
-    { periodDurationRemaining: null, periodDuration: 2 * 1000, periodDurationElapsed: 0, periodHasFinished: false, type: 'break', },
-    { periodDurationRemaining: null, periodDuration: 3 * 1000, periodDurationElapsed: 0, periodHasFinished: false, type: 'work', },
-    { periodDurationRemaining: null, periodDuration: 2 * 1000, periodDurationElapsed: 0, periodHasFinished: false, type: 'break', },
-  ],
+  periods: PERIOD_CONFIG.map(createPeriod)
 };
 
 // Main timer state signal, initialized from localStorage or defaults
@@ -42,10 +54,7 @@ export const initializeTimer = () => {
   } else { // set up fresh timer
     timerState.value = {
       ...timerState.value,
-      periods: timerState.value.periods.map(period => ({
-        ...period,
-        periodDurationRemaining: period.periodDuration
-      }))
+      periods: PERIOD_CONFIG.map(createPeriod)
     };
   }
 };
@@ -123,10 +132,7 @@ export const resetTimer = () => {
 
   timerState.value = {
     ...initialState,
-    periods: initialState.periods.map(period => ({
-      ...period,
-      periodDurationRemaining: period.periodDuration
-    }))
+    periods: PERIOD_CONFIG.map(createPeriod)
   };
 
   log('timer reset', timerState.value, 'orange', 'black');
