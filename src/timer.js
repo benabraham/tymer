@@ -206,12 +206,9 @@ export const finishCurrentPeriod = (isLastPeriod) => {
   if (isLastPeriod) {
     log('finished last period', timerState.value, 10)
     playSound('timerEnd');
-
   } else {
     log('finished current period', timerState.value, 10)
   }
-
-
 }
 
 // Update function called by interval timer
