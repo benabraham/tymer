@@ -62,7 +62,7 @@ export function Timer() {
             class={`
             period
             period--${period.type}
-            ${timerState.value.timerHasStarted && index === timerState.value.currentPeriodIndex
+            ${index === timerState.value.currentPeriodIndex
                 ? 'period--active'
                 : ''
               }
