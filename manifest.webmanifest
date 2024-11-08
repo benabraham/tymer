@@ -1,0 +1,1 @@
+{"name":"Linear Pomodoro Timer","short_name":"Pomodoro","start_url":"/tymer/","display":"standalone","background_color":"#ffffff","lang":"en","scope":"/tymer/","description":"A simple Pomodoro timer application","theme_color":"#ffffff","icons":[{"src":"icon-192x192.png","sizes":"192x192","type":"image/png"},{"src":"icon-512x512.png","sizes":"512x512","type":"image/png"}]}
