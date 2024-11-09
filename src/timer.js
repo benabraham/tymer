@@ -3,16 +3,15 @@ import { saveState, loadState } from './storage'
 import { playSound } from './sounds';
 import { log } from './util'
 
-export const TIMER_SCALE = 10 // 1000 is 1:1, lower means shorter everything
-const UI_UPDATE_INTERVAL = 0.5 * 60 * TIMER_SCALE // Time in milliseconds between timer updates
-const DURATION_TO_ADD_AUTOMATICALLY = UI_UPDATE_INTERVAL * 10
+const UI_UPDATE_INTERVAL = 1000 // time between timer updates in milliseconds
+const DURATION_TO_ADD_AUTOMATICALLY = 1 * 60 * 1000
 
-// Period configuration
+// period configuration
 const PERIOD_CONFIG = [
-  { duration: 50 * 60 * TIMER_SCALE, type: 'work' },
-  { duration: 25 * 60 * TIMER_SCALE, type: 'break' },
-  { duration: 50 * 60 * TIMER_SCALE, type: 'work' },
-  { duration: 25 * 60 * TIMER_SCALE, type: 'break' },
+  { duration: 50 * 60 * 1000, type: 'work' },
+  { duration: 25 * 60 * 1000, type: 'break' },
+  { duration: 50 * 60 * 1000, type: 'work' },
+  { duration: 25 * 60 * 1000, type: 'break' },
 ]
 
 // function to create a period from a period config
@@ -24,27 +23,27 @@ const createPeriod = ({ duration, type }) => ({
   type,
 })
 
-// Default timer configuration
+// default timer configuration
 export const initialState = {
-  currentPeriodIndex: null, // track current period
-  runningIntervalId: null,  // ID of the interval timer, null when not running
-  timestampPaused: null,    // timestamp when timer was paused
-  timestampStarted: null,   // timestamp when timer was started
-  shouldGoToNextPeriod: null,
+  currentPeriodIndex: null,   // track current period
+  runningIntervalId: null,    // ID of the interval timer, null when not running
+  timestampPaused: null,      // timestamp when timer was paused
+  timestampStarted: null,     // timestamp when timer was started
+  shouldGoToNextPeriod: null, // used only visually to blink the button
   periods: PERIOD_CONFIG.map(createPeriod)
 }
 
-// Timer state signal, initialized from localStorage or defaults
+// timer state signal, initialized from localStorage or defaults
 export const timerState = signal(saveState(loadState(initialState)))
 
-// Computed signals
+// computed signals
 export const timerDuration = computed(() => timerState.value.periods.reduce((sum, period) => sum + period.periodDuration, 0))
 export const timerDurationElapsed = computed(() => timerState.value.periods.reduce((sum, period) => sum + period.periodDurationElapsed, 0))
 export const timerDurationRemaining = computed(() => timerState.value.periods.reduce((sum, period) => sum + period.periodDurationRemaining, 0))
 export const timerHasFinished = computed(() => timerState.value.periods[timerState.value.periods.length - 1]?.periodHasFinished)
 export const timerOnLastPeriod = computed(() => timerState.value.currentPeriodIndex + 1 >= timerState.value.periods.length)
 
-// Prepares timer for use, either continuing existing timer or setting up new one
+// prepares timer for use, continuing an running timer or prepare a new one
 export const initializeTimer = () => {
   console.clear()
   log('initializeTimer', timerState.value, 2)
@@ -53,55 +52,74 @@ export const initializeTimer = () => {
   if (timerHasFinished.value || timerState.value.timestampPaused) return
 
   if (timerState.value.runningIntervalId) { // continue (restart) the timer if it was running
-    startTimer()
-  } else { // set up fresh timer
+    resumeTimer()
+  } else { // prepare a new timer
     resetTimer()
   }
 }
 
+// starts repeating the tick function to update UI periodically
 const startTick = () => {
   timerState.value = {
     ...timerState.value,
     runningIntervalId: setInterval(tick, UI_UPDATE_INTERVAL),
   }
-  // log('tick started', timerState.value, 12)
 }
 
+// stops repeating the tick function
 const stopTick = () => {
   clearInterval(timerState.value.runningIntervalId)
   timerState.value = {
     ...timerState.value,
     runningIntervalId: null,
   }
-  // log('tick stopped', timerState.value, 11)
 }
 
-// Starts the timer
+// starts the timer
 export const startTimer = () => {
   if (timerHasFinished.value) return // do nothing if timer has finished (needs reset)
+
   playSound('button');
+
   timerState.value = {
     ...timerState.value,
-    currentPeriodIndex: timerState.value.currentPeriodIndex || 0,
-    timestampPaused: null, // only needed when resuming (starting from paused state)
-    timestampStarted: timerState.value.timestampPaused // if was paused
-      // resume and adjust start time to account for the (paused duration)
-      ? timerState.value.timestampStarted + (Date.now() - timerState.value.timestampPaused)
-      // else leave the start time as is if available or use current time if not previously started (starting fresh)
-      : timerState.value.timestampStarted || Date.now(),
+    currentPeriodIndex: 0,
+    timestampStarted: Date.now()
   }
 
   updatePeriod()
 
   startTick()
 
-  log('(re)started timer', timerState.value, 3)
+  log('started timer', timerState.value, 3)
 }
 
-// Pauses the timer
+// resumes the timer
+export const resumeTimer = () => {
+  if (timerHasFinished.value) return // do nothing if timer has finished (needs reset)
+
+  playSound('button');
+
+  const durationPaused = Date.now() - timerState.value.timestampPaused
+
+  timerState.value = {
+    ...timerState.value,
+    timestampPaused: null,
+    // adjust the start time for the pause duration
+    timestampStarted: timerState.value.timestampStarted + durationPaused,
+  }
+
+  updatePeriod()
+
+  startTick()
+
+  log('resumed timer', timerState.value, 13)
+}
+
+// pauses the timer
 export const pauseTimer = () => {
-  // todo: is no remaining time a valid reason to not pause?
-  if (timerHasFinished.value || !timerDurationRemaining.value) return
+  if (timerHasFinished.value) return // do nothing if timer has finished (needs reset)
+
   playSound('button');
 
   timerState.value = {
@@ -116,26 +134,27 @@ export const pauseTimer = () => {
   log('timer paused', timerState.value, 8)
 }
 
-// Resets timer to initial state
+// resets timer to the initial state
 export const resetTimer = () => {
   stopTick()
 
-  timerState.value = {
-    ...initialState,
-  }
+  timerState.value = { ...initialState }
+
   console.clear()
   log('timer reset', timerState.value, 7)
 }
 
-// Update remaining time and elapsed time of the period
+// updates period related values
 const updatePeriod = () => {
   const currentPeriod = timerState.value.periods[timerState.value.currentPeriodIndex]
   const timeToCalculateWith = timerState.value.timestampPaused || Date.now()
 
-  const periodDurationElapsed = Math.max(0, timeToCalculateWith - timerState.value.timestampStarted) // todo: check if max is needed
+  const periodDurationElapsed = Math.max(0, timeToCalculateWith - timerState.value.timestampStarted)
   const periodDurationRemaining = Math.max(0, currentPeriod?.periodDuration - periodDurationElapsed)
 
-  if (periodDurationElapsed > 0 && periodDurationRemaining === 0) {
+  const hasPeriodElapsed = periodDurationElapsed > 0 && periodDurationRemaining === 0
+
+  if (hasPeriodElapsed) {
     timerState.value = {
       ...timerState.value,
       shouldGoToNextPeriod: true,

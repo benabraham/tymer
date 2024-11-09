@@ -115,6 +115,8 @@ button.highlighted {
   text-align: right;
 }
 
+
+
 .period--work {
   --period-bg: #4CAF50;
 }
@@ -143,6 +145,16 @@ button.highlighted {
   padding-block: var(--line-overshoot);
   background-clip: content-box;
   border-right: 2px solid #ffffff;
+}
+
+.period-elapsed {
+  font-size: 0.5rem;
+  width: max-content;
+  text-align: left;
+  display: block;
+  position: absolute;
+  top: calc(100% - 4px);
+  left: 6px;
 }
 
 .controls {
