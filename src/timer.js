@@ -207,11 +207,14 @@ export const finishCurrentPeriod = (isLastPeriod) => {
 
   if (isLastPeriod) stopTick()
 
-  if (!timerState.value.periods[timerState.value.currentPeriodIndex].periodHasFinished) updatePeriod()
+  const hasCurrentPeriodNotFinished = !timerState.value.periods[timerState.value.currentPeriodIndex].periodHasFinished
+  if (hasCurrentPeriodNotFinished) updatePeriod()
+
   timerState.value = {
     ...timerState.value,
     shouldGoToNextPeriod: false,
-    timestampStarted: timerState.value.timestampPaused || Date.now(), // reset start time for the new period
+    // reset start time for the new period if not paused
+    timestampStarted: timerState.value.timestampPaused || Date.now(),
     currentPeriodIndex: isLastPeriod ? null : timerState.value.currentPeriodIndex + 1,
     periods: timerState.value.periods.map((period, index) =>
       index !== timerState.value.currentPeriodIndex ? period : {
