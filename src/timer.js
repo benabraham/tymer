@@ -234,9 +234,25 @@ export const finishCurrentPeriod = (isLastPeriod) => {
   }
 }
 
+// checks if two numbers are divisible without remainder or almost
+const isDivisibleWithTolerance = (dividend, divisor, tolerance) => {
+  if (divisor === 0) return false // avoid division by zero
+  const remainder = Math.abs(dividend % divisor)
+  return remainder <= tolerance || Math.abs(remainder - divisor) <= tolerance
+};
+
+
 // update function called by interval timer
 const tick = () => {
   updatePeriod()
+  // play a sound every 12 minutes elapsed in a period
+  if (
+    isDivisibleWithTolerance(
+      timerState.value.periods[timerState.value.currentPeriodIndex].periodDurationElapsed,
+      12 * 60 * 1000, 500)
+  ) {
+    playSound('tick')
+  }
   log('tick', timerState.value, 14)
 }
 
