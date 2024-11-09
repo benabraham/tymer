@@ -85,7 +85,12 @@ export function Timer() {
                     }%`
                 }}
               >
-                <span class="period-elapsed">{formatTime(timerDurationElapsed.value, true)}</span>
+                <span class={`
+                  period-elapsed
+                  ${(timerState.value.periods[timerState.value.currentPeriodIndex].periodDurationElapsed / timerState.value.periods[timerState.value.currentPeriodIndex].periodDuration) > 0.5 ? 'period-elapsed--half' : '' }
+                  `}>
+                    {formatTime(timerDurationElapsed.value, true)}
+                </span>
               </div>
             )}
           </div>
