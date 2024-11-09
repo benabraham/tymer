@@ -3,6 +3,7 @@ import { useComputed } from '@preact/signals'
 import {
   timerState,
   startTimer,
+  resumeTimer,
   resetTimer,
   initializeTimer,
   pauseTimer,
@@ -14,7 +15,6 @@ import {
   timerHasFinished,
   timerOnLastPeriod,
   finishCurrentPeriod,
-  TIMER_SCALE,
 } from './timer'
 
 export function Timer() {
@@ -27,6 +27,8 @@ export function Timer() {
   const handleStartPause = () => {
     if (timerState.value.runningIntervalId) {
       pauseTimer()
+    } else if (timerState.value.timestampPaused) {
+      resumeTimer()
     } else {
       startTimer()
     }
@@ -48,12 +50,14 @@ export function Timer() {
     return `${pad(hours)}:${pad(minutes)}:${pad(seconds)} ${pad(ms, 6, ' ')} ms`
   }
 
+  const gridColumnsScale = 1000;
+
   return (
     <>
       <div
         class="timer"
         style={{
-          gridTemplateColumns: `repeat(${useComputed(() => timerState.value.periods.reduce((sum, period) => sum + (period.periodDuration ? Math.ceil(period.periodDuration / TIMER_SCALE) : 2), 0))}, 1fr)`,
+          gridTemplateColumns: `repeat(${useComputed(() => timerState.value.periods.reduce((sum, period) => sum + (period.periodDuration ? Math.ceil(period.periodDuration / gridColumnsScale) : 2), 0))}, 1fr)`,
         }}
       >
         {timerState.value.periods.map((period, index) => (
@@ -67,8 +71,7 @@ export function Timer() {
                 : ''
               }
           `}
-          style={{ gridColumnStart: `span ${period.periodDuration ? Math.ceil(period.periodDuration / TIMER_SCALE) : 2 }` }}
-
+            style={{ gridColumnStart: `span ${period.periodDuration ? Math.ceil(period.periodDuration / gridColumnsScale) : 2}` }}
           >
             <div class="period-text">
               {formatTime(period.periodDuration)}
@@ -81,7 +84,9 @@ export function Timer() {
                   width: `${(timerState.value.periods[timerState.value.currentPeriodIndex].periodDurationElapsed / timerState.value.periods[timerState.value.currentPeriodIndex].periodDuration * 100)
                     }%`
                 }}
-              ></div>
+              >
+                <span class="period-elapsed">{formatTime(timerDurationElapsed.value, true)}</span>
+              </div>
             )}
           </div>
         ))}
