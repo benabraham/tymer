@@ -129,7 +129,7 @@ button.highlighted {
 
 .period--active {
   outline: 2px solid #ffffff;
-  outline-offset: -2px;
+  z-index: 1;
 }
 
 .current-time {
@@ -142,7 +142,7 @@ button.highlighted {
   box-sizing: border-box;
   padding-block: var(--line-overshoot);
   background-clip: content-box;
-  border-right: 4px solid #ffffff;
+  border-right: 2px solid #ffffff;
 }
 
 .controls {
