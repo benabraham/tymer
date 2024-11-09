@@ -1,6 +1,6 @@
 import { signal, effect, computed } from '@preact/signals'
 import { saveState, loadState } from './storage'
-import { playSound } from './sounds';
+import { playSound } from './sounds'
 import { log } from './util'
 
 const UI_UPDATE_INTERVAL = 1000 // time between timer updates in milliseconds
@@ -84,7 +84,7 @@ const stopTick = () => {
 export const startTimer = () => {
   if (timerHasFinished.value) return // do nothing if timer has finished (needs reset)
 
-  playSound('button');
+  playSound('button')
 
   timerState.value = {
     ...timerState.value,
@@ -103,7 +103,7 @@ export const startTimer = () => {
 export const resumeTimer = () => {
   if (timerHasFinished.value) return // do nothing if timer has finished (needs reset)
 
-  playSound('button');
+  playSound('button')
 
   const durationPaused = Date.now() - timerState.value.timestampPaused
 
@@ -125,7 +125,7 @@ export const resumeTimer = () => {
 export const pauseTimer = () => {
   if (timerHasFinished.value) return // do nothing if timer has finished (needs reset)
 
-  playSound('button');
+  playSound('button')
 
   timerState.value = {
     ...timerState.value,
@@ -188,7 +188,7 @@ const updatePeriod = () => {
       shouldGoToNextPeriod: true,
     }
     adjustDuration(DURATION_TO_ADD_AUTOMATICALLY)
-    playSound('periodEnd');
+    playSound('periodEnd')
     log('period automatically extended', timerState.value, 2)
   }
 
@@ -233,7 +233,7 @@ export const finishCurrentPeriod = (isLastPeriod) => {
 
   if (isLastPeriod) {
     log('finished last period', timerState.value, 10)
-    playSound('timerEnd');
+    playSound('timerEnd')
   } else {
     log('finished current period', timerState.value, 10)
   }
@@ -244,8 +244,7 @@ const isDivisibleWithTolerance = (dividend, divisor, tolerance) => {
   if (divisor === 0) return false // avoid division by zero
   const remainder = Math.abs(dividend % divisor)
   return remainder <= tolerance || Math.abs(remainder - divisor) <= tolerance
-};
-
+}
 
 // update function called by interval timer
 const tick = () => {
