@@ -46,7 +46,7 @@ export function Timer() {
 
     const pad = (num, places = 2, fillChar = '0') =>
       num.toString().padStart(places, fillChar)
-    if(debug) return `${pad(hours)}:${pad(minutes)}:${pad(seconds)} ${pad(ms, 6, ' ')} ms`
+    if (debug) return `${pad(hours)}:${pad(minutes)}:${pad(seconds)} ${pad(ms, 6, ' ')} ms`
     return `${hours}:${pad(minutes)}`
   }
 
@@ -74,7 +74,7 @@ export function Timer() {
             style={{ gridColumnStart: `span ${period.periodDuration ? Math.ceil(period.periodDuration / gridColumnsScale) : 2}` }}
           >
             <div class="period-text">
-              {formatTime(period.periodDuration)}
+              {period.type} {formatTime(period.periodDuration)}
             </div>
 
             {index === timerState.value.currentPeriodIndex && (
