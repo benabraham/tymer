@@ -246,19 +246,23 @@ const isDivisibleWithTolerance = (dividend, divisor, tolerance) => {
   return remainder <= tolerance || Math.abs(remainder - divisor) <= tolerance
 }
 
-// update function called by interval timer
-const tick = () => {
-  updatePeriod()
-  // play a sound every 12 minutes elapsed in a period
+// plays sound around the time of each interval
+const playSoundEvery = (interval) => {
   if (
     isDivisibleWithTolerance(
       timerState.value.periods[timerState.value.currentPeriodIndex].periodDurationElapsed,
-      12 * 60 * 1000,
+      interval,
       500
     )
   ) {
     playSound('tick')
   }
+}
+
+// update function called by interval timer
+const tick = () => {
+  updatePeriod()
+  playSoundEvery(12 * 60 * 1000)
   log('tick', timerState.value, 14)
 }
 
