@@ -144,6 +144,29 @@ export const resetTimer = () => {
   log('timer reset', timerState.value, 7)
 }
 
+// adjusts the duration of period
+export const adjustDuration = (durationDelta) => {
+  // nothing to do if timer has finished or there is no current period
+  if (timerHasFinished.value || timerState.value.currentPeriodIndex === null) return
+
+  timerState.value = {
+    ...timerState.value,
+    periods: timerState.value.periods.map((period, index) =>
+      index !== timerState.value.currentPeriodIndex ? period : {
+        ...period,
+        periodDuration: Math.max(
+          period.periodDurationElapsed,
+          period.periodDuration + durationDelta
+        ),
+      }
+    )
+  }
+
+  updatePeriod()
+
+  log('duration adjusted', timerState.value, 9)
+}
+
 // updates period related values
 const updatePeriod = () => {
   const currentPeriod = timerState.value.periods[timerState.value.currentPeriodIndex]
@@ -176,29 +199,7 @@ const updatePeriod = () => {
   }
 }
 
-// Adjusts the duration of period
-export const adjustDuration = (durationDelta) => {
-  // nothing to do if timer has finished or there is no current period
-  if (timerHasFinished.value || timerState.value.currentPeriodIndex === null) return
-
-  timerState.value = {
-    ...timerState.value,
-    periods: timerState.value.periods.map((period, index) =>
-      index !== timerState.value.currentPeriodIndex ? period : {
-        ...period,
-        periodDuration: Math.max(
-          period.periodDurationElapsed,
-          period.periodDuration + durationDelta
-        ),
-      }
-    )
-  }
-
-  updatePeriod()
-
-  log('duration adjusted', timerState.value, 9)
-}
-
+// finishes current period and contains extra logic if it's the last period
 export const finishCurrentPeriod = (isLastPeriod) => {
   if (timerHasFinished.value || timerState.value.currentPeriodIndex === null) return
 
@@ -230,13 +231,13 @@ export const finishCurrentPeriod = (isLastPeriod) => {
   }
 }
 
-// Update function called by interval timer
+// update function called by interval timer
 const tick = () => {
   updatePeriod()
   log('tick', timerState.value, 14)
 }
 
-// Persists timer state to localStorage on every state change
+// persist timer state to localStorage on every state change
 effect(() => {
   saveState(timerState.value)
 })
