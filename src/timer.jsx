@@ -35,7 +35,7 @@ export function Timer() {
   }
 
   // Converts milliseconds to human-readable format
-  const formatTime = (ms, floor) => {
+  const formatTime = (ms, floor, debug) => {
     // Handle null/undefined input
     if (ms == null) return '–––'
 
@@ -46,8 +46,8 @@ export function Timer() {
 
     const pad = (num, places = 2, fillChar = '0') =>
       num.toString().padStart(places, fillChar)
-
-    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)} ${pad(ms, 6, ' ')} ms`
+    if(debug) return `${pad(hours)}:${pad(minutes)}:${pad(seconds)} ${pad(ms, 6, ' ')} ms`
+    return `${hours}:${pad(minutes)}`
   }
 
   const gridColumnsScale = 1000;
@@ -87,9 +87,9 @@ export function Timer() {
               >
                 <span class={`
                   period-elapsed
-                  ${(timerState.value.periods[timerState.value.currentPeriodIndex].periodDurationElapsed / timerState.value.periods[timerState.value.currentPeriodIndex].periodDuration) > 0.5 ? 'period-elapsed--half' : '' }
+                  ${(timerState.value.periods[timerState.value.currentPeriodIndex].periodDurationElapsed / timerState.value.periods[timerState.value.currentPeriodIndex].periodDuration) > 0.5 ? 'period-elapsed--half' : ''}
                   `}>
-                    {formatTime(timerDurationElapsed.value, true)}
+                  {formatTime(timerDurationElapsed.value, true)}
                 </span>
               </div>
             )}
@@ -154,42 +154,44 @@ export function Timer() {
           Finish
         </button>
       </section>
+      <details>
+        <summary>Debugging values</summary>
+        <p>
+          <code>timerDuration          </code> {formatTime(timerDuration.value, false, true)}<br />
+          <code>timerDurationElapsed   </code> {formatTime(timerDurationElapsed.value, true, true)}<br />
+          <code>timerDurationRemaining </code> {formatTime(timerDurationRemaining.value, false, true)}<br />
+          <code>currentPeriodIndex     </code> {timerState.value.currentPeriodIndex}<br />
+          <code>shouldGoToNextPeriod   </code> {timerState.value.shouldGoToNextPeriod ? 'YES' : 'no'}<br />
+          <code>timerOnLastPeriod      </code> {timerOnLastPeriod.value ? 'YES' : 'no'}<br />
+          <code>timerHasFinished       </code> {timerHasFinished.value ? 'YES' : 'no'}
+        </p>
 
-      <p>
-        <code>timerDuration          </code> {formatTime(timerDuration.value)}<br />
-        <code>timerDurationElapsed   </code> {formatTime(timerDurationElapsed.value, true)}<br />
-        <code>timerDurationRemaining </code> {formatTime(timerDurationRemaining.value)}<br />
-        <code>currentPeriodIndex     </code> {timerState.value.currentPeriodIndex}<br />
-        <code>shouldGoToNextPeriod   </code> {timerState.value.shouldGoToNextPeriod ? 'YES' : 'no'}<br />
-        <code>timerOnLastPeriod      </code> {timerOnLastPeriod.value ? 'YES' : 'no'}<br />
-        <code>timerHasFinished       </code> {timerHasFinished.value ? 'YES' : 'no'}
-      </p>
-
-      <div class="tempPeriods">
-        <div class="tempPeriod">
-          <div class="tempPeriod__data">Type</div>
-          <div class="tempPeriod__data">Duration</div>
-          <div class="tempPeriod__data">Remaining</div>
-          <div class="tempPeriod__data">Elapsed</div>
-          <div class="tempPeriod__data">Finished</div>
-        </div>
-        {timerState.value.periods.map((period, index) => (
-          <div
-            key={index}
-            class={`
+        <div class="tempPeriods">
+          <div class="tempPeriod">
+            <div class="tempPeriod__data">Type</div>
+            <div class="tempPeriod__data">Duration</div>
+            <div class="tempPeriod__data">Remaining</div>
+            <div class="tempPeriod__data">Elapsed</div>
+            <div class="tempPeriod__data">Finished</div>
+          </div>
+          {timerState.value.periods.map((period, index) => (
+            <div
+              key={index}
+              class={`
               tempPeriod 
               ${index === timerState.value.currentPeriodIndex ? 'tempPeriod--current' : ''}
               ${period.periodHasFinished ? 'tempPeriod--finished' : ''}
               `}
-          >
-            <div class="tempPeriod__data">{period.type}</div>
-            <div class="tempPeriod__data">{formatTime(period.periodDuration)}</div>
-            <div class="tempPeriod__data">{formatTime(period.periodDurationRemaining)}</div>
-            <div class="tempPeriod__data">{formatTime(period.periodDurationElapsed, true)}</div>
-            <div class="tempPeriod__data">{period.periodHasFinished ? 'yes' : 'no'}</div>
-          </div>
-        ))}
-      </div>
+            >
+              <div class="tempPeriod__data">{period.type}</div>
+              <div class="tempPeriod__data">{formatTime(period.periodDuration, false, true)}</div>
+              <div class="tempPeriod__data">{formatTime(period.periodDurationRemaining, false, true)}</div>
+              <div class="tempPeriod__data">{formatTime(period.periodDurationElapsed, true, true)}</div>
+              <div class="tempPeriod__data">{period.periodHasFinished ? 'yes' : 'no'}</div>
+            </div>
+          ))}
+        </div>
+      </details>
     </>
   )
 }
