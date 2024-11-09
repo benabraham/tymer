@@ -1,4 +1,5 @@
 import { useEffect } from 'preact/hooks'
+import { useComputed } from '@preact/signals'
 import {
   timerState,
   startTimer,
@@ -15,7 +16,6 @@ import {
   finishCurrentPeriod,
   TIMER_SCALE,
 } from './timer'
-import { playSound } from './sounds';
 
 export function Timer() {
   // Initialize timer when component mounts
@@ -53,7 +53,7 @@ export function Timer() {
       <div
         class="timer"
         style={{
-          gridTemplateColumns: `repeat(${Math.ceil(timerDuration.value / TIMER_SCALE + 1)}, 1fr)`,
+          gridTemplateColumns: `repeat(${useComputed(() => timerState.value.periods.reduce((sum, period) => sum + (period.periodDuration > 0 ? Math.ceil(period.periodDuration / TIMER_SCALE) : 2), 0))}, 1fr)`,
         }}
       >
         {timerState.value.periods.map((period, index) => (
@@ -67,7 +67,8 @@ export function Timer() {
                 : ''
               }
           `}
-            style={{ gridColumnStart: `span ${Math.ceil(period.periodDuration / TIMER_SCALE)}` }}
+          style={{ gridColumnStart: `span ${period.periodDuration > 0 ? Math.ceil(period.periodDuration / TIMER_SCALE) : 2 }` }}
+
           >
             <div class="period-text">
               {formatTime(period.periodDuration)}
