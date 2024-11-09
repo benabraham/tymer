@@ -53,7 +53,7 @@ export function Timer() {
       <div
         class="timer"
         style={{
-          gridTemplateColumns: `repeat(${useComputed(() => timerState.value.periods.reduce((sum, period) => sum + (period.periodDuration > 0 ? Math.ceil(period.periodDuration / TIMER_SCALE) : 2), 0))}, 1fr)`,
+          gridTemplateColumns: `repeat(${useComputed(() => timerState.value.periods.reduce((sum, period) => sum + (period.periodDuration ? Math.ceil(period.periodDuration / TIMER_SCALE) : 2), 0))}, 1fr)`,
         }}
       >
         {timerState.value.periods.map((period, index) => (
@@ -67,7 +67,7 @@ export function Timer() {
                 : ''
               }
           `}
-          style={{ gridColumnStart: `span ${period.periodDuration > 0 ? Math.ceil(period.periodDuration / TIMER_SCALE) : 2 }` }}
+          style={{ gridColumnStart: `span ${period.periodDuration ? Math.ceil(period.periodDuration / TIMER_SCALE) : 2 }` }}
 
           >
             <div class="period-text">
