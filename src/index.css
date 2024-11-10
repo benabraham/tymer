@@ -1,202 +1,196 @@
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.5;
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-  font-synthesis: none;
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.5;
+    color-scheme: light dark;
+    color: rgba(255, 255, 255, 0.87);
+    background-color: #242424;
+    font-synthesis: none;
 }
 
 body {
-  margin: 0;
-  padding: 1.25rem;
+    margin: 0;
+    padding: 1.25rem;
 }
 
 a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+    font-weight: 500;
+    color: #646cff;
+    text-decoration: inherit;
 }
 
 a:hover {
-  color: #535bf2;
+    color: #535bf2;
 }
 
 h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-  margin-top: 0;
+    font-size: 3.2em;
+    line-height: 1.1;
+    margin-top: 0;
 }
 
 button {
-  border-radius: 0.5rem;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 600;
-  font-family: inherit;
-  transition: border-color 0.25s;
-  padding: 0.25rem 0.625rem;
-  min-width: 9ch;
-  user-select: none;
+    border-radius: 0.5rem;
+    border: 1px solid transparent;
+    font-size: 1em;
+    font-weight: 600;
+    font-family: inherit;
+    transition: border-color 0.25s;
+    padding: 0.25rem 0.625rem;
+    min-width: 9ch;
+    user-select: none;
 }
 
 button:not(:disabled) {
-  cursor: pointer;
-  background-color: #3d3d3d;
-  color: #ffffff;
+    cursor: pointer;
+    background-color: #3d3d3d;
+    color: #ffffff;
 }
 
 button:not(:disabled):hover {
-  background-color: #464646;
-  border-color: #646cff;
-  color: #ffffff;
+    background-color: #464646;
+    border-color: #646cff;
+    color: #ffffff;
 }
 
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+    outline: 4px auto -webkit-focus-ring-color;
 }
 
-
 button.highlighted {
-  background-color: #ff0000;
-  animation: blink 1s infinite;
+    background-color: #ff0000;
+    animation: blink 1s infinite;
 }
 
 @keyframes blink {
+    0%,
+    100% {
+        background-color: #800000;
+    }
 
-  0%,
-  100% {
-    background-color: #800000;
-  }
-
-  50% {
-    background-color: #9f9f00;
-  }
+    50% {
+        background-color: #9f9f00;
+    }
 }
 
-
 .app {
-  padding-inline: 2rem;
-  margin: 0 auto;
+    padding-inline: 2rem;
+    margin: 0 auto;
 }
 
 .timer {
-  font-size: 1rem;
-  font-weight: bold;
-  display: grid;
-  height: 3rem;
-  background-color: skyblue;
-  margin-bottom: 2rem;
+    font-size: 1rem;
+    font-weight: bold;
+    display: grid;
+    height: 3rem;
+    background-color: skyblue;
+    margin-bottom: 2rem;
 }
 
 .period {
-  position: relative;
-  color: white;
-  text-align: right;
-  border-right: 1px solid #ffffff;
-  padding-right: 0.25rem;
+    position: relative;
+    color: white;
+    text-align: right;
+    border-right: 1px solid #ffffff;
+    padding-right: 0.25rem;
 
-  background-color: var(--period-bg, #fff);
+    background-color: var(--period-bg, #fff);
 
-  &:has(~.period--active) {
-    /* elapsed period*/
-    background-color: color-mix(in srgb, var(--period-bg, #fff) 50%, #eeeeee 50%);
-  }
+    &:has(~.period--active) {
+        /* elapsed period*/
+        background-color: color-mix(in srgb, var(--period-bg, #fff) 50%, #eeeeee 50%);
+    }
 
 }
 
 .period-text {
-  margin-left: auto;
-  font-size: 0.5rem;
-  width: min-content;
-  text-align: right;
+    margin-left: auto;
+    font-size: 0.5rem;
+    width: min-content;
+    text-align: right;
 }
 
-
-
 .period--work {
-  --period-bg: #4CAF50;
+    --period-bg: #4CAF50;
 }
 
 .period--break {
-  --period-bg: #00bfff;
+    --period-bg: #00bfff;
 }
 
 .period--lunch {
-  --period-bg: #2196F3;
+    --period-bg: #2196F3;
 }
 
 .period--active {
-  outline: 2px solid #ffffff;
-  z-index: 1;
+    outline: 2px solid #ffffff;
+    z-index: 1;
 }
 
 .current-time {
-  --line-overshoot: 8px;
-  position: absolute;
-  top: calc(-1 * var(--line-overshoot));
-  bottom: calc(-1 * var(--line-overshoot));
-  left: 0;
-  background-color: #eeeeee80;
-  box-sizing: border-box;
-  padding-block: var(--line-overshoot);
-  background-clip: content-box;
-  border-right: 2px solid #ffffff;
+    --line-overshoot: 8px;
+    position: absolute;
+    top: calc(-1 * var(--line-overshoot));
+    bottom: calc(-1 * var(--line-overshoot));
+    left: 0;
+    background-color: #eeeeee80;
+    box-sizing: border-box;
+    padding-block: var(--line-overshoot);
+    background-clip: content-box;
+    border-right: 2px solid #ffffff;
 }
 
 .period-elapsed {
-  font-size: 0.5rem;
-  width: max-content;
-  text-align: left;
-  display: block;
-  position: absolute;
-  top: calc(100% - 4px);
-  left: calc(100% + 6px);
+    font-size: 0.5rem;
+    width: max-content;
+    text-align: left;
+    display: block;
+    position: absolute;
+    top: calc(100% - 4px);
+    left: calc(100% + 6px);
 }
 
 .period-elapsed--half {
-  left: auto;
-  right: 6px;
+    left: auto;
+    right: 6px;
 }
 
 .controls {
-  display: flex;
-  gap: 0.625rem;
-  flex-wrap: wrap;
-  margin-bottom: 1.25rem;
+    display: flex;
+    gap: 0.625rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
 }
 
 .totals {
-  background-color: #888888;
-  color: black;
-  padding: 0.625rem;
-  border-radius: 0.3125rem;
+    background-color: #888888;
+    color: black;
+    padding: 0.625rem;
+    border-radius: 0.3125rem;
 }
 
 .tempPeriods {
-  display: grid;
-  grid-template-columns: min-content repeat(4, min-content);
-  gap: 0.25rem 2rem;
+    display: grid;
+    grid-template-columns: min-content repeat(4, min-content);
+    gap: 0.25rem 2rem;
 }
 
 .tempPeriod {
-  display: contents;
+    display: contents;
 }
 
 .tempPeriod__data {
-  padding: 0.25rem;
-  font-size: 0.7rem;
-  text-wrap: nowrap;
+    padding: 0.25rem;
+    font-size: 0.7rem;
+    text-wrap: nowrap;
 
-  .tempPeriod--current & {
-    outline: 2px solid #ffffff;
-  }
+    .tempPeriod--current & {
+        outline: 2px solid #ffffff;
+    }
 
-  .tempPeriod--finished & {
-    background-color: rgb(0, 70, 0);
-    color: #ffffff;
-  }
+    .tempPeriod--finished & {
+        background-color: rgb(0, 70, 0);
+        color: #ffffff;
+    }
 }
