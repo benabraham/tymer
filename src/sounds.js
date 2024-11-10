@@ -8,5 +8,8 @@ const sounds = {
 }
 
 export const playSound = (soundName) => {
-  if (sounds[soundName]) sounds[soundName].play()
+  if (sounds[soundName]) {
+    Howler.stop()
+    sounds[soundName].play()
+  }
 }
