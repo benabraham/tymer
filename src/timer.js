@@ -174,6 +174,30 @@ export const adjustDuration = (durationDelta) => {
     log('duration adjusted', timerState.value, 9)
 }
 
+
+// adjusts elapsed time
+export const adjustElapsed = (elapsedDelta) => {
+    // nothing to do if timer has finished or there is no current period
+    if (timerState.value.currentPeriodIndex === null) return
+
+    updatePeriod()
+
+    timerState.value = {
+        ...timerState.value,
+        timestampStarted:
+            timerState.value.timestampStarted
+            + Math.min( // prevents elapsed to go negative
+                timerState.value.periods[timerState.value.currentPeriodIndex].periodDurationElapsed,
+                -elapsedDelta
+            ),
+    }
+
+    updatePeriod()
+
+    log('time adjusted', timerState.value, 6)
+}
+
+
 // updates period related values
 const updatePeriod = () => {
     const currentPeriod = timerState.value.periods[timerState.value.currentPeriodIndex]
@@ -208,7 +232,7 @@ const updatePeriod = () => {
 
 // finishes current period and contains extra logic if it's the last period
 export const finishCurrentPeriod = (isLastPeriod) => {
-    if (timerHasFinished.value || timerState.value.currentPeriodIndex === null) return
+    if (timerState.value.currentPeriodIndex === null) return
 
     isLastPeriod = isLastPeriod === true || timerOnLastPeriod.value
 

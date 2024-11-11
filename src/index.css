@@ -161,6 +161,7 @@ button.highlighted {
     gap: 0.625rem;
     flex-wrap: wrap;
     margin-bottom: 1.25rem;
+    align-items: baseline;
 }
 
 .totals {
@@ -193,4 +194,9 @@ button.highlighted {
         background-color: rgb(0, 70, 0);
         color: #ffffff;
     }
+}
+
+details code {
+    min-width: 24ch;
+    display:inline-block;
 }
