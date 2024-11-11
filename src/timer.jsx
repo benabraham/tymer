@@ -1,7 +1,21 @@
 import {useEffect} from 'preact/hooks'
 import {useComputed} from '@preact/signals'
 import {
-    timerState, startTimer, resumeTimer, resetTimer, initializeTimer, pauseTimer, adjustDuration, initialState, timerDurationRemaining, timerDuration, timerDurationElapsed, timerHasFinished, timerOnLastPeriod, finishCurrentPeriod,
+    timerState,
+    startTimer,
+    resumeTimer,
+    resetTimer,
+    initializeTimer,
+    pauseTimer,
+    adjustElapsed,
+    adjustDuration,
+    initialState,
+    timerDurationRemaining,
+    timerDuration,
+    timerDurationElapsed,
+    timerHasFinished,
+    timerOnLastPeriod,
+    finishCurrentPeriod,
 } from './timer'
 
 export function Timer() {
@@ -74,7 +88,20 @@ export function Timer() {
             </div>))}
         </div>
 
-        <section class="controls">
+        <section className="controls">
+            <div>Timer</div>
+            <button
+                onClick={() => adjustElapsed(-6 * 60 * 1000)}
+                disabled={timerState.value.currentPeriodIndex === null || timerDurationElapsed.value === 0}
+            >
+                ◀ 6 min
+            </button>
+            <button
+                onClick={() => adjustElapsed(-1 * 60 * 1000)}
+                disabled={timerState.value.currentPeriodIndex === null || timerDurationElapsed.value === 0}
+            >
+                ◀ 1 min
+            </button>
             <button
                 onClick={handleStartPause}
                 disabled={timerHasFinished.value || !timerDurationRemaining.value}
@@ -89,6 +116,21 @@ export function Timer() {
                 Reset
             </button>
             <button
+                onClick={() => adjustElapsed(1 * 60 * 1000)}
+                disabled={timerState.value.currentPeriodIndex === null}
+            >
+                1 min ▶
+            </button>
+            <button
+                onClick={() => adjustElapsed(6 * 60 * 1000)}
+                disabled={timerState.value.currentPeriodIndex === null}
+            >
+                6 min ▶
+            </button>
+        </section>
+        <section className="controls">
+            <div>Period</div>
+            <button
                 onClick={() => adjustDuration(-6 * 60 * 1000)}
                 disabled={timerHasFinished.value || timerState.value.currentPeriodIndex === null || !timerDurationRemaining.value}
             >
@@ -99,6 +141,20 @@ export function Timer() {
                 disabled={timerHasFinished.value || timerState.value.currentPeriodIndex === null || !timerDurationRemaining.value}
             >
                 -1 min
+            </button>
+            <button
+                onClick={finishCurrentPeriod}
+                disabled={timerHasFinished.value || timerState.value.currentPeriodIndex === null || timerOnLastPeriod.value}
+                className={!timerOnLastPeriod.value && timerState.value.shouldGoToNextPeriod ? 'highlighted' : ''}
+            >
+                Next
+            </button>
+            <button
+                onClick={() => finishCurrentPeriod(true)}
+                disabled={timerHasFinished.value || timerState.value.currentPeriodIndex === null}
+                className={timerOnLastPeriod.value && timerState.value.shouldGoToNextPeriod ? 'highlighted' : ''}
+            >
+                Finish
             </button>
             <button
                 onClick={() => adjustDuration(60 * 1000)}
@@ -112,28 +168,16 @@ export function Timer() {
             >
                 +6 min
             </button>
-            <button
-                onClick={finishCurrentPeriod}
-                disabled={timerHasFinished.value || timerState.value.currentPeriodIndex === null || timerOnLastPeriod.value}
-                class={!timerOnLastPeriod.value && timerState.value.shouldGoToNextPeriod ? 'highlighted' : ''}
-            >
-                Next
-            </button>
-            <button
-                onClick={() => finishCurrentPeriod(true)}
-                disabled={timerHasFinished.value || timerState.value.currentPeriodIndex === null}
-                class={timerOnLastPeriod.value && timerState.value.shouldGoToNextPeriod ? 'highlighted' : ''}
-            >
-                Finish
-            </button>
         </section>
         <details>
             <summary>Debugging values</summary>
             <p>
-                <code>timerDuration </code> {formatTime(timerDuration.value, false, true)}<br/>
+                <code>timerDuration</code> {formatTime(timerDuration.value, false, true)}<br/>
                 <code>timerDurationElapsed </code> {formatTime(timerDurationElapsed.value, true, true)}<br/>
                 <code>timerDurationRemaining </code> {formatTime(timerDurationRemaining.value, false, true)}<br/>
                 <code>currentPeriodIndex </code> {timerState.value.currentPeriodIndex}<br/>
+                <code>timestampStarted </code> {(timerState.value.timestampStarted || 0).toLocaleString()}<br/>
+                <code>timestampPaused </code> {(timerState.value.timestampPaused || 0).toLocaleString()}<br/>
                 <code>shouldGoToNextPeriod </code> {timerState.value.shouldGoToNextPeriod ? 'YES' : 'no'}<br/>
                 <code>timerOnLastPeriod </code> {timerOnLastPeriod.value ? 'YES' : 'no'}<br/>
                 <code>timerHasFinished </code> {timerHasFinished.value ? 'YES' : 'no'}
