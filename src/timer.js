@@ -9,9 +9,11 @@ const DURATION_TO_ADD_AUTOMATICALLY = 1 * 60 * 1000
 // period configuration
 const PERIOD_CONFIG = [
     {duration: 48 * 60 * 1000, type: 'work'},
-    {duration: 12 * 60 * 1000, type: 'break'},
+    {duration: 24 * 60 * 1000, type: 'break'},
     {duration: 48 * 60 * 1000, type: 'work'},
-    {duration: 84 * 60 * 1000, type: 'lunch'},
+    {duration: 24 * 60 * 1000, type: 'break'},
+    {duration: 48 * 60 * 1000, type: 'work'},
+    {duration: 60 * 60 * 1000, type: 'break'},
     {duration: 48 * 60 * 1000, type: 'work'},
     {duration: 24 * 60 * 1000, type: 'break'},
     {duration: 48 * 60 * 1000, type: 'work'},
