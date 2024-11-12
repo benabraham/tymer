@@ -1,21 +1,21 @@
 import {useEffect} from 'preact/hooks'
 import {useComputed} from '@preact/signals'
 import {
-    timerState,
-    startTimer,
-    resumeTimer,
-    resetTimer,
-    initializeTimer,
-    pauseTimer,
-    adjustElapsed,
     adjustDuration,
+    adjustElapsed,
+    finishCurrentPeriod,
+    initializeTimer,
     initialState,
-    timerDurationRemaining,
+    pauseTimer,
+    resetTimer,
+    resumeTimer,
+    startTimer,
     timerDuration,
     timerDurationElapsed,
+    timerDurationRemaining,
     timerHasFinished,
     timerOnLastPeriod,
-    finishCurrentPeriod,
+    timerState,
 } from './timer'
 
 export function Timer() {
@@ -50,7 +50,41 @@ export function Timer() {
         return `${hours}:${pad(minutes)}`
     }
 
+    const msToMinutes = (ms) => Math.floor(ms/60000)
+
     const gridColumnsScale = 1000;
+
+    const calculatePeriodSums = (periods) => {
+        const totals = {
+            totalDuration: 0,
+            totalElapsed: 0,
+            byType: {}
+        }
+
+        return periods.reduce((sum, period) => {
+            // Sum all durations
+            sum.totalDuration += period.periodDuration
+            sum.totalElapsed += period.periodDurationElapsed
+            sum.totalRemaining += period.periodDurationRemaining
+
+            // Sum by type
+            if (!sum.byType[period.type]) {
+                sum.byType[period.type] = {
+                    duration: 0,
+                    durationElapsed: 0,
+                    durationRemaining: 0,
+                }
+            }
+            sum.byType[period.type].duration += period.periodDuration
+            sum.byType[period.type].durationElapsed += period.periodDurationElapsed
+            sum.byType[period.type].durationRemaining += period.periodDurationRemaining
+
+            return sum
+        }, totals)
+    }
+
+    const original = calculatePeriodSums(initialState.periods)
+    const planned = calculatePeriodSums(timerState.value.periods)
 
     return (<>
         <div
@@ -88,7 +122,7 @@ export function Timer() {
             </div>))}
         </div>
 
-        <section className="controls">
+        <section class="controls">
             <div>Timer</div>
             <button
                 onClick={() => adjustElapsed(-6 * 60 * 1000)}
@@ -128,7 +162,7 @@ export function Timer() {
                 6 min ▶
             </button>
         </section>
-        <section className="controls">
+        <section class="controls">
             <div>Period</div>
             <button
                 onClick={() => adjustDuration(-6 * 60 * 1000)}
@@ -145,14 +179,14 @@ export function Timer() {
             <button
                 onClick={finishCurrentPeriod}
                 disabled={timerHasFinished.value || timerState.value.currentPeriodIndex === null || timerOnLastPeriod.value}
-                className={!timerOnLastPeriod.value && timerState.value.shouldGoToNextPeriod ? 'highlighted' : ''}
+                class={!timerOnLastPeriod.value && timerState.value.shouldGoToNextPeriod ? 'highlighted' : ''}
             >
                 Next
             </button>
             <button
                 onClick={() => finishCurrentPeriod(true)}
                 disabled={timerHasFinished.value || timerState.value.currentPeriodIndex === null}
-                className={timerOnLastPeriod.value && timerState.value.shouldGoToNextPeriod ? 'highlighted' : ''}
+                class={timerOnLastPeriod.value && timerState.value.shouldGoToNextPeriod ? 'highlighted' : ''}
             >
                 Finish
             </button>
@@ -169,6 +203,53 @@ export function Timer() {
                 +6 min
             </button>
         </section>
+
+        <div
+            class="stats"
+            style={`
+                --break-original: ${msToMinutes(original.byType.break.duration)};
+                --break-planned: ${msToMinutes(planned.byType.break.duration)};
+                --break-elapsed: ${msToMinutes(planned.byType.break.durationElapsed)};
+
+                --work-original: ${msToMinutes(original.byType.work.duration)};
+                --work-planned: ${msToMinutes(planned.byType.work.duration)};
+                --work-elapsed: ${msToMinutes(planned.byType.work.durationElapsed)};
+            `}
+        >
+            <h2>Stats</h2>
+            <div class="stats-bars">
+                <div class="stats-bar stats-bar--break stats-bar--original">
+                    break {formatTime(original.byType.break.duration)}
+                </div>
+                <div class="stats-bar stats-bar--break stats-bar--planned">
+                    {formatTime(planned.byType.break.duration)}
+                    <div
+                        class={`
+                            stats-elapsed
+                            ${planned.byType.break.durationElapsed < 60000 ? 'stats-elapsed--none' : ''}
+                        `}
+                    >
+                        {formatTime(planned.byType.break.durationElapsed)}
+                    </div>
+                </div>
+                <div class="stats-bar stats-bar--work stats-bar--original">
+                    work {formatTime(original.byType.work.duration)}
+                </div>
+                <div class="stats-bar stats-bar--work stats-bar--planned">
+                    {formatTime(planned.byType.work.duration)}
+                    <div
+                        className={`
+                            stats-elapsed
+                            ${planned.byType.work.durationElapsed < 60000 ? 'stats-elapsed--none' : ''}
+                        `}
+                    >
+                        {formatTime(planned.byType.work.durationElapsed)}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
         <details>
             <summary>Debugging values</summary>
             <p>

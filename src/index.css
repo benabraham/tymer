@@ -29,6 +29,11 @@ h1 {
     margin-top: 0;
 }
 
+h2,
+h3 {
+    margin: 0;
+}
+
 button {
     border-radius: 0.5rem;
     border: 1px solid transparent;
@@ -198,5 +203,112 @@ button.highlighted {
 
 details code {
     min-width: 24ch;
-    display:inline-block;
+    display: inline-block;
+}
+
+.stats {
+    font-weight: 700;
+    margin-bottom: 1rem;
+
+    /*
+    --break-original: 100;
+    --break-planned: 25;
+    --break-elapsed: 50;
+
+    --work-original: 33;
+    --work-planned: 100;
+    --work-elapsed: 50;
+    */
+
+    /* calculated */
+    --break-max: max(var(--break-original), var(--break-planned));
+    --break-percentage: calc(var(--break-elapsed) / var(--break-max) * 100%);
+
+    --work-max: max(var(--work-original), var(--work-planned));
+    --work-percentage: calc(var(--work-elapsed) / var(--work-max) * 100%);
+
+    --total-width: calc(var(--break-max) + var(--work-max));
+
+    --middle-line: var(--break-max);
+}
+
+.stats-bars {
+    display: grid;
+    grid-template-columns: repeat(var(--total-width), 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    height: 50px;
+}
+
+.stats-bar,
+.stats-elapsed {
+    overflow: hidden;
+    padding: 0.25rem;
+    line-height: 1;
+    font-size: 0.5rem;
+    align-content: end;
+}
+
+.stats-bar {
+    background-color: #000000;
+    position: relative;
+}
+
+.stats-bar--break {
+    text-align: left;
+    background-color: #00bfff;
+    grid-column-end: var(--middle-line);
+
+    &.stats-bar--original {
+        grid-column-start: calc(var(--middle-line) - var(--break-original) + 1);
+    }
+
+    &.stats-bar--planned {
+        grid-column-start: calc(var(--middle-line) - var(--break-planned) + 1);
+    }
+}
+
+.stats-bar--work {
+    text-align: right;
+    background-color: #4caf50;
+    grid-column-start: var(--middle-line);
+
+    &.stats-bar--original {
+        grid-column-end: calc(var(--middle-line) + var(--work-original) + 1);
+    }
+
+    &.stats-bar--planned {
+        grid-column-end: calc(var(--middle-line) + var(--work-planned) + 1);
+    }
+}
+
+.stats-bar--original {
+    grid-row: 1 / 4;
+    border: 1px solid white;
+}
+
+.stats-bar--planned {
+    grid-row: 2 / 3;
+    z-index: 1;
+    border: 1px solid white;
+}
+
+.stats-elapsed {
+    position: absolute;
+    top: 0;
+    background-color: rgba(255, 255, 255, 0.5);
+
+    .stats-bar--break & {
+        right: 0;
+        border-left: 2px solid white;
+        width: var(--break-percentage);
+    }
+    .stats-bar--work & {
+        left: 0;
+        border-right: 2px solid white;
+        width: var(--work-percentage);
+    }
+}
+
+.stats-elapsed--none {
+    display: none;
 }
