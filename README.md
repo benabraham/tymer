@@ -1,4 +1,4 @@
-<h1 style="color:red;background-color:yellow">Tymer!</h1>
+# Tymer!
 
 ## Develop
 
