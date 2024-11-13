@@ -200,7 +200,7 @@ export const adjustElapsed = (elapsedDelta) => {
 }
 
 
-// updates period related values
+// updates (recalculates) period related values
 const updatePeriod = () => {
     const currentPeriod = timerState.value.periods[timerState.value.currentPeriodIndex]
     const timeToCalculateWith = timerState.value.timestampPaused || Date.now()
