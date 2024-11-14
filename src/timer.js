@@ -61,7 +61,8 @@ export const initializeTimer = () => {
     if (timerHasFinished.value || timerState.value.timestampPaused) return
 
     if (timerState.value.runningIntervalId) { // continue (restart) the timer if it was running
-        resumeTimer()
+        updatePeriod()
+        startTick()
     } else { // prepare a new timer
         resetTimer()
     }
@@ -103,7 +104,7 @@ export const startTimer = () => {
     log('started timer', timerState.value, 3)
 }
 
-// resumes the timer
+// resumes the timer after it was paused
 export const resumeTimer = () => {
     if (timerHasFinished.value) return // do nothing if timer has finished (needs reset)
 
