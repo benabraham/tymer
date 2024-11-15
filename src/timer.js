@@ -281,7 +281,7 @@ const playSoundEvery = (interval) => {
         isDivisibleWithTolerance(
             timerState.value.periods[timerState.value.currentPeriodIndex].periodDurationElapsed,
             interval,
-            500
+            400
         )
     ) {
         playSound('tick')
