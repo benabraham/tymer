@@ -1,3 +1,9 @@
+*,
+::after,
+::before {
+    box-sizing: border-box
+}
+
 :root {
     font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
     font-variant-numeric: tabular-nums;
@@ -220,10 +226,10 @@ details code {
 
     /* calculated */
     --break-max: max(var(--break-original), var(--break-planned));
-    --break-percentage: calc(var(--break-elapsed) / var(--break-max) * 100%);
+    --break-percentage: calc(var(--break-elapsed) / var(--break-planned) * 100%);
 
     --work-max: max(var(--work-original), var(--work-planned));
-    --work-percentage: calc(var(--work-elapsed) / var(--work-max) * 100%);
+    --work-percentage: calc(var(--work-elapsed) / var(--work-planned) * 100%);
 
     --total-width: calc(var(--break-max) + var(--work-max));
 
@@ -239,8 +245,6 @@ details code {
 
 .stats-bar,
 .stats-elapsed {
-    overflow: hidden;
-    padding: 0.25rem;
     font-size: 0.75rem;
     align-content: end;
 }
@@ -292,6 +296,7 @@ details code {
 .stats-elapsed {
     position: absolute;
     top: 0;
+    height: 100%;
     background-color: rgba(255, 255, 255, 0.5);
 
     .stats-bar--break & {
@@ -309,4 +314,23 @@ details code {
 
 .stats-elapsed--none {
     display: none;
+}
+
+.stats-text {
+    padding: 0.125rem;
+}
+
+.stats-elapsed-text {
+    position: relative;
+    top: -100%;
+
+    .stats-bar--break & {
+        position: absolute;
+        right: 100%;
+    }
+
+    .stats-bar--work & {
+        text-align: right;
+
+    }
 }
