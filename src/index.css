@@ -1,7 +1,7 @@
 :root {
     font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
     font-variant-numeric: tabular-nums;
-    line-height: 1.5;
+    line-height: 1.3;
     color-scheme: light dark;
     color: rgba(255, 255, 255, 0.87);
     background-color: #242424;
@@ -24,7 +24,6 @@ a:hover {
 }
 
 h1 {
-    font-size: 3.2em;
     line-height: 1.1;
     margin-top: 0;
 }
@@ -37,7 +36,7 @@ h3 {
 button {
     border-radius: 0.5rem;
     border: 1px solid transparent;
-    font-size: 1em;
+    font-size: 1rem;
     font-weight: 600;
     font-family: inherit;
     transition: border-color 0.25s;
@@ -85,10 +84,9 @@ button.highlighted {
 }
 
 .timer {
-    font-size: 1rem;
     font-weight: bold;
     display: grid;
-    height: 3rem;
+    height: 4rem;
     background-color: skyblue;
     margin-bottom: 2rem;
 }
@@ -111,7 +109,7 @@ button.highlighted {
 
 .period-text {
     margin-left: auto;
-    font-size: 0.5rem;
+    font-size: 0.75rem;
     width: min-content;
     text-align: right;
 }
@@ -147,7 +145,7 @@ button.highlighted {
 }
 
 .period-elapsed {
-    font-size: 0.5rem;
+    font-size: 1rem;
     width: max-content;
     text-align: left;
     display: block;
@@ -188,7 +186,7 @@ button.highlighted {
 
 .tempPeriod__data {
     padding: 0.25rem;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     text-wrap: nowrap;
 
     .tempPeriod--current & {
@@ -236,15 +234,14 @@ details code {
     display: grid;
     grid-template-columns: repeat(var(--total-width), 1fr);
     grid-template-rows: repeat(3, 1fr);
-    height: 50px;
+    height: 4rem;
 }
 
 .stats-bar,
 .stats-elapsed {
     overflow: hidden;
     padding: 0.25rem;
-    line-height: 1;
-    font-size: 0.5rem;
+    font-size: 0.75rem;
     align-content: end;
 }
 
@@ -302,6 +299,7 @@ details code {
         border-left: 2px solid white;
         width: var(--break-percentage);
     }
+
     .stats-bar--work & {
         left: 0;
         border-right: 2px solid white;
