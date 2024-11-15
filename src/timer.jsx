@@ -50,7 +50,7 @@ export function Timer() {
         return `${hours}:${pad(minutes)}`
     }
 
-    const msToMinutes = (ms) => Math.floor(ms/60000)
+    const msToMinutes = (ms) => Math.floor(ms / 60000)
 
     const gridColumnsScale = 1000;
 
@@ -219,35 +219,54 @@ export function Timer() {
             <h2>Stats</h2>
             <div class="stats-bars">
                 <div class="stats-bar stats-bar--break stats-bar--original">
-                    break {formatTime(original.byType.break.duration)}
+                    <div class="stats-text">
+                        break {formatTime(original.byType.break.duration)}
+                    </div>
                 </div>
                 <div class="stats-bar stats-bar--break stats-bar--planned">
-                    {formatTime(planned.byType.break.duration)}
+                    <div class="stats-text">
+                        {formatTime(planned.byType.break.duration)}
+                    </div>
                     <div
                         class={`
                             stats-elapsed
                             ${planned.byType.break.durationElapsed < 60000 ? 'stats-elapsed--none' : ''}
                         `}
                     >
-                        {formatTime(planned.byType.break.durationElapsed)}
+                        <div class="stats-text stats-elapsed-text">
+                            {
+                                planned.byType.break.duration !== planned.byType.break.durationElapsed
+                                    ? formatTime(planned.byType.work.durationElapsed)
+                                    : ''
+                            }
+                        </div>
                     </div>
                 </div>
                 <div class="stats-bar stats-bar--work stats-bar--original">
-                    work {formatTime(original.byType.work.duration)}
+                    <div class="stats-text">
+                        work {formatTime(original.byType.work.duration)}
+                    </div>
                 </div>
                 <div class="stats-bar stats-bar--work stats-bar--planned">
-                    {formatTime(planned.byType.work.duration)}
+                    <div class="stats-text">
+                        {formatTime(planned.byType.work.duration)}
+                    </div>
                     <div
-                        className={`
+                        class={`
                             stats-elapsed
                             ${planned.byType.work.durationElapsed < 60000 ? 'stats-elapsed--none' : ''}
                         `}
                     >
-                        {formatTime(planned.byType.work.durationElapsed)}
+                        <div class="stats-text stats-elapsed-text">
+                            {
+                                planned.byType.work.duration !== planned.byType.work.durationElapsed
+                                    ? formatTime(planned.byType.work.durationElapsed)
+                                    : ''
+                            }
+                        </div>
                     </div>
                 </div>
             </div>
-
         </div>
 
         <details>
