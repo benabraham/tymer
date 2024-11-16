@@ -236,7 +236,7 @@ export function Timer() {
                         <div class="stats-text stats-elapsed-text">
                             {
                                 planned.byType.break.duration !== planned.byType.break.durationElapsed
-                                    ? formatTime(planned.byType.work.durationElapsed)
+                                    ? formatTime(planned.byType.break.durationElapsed)
                                     : ''
                             }
                         </div>
