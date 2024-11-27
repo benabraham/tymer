@@ -257,7 +257,7 @@ export const finishCurrentPeriod = (isLastPeriod) => {
                 periodDurationRemaining: 0,
                 periodHasFinished: true,
             }
-        ).filter(period => !isLastPeriod || period.periodDurationElapsed > 0),
+        ).filter(period => !isLastPeriod || period.periodDurationElapsed > DURATION_TO_ADD_AUTOMATICALLY),
     }
 
     if (isLastPeriod) {
