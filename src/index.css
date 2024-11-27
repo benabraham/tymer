@@ -39,6 +39,14 @@ h3 {
     margin: 0;
 }
 
+.app {
+    padding-inline: 2rem;
+    margin: 0 auto;
+}
+
+
+/* BUTTONS */
+
 button {
     border-radius: 0.5rem;
     border: 1px solid transparent;
@@ -84,85 +92,78 @@ button.highlighted {
     }
 }
 
-.app {
-    padding-inline: 2rem;
-    margin: 0 auto;
-}
 
-.timer {
-    font-weight: bold;
-    display: grid;
-    height: 4rem;
+/* TIMELINE */
+
+.timeline {
     background-color: skyblue;
+    font-weight: bold;
+    min-height: 4rem;
     margin-bottom: 2rem;
+    display: grid;
+    grid-template-columns: repeat(var(--total-minutes), 1fr);
+    user-select: none;
 }
 
-.period {
+.timeline__period {
     position: relative;
     color: white;
     text-align: right;
     border-right: 1px solid #ffffff;
     padding-right: 0.25rem;
-
     background-color: var(--period-bg, #fff);
-
-    &:has(~.period--active) {
-        /* elapsed period*/
-        background-color: color-mix(in srgb, var(--period-bg, #fff) 50%, #eeeeee 50%);
-    }
-
+    grid-column-start: span var(--period-minutes);
 }
 
-.period-text {
+.timeline__period[style*="--period-minutes: 0"] {
+    display: none;
+}
+
+.timeline__period--work {
+    --period-bg: #4CAF50;
+}
+
+.timeline__period--break {
+    --period-bg: #00bfff;
+}
+
+.timeline__period--active {
+    outline: 2px solid #ffffff;
+    z-index: 1;
+}
+
+.timeline__current-time {
+    --line-overshoot: 8px;
+
+    position: absolute;
+    width: calc(var(--elapsed-minutes) / var(--period-minutes) * 100%);
+
+    top: calc(-1 * var(--line-overshoot));
+    bottom: calc(-1 * var(--line-overshoot));
+    left: 0;
+
+    padding-block: var(--line-overshoot);
+    border-right: 2px solid #ffffff;
+    background-color: #eeeeee80;
+    background-clip: content-box;
+}
+
+.timeline__text {
     margin-left: auto;
     font-size: 0.75rem;
     width: min-content;
     text-align: right;
 }
 
-.period--work {
-    --period-bg: #4CAF50;
-}
-
-.period--break {
-    --period-bg: #00bfff;
-}
-
-.period--lunch {
-    --period-bg: #2196F3;
-}
-
-.period--active {
-    outline: 2px solid #ffffff;
-    z-index: 1;
-}
-
-.current-time {
-    --line-overshoot: 8px;
-    position: absolute;
-    top: calc(-1 * var(--line-overshoot));
-    bottom: calc(-1 * var(--line-overshoot));
-    left: 0;
-    background-color: #eeeeee80;
-    box-sizing: border-box;
-    padding-block: var(--line-overshoot);
-    background-clip: content-box;
-    border-right: 2px solid #ffffff;
-}
-
-.period-elapsed {
+.timeline__elapsed {
     font-size: 1rem;
     width: max-content;
     text-align: left;
     display: block;
     position: absolute;
-    top: calc(100% - 4px);
-    left: calc(100% + 6px);
-}
-
-.period-elapsed--half {
-    left: auto;
-    right: 6px;
+    top: calc(100%);
+    right: 0;
+    transform: translate(50%);
 }
 
 .controls {
@@ -180,35 +181,8 @@ button.highlighted {
     border-radius: 0.3125rem;
 }
 
-.tempPeriods {
-    display: grid;
-    grid-template-columns: min-content repeat(4, min-content);
-    gap: 0.25rem 2rem;
-}
 
-.tempPeriod {
-    display: contents;
-}
-
-.tempPeriod__data {
-    padding: 0.25rem;
-    font-size: 0.75rem;
-    text-wrap: nowrap;
-
-    .tempPeriod--current & {
-        outline: 2px solid #ffffff;
-    }
-
-    .tempPeriod--finished & {
-        background-color: rgb(0, 70, 0);
-        color: #ffffff;
-    }
-}
-
-details code {
-    min-width: 24ch;
-    display: inline-block;
-}
+/* STATS */
 
 .stats {
     font-weight: 700;
@@ -332,5 +306,38 @@ details code {
     .stats-bar--work & {
         text-align: right;
 
+    }
+}
+
+/* for debugging */
+details {
+    code {
+        min-width: 24ch;
+        display: inline-block;
+    }
+
+    .tempPeriods {
+        display: grid;
+        grid-template-columns: min-content repeat(4, min-content);
+        gap: 0.25rem 2rem;
+    }
+
+    .tempPeriod {
+        display: contents;
+    }
+
+    .tempPeriod__data {
+        padding: 0.25rem;
+        font-size: 0.75rem;
+        text-wrap: nowrap;
+
+        .tempPeriod--current & {
+            outline: 2px solid #ffffff;
+        }
+
+        .tempPeriod--finished & {
+            background-color: rgb(0, 70, 0);
+            color: #ffffff;
+        }
     }
 }

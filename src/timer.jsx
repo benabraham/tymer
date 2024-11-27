@@ -1,5 +1,4 @@
 import {useEffect} from 'preact/hooks'
-import {useComputed} from '@preact/signals'
 import {
     adjustDuration,
     adjustElapsed,
@@ -52,8 +51,6 @@ export function Timer() {
 
     const msToMinutes = (ms) => Math.floor(ms / 60000)
 
-    const gridColumnsScale = 1000;
-
     const calculatePeriodSums = (periods) => {
         const totals = {
             totalDuration: 0,
@@ -88,36 +85,35 @@ export function Timer() {
 
     return (<>
         <div
-            class="timer"
-            style={{
-                gridTemplateColumns: `repeat(${useComputed(() => timerState.value.periods.reduce((sum, period) => sum + (period.periodDuration ? Math.ceil(period.periodDuration / gridColumnsScale) : 2), 0))}, 1fr)`,
-            }}
+            class="timeline"
+            style={`
+                --total-minutes: ${msToMinutes(timerDuration.value)};
+            `}
         >
             {timerState.value.periods.map((period, index) => (<div
                 key={index}
                 class={`
-            period
-            period--${period.type}
-            ${index === timerState.value.currentPeriodIndex ? 'period--active' : ''}
-          `}
-                style={{gridColumnStart: `span ${period.periodDuration ? Math.ceil(period.periodDuration / gridColumnsScale) : 2}`}}
+                        timeline__period
+                        timeline__period--${period.type}
+                        ${index === timerState.value.currentPeriodIndex ? 'timeline__period--active' : ''}
+                `}
+                style={`
+                        --period-minutes: ${msToMinutes(period.periodDuration)};
+                `}
             >
-                <div class="period-text">
+                <div class="timeline__text">
                     {period.type} {formatTime(period.periodDuration)}
                 </div>
 
                 {index === timerState.value.currentPeriodIndex && (<div
-                    class="current-time"
-                    style={{
-                        width: `${(timerState.value.periods[timerState.value.currentPeriodIndex].periodDurationElapsed / timerState.value.periods[timerState.value.currentPeriodIndex].periodDuration * 100)}%`
-                    }}
+                    class="timeline__current-time"
+                    style={`
+                        --elapsed-minutes: ${msToMinutes(period.periodDurationElapsed)};
+                    `}
                 >
-                <span class={`
-                  period-elapsed
-                  ${(timerState.value.periods[timerState.value.currentPeriodIndex].periodDurationElapsed / timerState.value.periods[timerState.value.currentPeriodIndex].periodDuration) > 0.5 ? 'period-elapsed--half' : ''}
-                  `}>
-                  {formatTime(timerDurationElapsed.value, true)}
-                </span>
+                    <span class="timeline__elapsed">
+                        {formatTime(timerDurationElapsed.value, true)}
+                    </span>
                 </div>)}
             </div>))}
         </div>
