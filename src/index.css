@@ -166,19 +166,15 @@ button.highlighted {
     transform: translate(50%);
 }
 
+
+/* CONTROLS */
+
 .controls {
     display: flex;
     gap: 0.625rem;
     flex-wrap: wrap;
     margin-bottom: 1.25rem;
     align-items: baseline;
-}
-
-.totals {
-    background-color: #888888;
-    color: black;
-    padding: 0.625rem;
-    border-radius: 0.3125rem;
 }
 
 
