@@ -51,44 +51,34 @@ export function Timer() {
 
     const msToMinutes = (ms) => Math.floor(ms / 60000)
 
-    const calculatePeriodSums = (periods) => {
-        const totals = {
-            totalDuration: 0,
-            totalElapsed: 0,
-            byType: {}
+    const calculateTypeSums = ({periods, type}) => {
+        const sumByKey = (key) => periods.reduce((sum, period) => period.type === type ? sum + period[key] : sum, 0)
+
+        return {
+            duration: sumByKey('periodDuration'), durationElapsed: sumByKey('periodDurationElapsed'), durationRemaining: sumByKey('periodDurationRemaining')
         }
-
-        return periods.reduce((sum, period) => {
-            // Sum all durations
-            sum.totalDuration += period.periodDuration
-            sum.totalElapsed += period.periodDurationElapsed
-            sum.totalRemaining += period.periodDurationRemaining
-
-            // Sum by type
-            if (!sum.byType[period.type]) {
-                sum.byType[period.type] = {
-                    duration: 0,
-                    durationElapsed: 0,
-                    durationRemaining: 0,
-                }
-            }
-            sum.byType[period.type].duration += period.periodDuration
-            sum.byType[period.type].durationElapsed += period.periodDurationElapsed
-            sum.byType[period.type].durationRemaining += period.periodDurationRemaining
-
-            return sum
-        }, totals)
     }
 
-    const original = calculatePeriodSums(initialState.periods)
-    const planned = calculatePeriodSums(timerState.value.periods)
+    const calculatePeriodSums = ({initialPeriods, currentPeriods}) => {
+        const calculateFor = (periods) => (type) => calculateTypeSums({periods, type})
+
+        const types = ['work', 'break']
+        return types.reduce((acc, type) => ({
+            ...acc, [type]: {
+                original: calculateFor(initialPeriods)(type), current: calculateFor(currentPeriods)(type)
+            }
+        }), {})
+    }
+
+    const periodSums = calculatePeriodSums({
+        initialPeriods: initialState.periods, currentPeriods: timerState.value.periods
+    })
+
 
     return (<>
         <div
             class="timeline"
-            style={`
-                --total-minutes: ${msToMinutes(timerDuration.value)};
-            `}
+            style={`--total-minutes: ${msToMinutes(timerDuration.value)};`}
         >
             {timerState.value.periods.map((period, index) => (<div
                 key={index}
@@ -97,9 +87,7 @@ export function Timer() {
                         timeline__period--${period.type}
                         ${index === timerState.value.currentPeriodIndex ? 'timeline__period--active' : ''}
                 `}
-                style={`
-                        --period-minutes: ${msToMinutes(period.periodDuration)};
-                `}
+                style={`--period-minutes: ${msToMinutes(period.periodDuration)};`}
             >
                 <div class="timeline__text">
                     {period.type} {formatTime(period.periodDuration)}
@@ -107,9 +95,7 @@ export function Timer() {
 
                 {index === timerState.value.currentPeriodIndex && (<div
                     class="timeline__current-time"
-                    style={`
-                        --elapsed-minutes: ${msToMinutes(period.periodDurationElapsed)};
-                    `}
+                    style={`--elapsed-minutes: ${msToMinutes(period.periodDurationElapsed)};`}
                 >
                     <span class="timeline__elapsed">
                         {formatTime(timerDurationElapsed.value, true)}
@@ -158,6 +144,7 @@ export function Timer() {
                 6 min ▶
             </button>
         </section>
+
         <section class="controls">
             <div>Period</div>
             <button
@@ -203,36 +190,36 @@ export function Timer() {
         <div
             class="stats"
             style={`
-                --break-original: ${msToMinutes(original.byType.break.duration)};
-                --break-planned: ${msToMinutes(planned.byType.break.duration)};
-                --break-elapsed: ${msToMinutes(planned.byType.break.durationElapsed)};
-
-                --work-original: ${msToMinutes(original.byType.work.duration)};
-                --work-planned: ${msToMinutes(planned.byType.work.duration)};
-                --work-elapsed: ${msToMinutes(planned.byType.work.durationElapsed)};
+                --break-original: ${msToMinutes(periodSums.break.original.duration)};
+                --break-planned: ${msToMinutes(periodSums.break.current.duration)};
+                --break-elapsed: ${msToMinutes(periodSums.break.current.durationElapsed)};
+            
+                --work-original: ${msToMinutes(periodSums.work.original.duration)};
+                --work-planned: ${msToMinutes(periodSums.work.current.duration)};
+                --work-elapsed: ${msToMinutes(periodSums.work.current.durationElapsed)};
             `}
         >
             <h2>Stats</h2>
             <div class="stats-bars">
                 <div class="stats-bar stats-bar--break stats-bar--original">
                     <div class="stats-text">
-                        break {formatTime(original.byType.break.duration)}
+                        break {formatTime(periodSums.break.original.duration)}
                     </div>
                 </div>
                 <div class="stats-bar stats-bar--break stats-bar--planned">
                     <div class="stats-text">
-                        {formatTime(planned.byType.break.duration)}
+                        {formatTime(periodSums.break.current.duration)}
                     </div>
                     <div
                         class={`
                             stats-elapsed
-                            ${planned.byType.break.durationElapsed < 60000 ? 'stats-elapsed--none' : ''}
+                            ${periodSums.break.current.durationElapsed < 60000 ? 'stats-elapsed--none' : ''}
                         `}
                     >
                         <div class="stats-text stats-elapsed-text">
                             {
-                                planned.byType.break.duration !== planned.byType.break.durationElapsed
-                                    ? formatTime(planned.byType.break.durationElapsed)
+                                periodSums.break.current.duration !== periodSums.break.current.durationElapsed
+                                    ? formatTime(periodSums.break.current.durationElapsed)
                                     : ''
                             }
                         </div>
@@ -240,23 +227,23 @@ export function Timer() {
                 </div>
                 <div class="stats-bar stats-bar--work stats-bar--original">
                     <div class="stats-text">
-                        work {formatTime(original.byType.work.duration)}
+                        work {formatTime(periodSums.work.original.duration)}
                     </div>
                 </div>
                 <div class="stats-bar stats-bar--work stats-bar--planned">
                     <div class="stats-text">
-                        {formatTime(planned.byType.work.duration)}
+                        {formatTime(periodSums.work.current.duration)}
                     </div>
                     <div
                         class={`
                             stats-elapsed
-                            ${planned.byType.work.durationElapsed < 60000 ? 'stats-elapsed--none' : ''}
+                            ${periodSums.work.current.durationElapsed < 60000 ? 'stats-elapsed--none' : ''}
                         `}
                     >
                         <div class="stats-text stats-elapsed-text">
                             {
-                                planned.byType.work.duration !== planned.byType.work.durationElapsed
-                                    ? formatTime(planned.byType.work.durationElapsed)
+                                periodSums.work.current.duration !== periodSums.work.current.durationElapsed
+                                    ? formatTime(periodSums.work.current.durationElapsed)
                                     : ''
                             }
                         </div>
@@ -287,20 +274,22 @@ export function Timer() {
                     <div class="tempPeriod__data">Elapsed</div>
                     <div class="tempPeriod__data">Finished</div>
                 </div>
-                {timerState.value.periods.map((period, index) => (<div
-                    key={index}
-                    class={`
-              tempPeriod 
-              ${index === timerState.value.currentPeriodIndex ? 'tempPeriod--current' : ''}
-              ${period.periodHasFinished ? 'tempPeriod--finished' : ''}
-              `}
-                >
-                    <div class="tempPeriod__data">{period.type}</div>
-                    <div class="tempPeriod__data">{formatTime(period.periodDuration, false, true)}</div>
-                    <div class="tempPeriod__data">{formatTime(period.periodDurationRemaining, false, true)}</div>
-                    <div class="tempPeriod__data">{formatTime(period.periodDurationElapsed, true, true)}</div>
-                    <div class="tempPeriod__data">{period.periodHasFinished ? 'yes' : 'no'}</div>
-                </div>))}
+                {timerState.value.periods.map((period, index) => (
+                    <div
+                        key={index}
+                        class={`
+                            tempPeriod 
+                            ${index === timerState.value.currentPeriodIndex ? 'tempPeriod--current' : ''}
+                            ${period.periodHasFinished ? 'tempPeriod--finished' : ''}
+                        `}
+                    >
+                        <div class="tempPeriod__data">{period.type}</div>
+                        <div class="tempPeriod__data">{formatTime(period.periodDuration, false, true)}</div>
+                        <div class="tempPeriod__data">{formatTime(period.periodDurationRemaining, false, true)}</div>
+                        <div class="tempPeriod__data">{formatTime(period.periodDurationElapsed, true, true)}</div>
+                        <div class="tempPeriod__data">{period.periodHasFinished ? 'yes' : 'no'}</div>
+                    </div>
+                ))}
             </div>
         </details>
     </>)
