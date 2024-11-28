@@ -101,19 +101,22 @@ export function Timer() {
                     {period.type} {formatTime(period.periodDuration)}
                 </div>
 
-                {index === timerState.value.currentPeriodIndex && (<div
-                    class="timeline__current-time"
-                    style={`--elapsed-minutes: ${msToMinutes(period.periodDurationElapsed)};`}
-                >
-                    <span class="timeline__elapsed timeline__elapsed--period">
-                        {formatTime(currentPeriod.value.periodDurationElapsed, true)}
-                        <span class="timeline__symbol"> ◀▶ </span>
-                        {formatTime(currentPeriod.value.periodDurationRemaining)}
-                    </span>
-                    <span class="timeline__elapsed timeline__elapsed--timer">
-                        {formatTime(timerDurationElapsed.value, true)}
-                    </span>
-                </div>)}
+                {index === timerState.value.currentPeriodIndex && (<>
+                    <div
+                        class="timeline__current-time"
+                        style={`--elapsed-minutes: ${msToMinutes(period.periodDurationElapsed)};`}
+                    >
+                        <span class="timeline__elapsed timeline__elapsed--period">
+                            {formatTime(currentPeriod.value.periodDurationElapsed, true)}
+                            <span class="timeline__symbol"> ◀▶ </span>
+                            {formatTime(currentPeriod.value.periodDurationRemaining)}
+                        </span>
+                        <span class="timeline__elapsed timeline__elapsed--timer">
+                            {formatTime(timerDurationElapsed.value, true)}
+                        </span>
+                    </div>
+                    <div class="timeline__subinterval"></div>
+                </>)}
             </div>))}
         </div>
 
