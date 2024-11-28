@@ -25,6 +25,7 @@ export function Timer() {
     const timerDuration = useComputed(() => timerState.value.periods.reduce((sum, period) => sum + period.periodDuration, 0))
     const timerDurationElapsed = useComputed(() => timerState.value.periods.reduce((sum, period) => sum + period.periodDurationElapsed, 0))
     const timerDurationRemaining = useComputed(() => timerState.value.periods.reduce((sum, period) => sum + period.periodDurationRemaining, 0))
+    const currentPeriod = useComputed(() => timerState.value.periods[timerState.value.currentPeriodIndex])
 
     // combined handler for start/pause/resume
     const handleStartPause = () => {
@@ -104,7 +105,12 @@ export function Timer() {
                     class="timeline__current-time"
                     style={`--elapsed-minutes: ${msToMinutes(period.periodDurationElapsed)};`}
                 >
-                    <span class="timeline__elapsed">
+                    <span class="timeline__elapsed timeline__elapsed--period">
+                        {formatTime(currentPeriod.value.periodDurationElapsed, true)}
+                        <span class="timeline__symbol"> ◀▶ </span>
+                        {formatTime(currentPeriod.value.periodDurationRemaining)}
+                    </span>
+                    <span class="timeline__elapsed timeline__elapsed--timer">
                         {formatTime(timerDurationElapsed.value, true)}
                     </span>
                 </div>)}

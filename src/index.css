@@ -99,7 +99,8 @@ button.highlighted {
     background-color: skyblue;
     font-weight: bold;
     min-height: 4rem;
-    margin-bottom: 2rem;
+    margin-top: 1rem;
+    margin-bottom: 2.5rem;
     display: grid;
     grid-template-columns: repeat(var(--total-minutes), 1fr);
     user-select: none;
@@ -161,9 +162,22 @@ button.highlighted {
     text-align: left;
     display: block;
     position: absolute;
-    top: calc(100%);
     right: 0;
-    transform: translate(50%);
+    transform: translate(calc(50% + 1px));
+}
+
+.timeline__elapsed--timer {
+    top: 100%;
+}
+
+.timeline__elapsed--period {
+    bottom: 100%;
+    font-size: 0.75rem;
+}
+
+.timeline__symbol {
+    font-size: 60%;
+    vertical-align: middle;
 }
 
 
