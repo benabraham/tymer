@@ -1,4 +1,5 @@
 import {useEffect} from 'preact/hooks'
+import {useComputed} from '@preact/signals'
 import {
     adjustDuration,
     adjustElapsed,
@@ -9,21 +10,23 @@ import {
     resetTimer,
     resumeTimer,
     startTimer,
-    timerDuration,
-    timerDurationElapsed,
-    timerDurationRemaining,
     timerHasFinished,
     timerOnLastPeriod,
     timerState,
 } from './timer'
 
 export function Timer() {
-    // Initialize timer when component mounts
+    // initialize timer when component mounts
     useEffect(() => {
         initializeTimer()
     }, [])
 
-    // Combined handler for start/pause/resume
+    // computed signals
+    const timerDuration = useComputed(() => timerState.value.periods.reduce((sum, period) => sum + period.periodDuration, 0))
+    const timerDurationElapsed = useComputed(() => timerState.value.periods.reduce((sum, period) => sum + period.periodDurationElapsed, 0))
+    const timerDurationRemaining = useComputed(() => timerState.value.periods.reduce((sum, period) => sum + period.periodDurationRemaining, 0))
+
+    // combined handler for start/pause/resume
     const handleStartPause = () => {
         if (timerState.value.runningIntervalId) {
             pauseTimer()
@@ -34,9 +37,9 @@ export function Timer() {
         }
     }
 
-    // Converts milliseconds to human-readable format
+    // converts milliseconds to human-readable format
     const formatTime = (ms, floor, debug) => {
-        // Handle null/undefined input
+        // handle null/undefined input
         if (ms == null) return '–––'
 
         const totalSeconds = floor ? Math.floor(ms / 1000) : Math.ceil(ms / 1000)
@@ -49,13 +52,17 @@ export function Timer() {
         return `${hours}:${pad(minutes)}`
     }
 
+    // converts milliseconds to minutes (rounding down by milliseconds)
     const msToMinutes = (ms) => Math.floor(ms / 60000)
 
+    // prepare data for Stats
     const calculateTypeSums = ({periods, type}) => {
         const sumByKey = (key) => periods.reduce((sum, period) => period.type === type ? sum + period[key] : sum, 0)
 
         return {
-            duration: sumByKey('periodDuration'), durationElapsed: sumByKey('periodDurationElapsed'), durationRemaining: sumByKey('periodDurationRemaining')
+            duration: sumByKey('periodDuration'),
+            durationElapsed: sumByKey('periodDurationElapsed'),
+            durationRemaining: sumByKey('periodDurationRemaining'),
         }
     }
 
@@ -74,7 +81,7 @@ export function Timer() {
         initialPeriods: initialState.periods, currentPeriods: timerState.value.periods
     })
 
-
+    // template
     return (<>
         <div
             class="timeline"

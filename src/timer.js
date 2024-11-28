@@ -46,9 +46,6 @@ export const initialState = {
 export const timerState = signal(saveState(loadState(initialState)))
 
 // computed signals
-export const timerDuration = computed(() => timerState.value.periods.reduce((sum, period) => sum + period.periodDuration, 0))
-export const timerDurationElapsed = computed(() => timerState.value.periods.reduce((sum, period) => sum + period.periodDurationElapsed, 0))
-export const timerDurationRemaining = computed(() => timerState.value.periods.reduce((sum, period) => sum + period.periodDurationRemaining, 0))
 export const timerHasFinished = computed(() => timerState.value.periods[timerState.value.periods.length - 1]?.periodHasFinished)
 export const timerOnLastPeriod = computed(() => timerState.value.currentPeriodIndex + 1 >= timerState.value.periods.length)
 
