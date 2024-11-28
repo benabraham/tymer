@@ -1,7 +1,7 @@
 import {signal, effect, computed, batch} from '@preact/signals'
 import {saveState, loadState} from './storage'
 import {playSound} from './sounds'
-import {log} from './util'
+import {log} from './log.js'
 
 const UI_UPDATE_INTERVAL = 1000 // time between timer updates in milliseconds
 const DURATION_TO_ADD_AUTOMATICALLY = 1 * 60 * 1000

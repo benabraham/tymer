@@ -1,4 +1,4 @@
-import {log} from './util'
+import {log} from './log.js'
 
 // Function to save the timer state to localStorage
 export const saveState = (state) => {
