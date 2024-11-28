@@ -267,7 +267,7 @@ button.highlighted {
         grid-column-start: calc(var(--middle-line) - var(--break-original) + 1);
     }
 
-    &.stats-bar--planned {
+    &.stats-bar--current {
         grid-column-start: calc(var(--middle-line) - var(--break-planned) + 1);
     }
 }
@@ -281,7 +281,7 @@ button.highlighted {
         grid-column-end: calc(var(--middle-line) + var(--work-original) + 1);
     }
 
-    &.stats-bar--planned {
+    &.stats-bar--current {
         grid-column-end: calc(var(--middle-line) + var(--work-planned) + 1);
     }
 }
@@ -291,7 +291,7 @@ button.highlighted {
     border: 1px solid white;
 }
 
-.stats-bar--planned {
+.stats-bar--current {
     grid-row: 2 / 3;
     z-index: 1;
     border: 1px solid white;
