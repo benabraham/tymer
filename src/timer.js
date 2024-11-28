@@ -198,26 +198,55 @@ export const adjustElapsed = (elapsedDelta) => {
 }
 
 
-// updates (recalculates) period related values
-const updatePeriod = () => {
-    const currentPeriod = timerState.value.periods[timerState.value.currentPeriodIndex]
-    const timeToCalculateWith = timerState.value.timestampPaused || Date.now()
+// update (recalculate) period related values
 
-    const periodDurationElapsed = Math.max(0, timeToCalculateWith - timerState.value.timestampStarted)
-    const periodDurationRemaining = Math.max(0, currentPeriod?.periodDuration - periodDurationElapsed)
+// calculate elapsed and remaining time for the current period
+const calculatePeriodTimes = (timestampStarted, timestampPaused, periodDuration) => {
+    const timeToCalculateWith = timestampPaused || Date.now()
+    const periodDurationElapsed = Math.max(0, timeToCalculateWith - timestampStarted)
+    const periodDurationRemaining = Math.max(0, periodDuration - periodDurationElapsed)
 
-    const hasPeriodElapsed = periodDurationElapsed > 0 && periodDurationRemaining === 0
+    return {
+        periodDurationElapsed,
+        periodDurationRemaining
+    }
+}
 
-    if (hasPeriodElapsed) {
-        timerState.value = {
-            ...timerState.value,
-            shouldGoToNextPeriod: true,
-        }
-        adjustDuration(DURATION_TO_ADD_AUTOMATICALLY)
-        playSound('periodEnd')
-        log('period automatically extended', timerState.value, 2)
+// check if the period has elapsed
+const hasPeriodReachedCompletion = (periodDurationElapsed, periodDuration) =>
+    periodDurationElapsed > 0 && periodDurationElapsed >= periodDuration
+
+// handle actions when a period is completed
+const handlePeriodCompletion = () => {
+    timerState.value = {
+        ...timerState.value,
+        shouldGoToNextPeriod: true,
     }
 
+    // automatically extend duration
+    adjustDuration(DURATION_TO_ADD_AUTOMATICALLY)
+
+    playSound('periodEnd')
+    log('period automatically extended', timerState.value, 2)
+}
+
+// main update period function
+const updatePeriod = () => {
+    const currentPeriod = timerState.value.periods[timerState.value.currentPeriodIndex]
+    // guard clause for no current period
+    if (!currentPeriod) return
+
+    // calculate period times
+    const {periodDurationElapsed, periodDurationRemaining} = calculatePeriodTimes(
+        timerState.value.timestampStarted,
+        timerState.value.timestampPaused,
+        currentPeriod.periodDuration
+    )
+
+    // handle period completion if necessary
+    if (hasPeriodReachedCompletion(periodDurationElapsed, currentPeriod.periodDuration)) handlePeriodCompletion()
+
+    // update the current period's state
     timerState.value = {
         ...timerState.value,
         periods: timerState.value.periods.map((period, index) =>
