@@ -3,7 +3,6 @@ import {useComputed} from '@preact/signals'
 import {
     adjustDuration,
     adjustElapsed,
-    finishCurrentPeriod,
     initializeTimer,
     initialState,
     pauseTimer,
@@ -13,6 +12,8 @@ import {
     timerHasFinished,
     timerOnLastPeriod,
     timerState,
+    handleTimerFinish,
+    handlePeriodCompletion,
 } from './timer'
 
 export function Timer() {
@@ -176,14 +177,14 @@ export function Timer() {
                 -1 min
             </button>
             <button
-                onClick={finishCurrentPeriod}
+                onClick={handlePeriodCompletion}
                 disabled={timerHasFinished.value || timerState.value.currentPeriodIndex === null || timerOnLastPeriod.value}
                 class={!timerOnLastPeriod.value && timerState.value.shouldGoToNextPeriod ? 'highlighted' : ''}
             >
                 Next
             </button>
             <button
-                onClick={() => finishCurrentPeriod(true)}
+                onClick={handleTimerFinish}
                 disabled={timerHasFinished.value || timerState.value.currentPeriodIndex === null}
                 class={timerOnLastPeriod.value && timerState.value.shouldGoToNextPeriod ? 'highlighted' : ''}
             >
