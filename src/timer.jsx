@@ -3,6 +3,7 @@ import {useComputed} from '@preact/signals'
 import {
     adjustDuration,
     adjustElapsed,
+    currentPeriod,
     initializeTimer,
     initialState,
     pauseTimer,
@@ -12,7 +13,7 @@ import {
     timerHasFinished,
     timerOnLastPeriod,
     timerState,
-    handleTimerFinish,
+    handleTimerCompletion,
     handlePeriodCompletion,
 } from './timer'
 
@@ -26,7 +27,6 @@ export function Timer() {
     const timerDuration = useComputed(() => timerState.value.periods.reduce((sum, period) => sum + period.periodDuration, 0))
     const timerDurationElapsed = useComputed(() => timerState.value.periods.reduce((sum, period) => sum + period.periodDurationElapsed, 0))
     const timerDurationRemaining = useComputed(() => timerState.value.periods.reduce((sum, period) => sum + period.periodDurationRemaining, 0))
-    const currentPeriod = useComputed(() => timerState.value.periods[timerState.value.currentPeriodIndex])
 
     // combined handler for start/pause/resume
     const handleStartPause = () => {
@@ -184,7 +184,7 @@ export function Timer() {
                 Next
             </button>
             <button
-                onClick={handleTimerFinish}
+                onClick={handleTimerCompletion}
                 disabled={timerHasFinished.value || timerState.value.currentPeriodIndex === null}
                 class={timerOnLastPeriod.value && timerState.value.shouldGoToNextPeriod ? 'highlighted' : ''}
             >

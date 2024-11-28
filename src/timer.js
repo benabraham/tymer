@@ -1,4 +1,4 @@
-import {signal, effect, computed} from '@preact/signals'
+import {signal, effect, computed, batch} from '@preact/signals'
 import {saveState, loadState} from './storage'
 import {playSound} from './sounds'
 import {log} from './util'
@@ -48,6 +48,7 @@ export const timerState = signal(saveState(loadState(initialState)))
 // computed signals
 export const timerHasFinished = computed(() => timerState.value.periods[timerState.value.periods.length - 1]?.periodHasFinished)
 export const timerOnLastPeriod = computed(() => timerState.value.currentPeriodIndex + 1 >= timerState.value.periods.length)
+export const currentPeriod = computed(() => timerState.value.periods[timerState.value.currentPeriodIndex])
 
 // prepares timer for use, continuing an running timer or prepare a new one
 export const initializeTimer = () => {
@@ -67,19 +68,17 @@ export const initializeTimer = () => {
 
 // starts repeating the tick function to update UI periodically
 const startTick = () => {
-    timerState.value = {
-        ...timerState.value,
-        runningIntervalId: setInterval(tick, UI_UPDATE_INTERVAL),
-    }
+    updateTimerState({
+        timerProperties: {runningIntervalId: setInterval(tick, UI_UPDATE_INTERVAL)}
+    })
 }
 
 // stops repeating the tick function
 const stopTick = () => {
     clearInterval(timerState.value.runningIntervalId)
-    timerState.value = {
-        ...timerState.value,
-        runningIntervalId: null,
-    }
+    updateTimerState({
+        timerProperties: {runningIntervalId: null}
+    })
 }
 
 // starts the timer
@@ -88,11 +87,12 @@ export const startTimer = () => {
 
     playSound('button')
 
-    timerState.value = {
-        ...timerState.value,
-        currentPeriodIndex: 0,
-        timestampStarted: Date.now()
-    }
+    updateTimerState({
+        timerProperties: {
+            currentPeriodIndex: 0,
+            timestampStarted: Date.now()
+        }
+    })
 
     updateCurrentPeriod()
 
@@ -109,12 +109,13 @@ export const resumeTimer = () => {
 
     const durationPaused = Date.now() - timerState.value.timestampPaused
 
-    timerState.value = {
-        ...timerState.value,
-        timestampPaused: null,
-        // adjust the start time for the pause duration
-        timestampStarted: timerState.value.timestampStarted + durationPaused,
-    }
+    updateTimerState({
+        timerProperties: {
+            timestampPaused: null,
+            // adjust the start time for the pause duration
+            timestampStarted: timerState.value.timestampStarted + durationPaused,
+        }
+    })
 
     updateCurrentPeriod()
 
@@ -129,10 +130,9 @@ export const pauseTimer = () => {
 
     playSound('button')
 
-    timerState.value = {
-        ...timerState.value,
-        timestampPaused: Date.now(),
-    }
+    updateTimerState({
+        timerProperties: {timestampPaused: Date.now()}
+    })
 
     stopTick()
 
@@ -156,18 +156,14 @@ export const adjustDuration = (durationDelta) => {
     // nothing to do if timer has finished or there is no current period
     if (timerHasFinished.value || timerState.value.currentPeriodIndex === null) return
 
-    timerState.value = {
-        ...timerState.value,
-        periods: timerState.value.periods.map((period, index) =>
-            index !== timerState.value.currentPeriodIndex ? period : {
-                ...period,
-                periodDuration: Math.max(
-                    period.periodDurationElapsed,
-                    period.periodDuration + durationDelta
-                ),
-            }
-        )
-    }
+    updateTimerState({
+        currentPeriodProperties: {
+            periodDuration: Math.max(
+                currentPeriod.value.periodDurationElapsed,
+                currentPeriod.value.periodDuration + durationDelta
+            )
+        },
+    })
 
     updateCurrentPeriod()
 
@@ -182,15 +178,16 @@ export const adjustElapsed = (elapsedDelta) => {
 
     updateCurrentPeriod()
 
-    timerState.value = {
-        ...timerState.value,
-        timestampStarted:
-            timerState.value.timestampStarted
-            + Math.min( // prevents elapsed to go negative
-                timerState.value.periods[timerState.value.currentPeriodIndex].periodDurationElapsed,
-                -elapsedDelta
-            ),
-    }
+    updateTimerState({
+        timerProperties: {
+            timestampStarted:
+                timerState.value.timestampStarted
+                + Math.min( // prevents elapsed to go negative
+                    currentPeriod.value.periodDurationElapsed,
+                    -elapsedDelta
+                )
+        }
+    })
 
     updateCurrentPeriod()
 
@@ -218,10 +215,9 @@ const hasPeriodReachedCompletion = (periodDurationElapsed, periodDuration) =>
 
 // handle actions when a period is completed
 const handlePeriodElapsed = () => {
-    timerState.value = {
-        ...timerState.value,
-        shouldGoToNextPeriod: true,
-    }
+    updateTimerState({
+        timerProperties: {shouldGoToNextPeriod: true}
+    })
 
     // automatically extend duration
     adjustDuration(DURATION_TO_ADD_AUTOMATICALLY)
@@ -232,79 +228,103 @@ const handlePeriodElapsed = () => {
 
 // main update period function
 const updateCurrentPeriod = () => {
-    const currentPeriod = timerState.value.periods[timerState.value.currentPeriodIndex]
     // guard clause for no current period
-    if (!currentPeriod) return
+    if (!currentPeriod.value) return
 
     // calculate period times
     const {periodDurationElapsed, periodDurationRemaining} = calculatePeriodTimes(
         timerState.value.timestampStarted,
         timerState.value.timestampPaused,
-        currentPeriod.periodDuration
+        currentPeriod.value.periodDuration
     )
 
     // handle period completion if necessary
-    if (hasPeriodReachedCompletion(periodDurationElapsed, currentPeriod.periodDuration)) handlePeriodElapsed()
+    if (hasPeriodReachedCompletion(periodDurationElapsed, currentPeriod.value.periodDuration)) handlePeriodElapsed()
 
     // update the current period's state
-    timerState.value = {
-        ...timerState.value,
-        periods: timerState.value.periods.map((period, index) =>
-            index !== timerState.value.currentPeriodIndex ? period : {
-                ...period,
-                periodDurationElapsed,
-                periodDurationRemaining,
-            }
-        ),
-    }
+    updateTimerState({
+        currentPeriodProperties: {
+            periodDurationElapsed,
+            periodDurationRemaining,
+        }
+    })
 }
 
 // handler for non-last periods
 export const handlePeriodCompletion = () => {
     if (timerState.value.currentPeriodIndex === null) return
 
-    timerState.value = {
-        ...timerState.value,
-        shouldGoToNextPeriod: false,
-        // reset start time for the new period if not paused
-        timestampStarted: timerState.value.timestampPaused || Date.now(),
-        currentPeriodIndex: timerState.value.currentPeriodIndex + 1,
-        periods: timerState.value.periods.map((period, index) =>
-            index !== timerState.value.currentPeriodIndex ? period : {
-                ...period,
-                periodDuration: period.periodDurationElapsed,
-                periodDurationRemaining: 0,
-                periodHasFinished: true,
-            }
-        ),
-    }
+    updateTimerState({
+        currentPeriodProperties: {
+            periodDuration: currentPeriod.value.periodDurationElapsed,
+            periodDurationRemaining: 0,
+            periodHasFinished: true,
+        },
+        timerProperties: {
+            shouldGoToNextPeriod: false,
+            // reset start time for the new period if not paused
+            timestampStarted: timerState.value.timestampPaused || Date.now(),
+            currentPeriodIndex: timerState.value.currentPeriodIndex + 1,
+        },
+    })
 
     log('finished current period', timerState.value, 10)
 }
 
 // handler for the last period
-export const handleTimerFinish = () => {
+export const handleTimerCompletion = () => {
     if (timerState.value.currentPeriodIndex === null) return
 
     stopTick()
 
-    timerState.value = {
-        ...timerState.value,
-        shouldGoToNextPeriod: false,
-        timestampStarted: null,
-        currentPeriodIndex: null,
-        periods: timerState.value.periods.map((period, index) =>
-            index !== timerState.value.currentPeriodIndex ? period : {
-                ...period,
-                periodDuration: period.periodDurationElapsed,
-                periodDurationRemaining: 0,
-                periodHasFinished: true,
-            }
-        ).filter(period => period.periodDurationElapsed > DURATION_TO_ADD_AUTOMATICALLY)
-    }
+    updateTimerState({
+        currentPeriodProperties: {
+            periodDuration: currentPeriod.value.periodDurationElapsed,
+            periodDurationRemaining: 0,
+            periodHasFinished: true,
+        },
+        timerProperties: {
+            shouldGoToNextPeriod: false,
+            timestampStarted: null,
+            currentPeriodIndex: null,
+            periods: timerState.value.periods.filter(
+                period => period.periodDurationElapsed > DURATION_TO_ADD_AUTOMATICALLY
+            )
+        },
+    })
 
     log('finished last period', timerState.value, 10)
     playSound('timerEnd')
+}
+
+// helper function to update state
+const updateTimerState = (updateConfig) => {
+    const {
+        currentPeriodProperties = {},
+        timerProperties = {},
+    } = updateConfig
+
+    batch(() => {
+        // First, update the current period
+        if (Object.keys(currentPeriodProperties).length > 0) {
+            timerState.value = {
+                ...timerState.value,
+                periods: timerState.value.periods.map((period, index) =>
+                    index !== timerState.value.currentPeriodIndex ? period : {
+                        ...period,
+                        ...currentPeriodProperties
+                    }
+                )
+            }
+        }
+        // Then, update timer properties
+        if (Object.keys(timerProperties).length > 0) {
+            timerState.value = {
+                ...timerState.value,
+                ...timerProperties
+            }
+        }
+    })
 }
 
 // checks if two numbers are divisible without remainder or almost
@@ -318,7 +338,7 @@ const isDivisibleWithTolerance = (dividend, divisor, tolerance) => {
 const playSoundEvery = (interval) => {
     if (
         isDivisibleWithTolerance(
-            timerState.value.periods[timerState.value.currentPeriodIndex].periodDurationElapsed,
+            currentPeriod.value.periodDurationElapsed,
             interval,
             400
         )
