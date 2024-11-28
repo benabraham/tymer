@@ -217,7 +217,7 @@ const hasPeriodReachedCompletion = (periodDurationElapsed, periodDuration) =>
     periodDurationElapsed > 0 && periodDurationElapsed >= periodDuration
 
 // handle actions when a period is completed
-const handlePeriodCompletion = () => {
+const handlePeriodElapsed = () => {
     timerState.value = {
         ...timerState.value,
         shouldGoToNextPeriod: true,
@@ -244,7 +244,7 @@ const updateCurrentPeriod = () => {
     )
 
     // handle period completion if necessary
-    if (hasPeriodReachedCompletion(periodDurationElapsed, currentPeriod.periodDuration)) handlePeriodCompletion()
+    if (hasPeriodReachedCompletion(periodDurationElapsed, currentPeriod.periodDuration)) handlePeriodElapsed()
 
     // update the current period's state
     timerState.value = {
@@ -259,23 +259,16 @@ const updateCurrentPeriod = () => {
     }
 }
 
-// finishes current period and contains extra logic if it's the last period
-export const finishCurrentPeriod = (isLastPeriod) => {
+// handler for non-last periods
+export const handlePeriodCompletion = () => {
     if (timerState.value.currentPeriodIndex === null) return
-
-    isLastPeriod = isLastPeriod === true || timerOnLastPeriod.value
-
-    if (isLastPeriod) stopTick()
-
-    const hasCurrentPeriodNotFinished = !timerState.value.periods[timerState.value.currentPeriodIndex].periodHasFinished
-    if (hasCurrentPeriodNotFinished) updateCurrentPeriod()
 
     timerState.value = {
         ...timerState.value,
         shouldGoToNextPeriod: false,
         // reset start time for the new period if not paused
         timestampStarted: timerState.value.timestampPaused || Date.now(),
-        currentPeriodIndex: isLastPeriod ? null : timerState.value.currentPeriodIndex + 1,
+        currentPeriodIndex: timerState.value.currentPeriodIndex + 1,
         periods: timerState.value.periods.map((period, index) =>
             index !== timerState.value.currentPeriodIndex ? period : {
                 ...period,
@@ -283,15 +276,35 @@ export const finishCurrentPeriod = (isLastPeriod) => {
                 periodDurationRemaining: 0,
                 periodHasFinished: true,
             }
-        ).filter(period => !isLastPeriod || period.periodDurationElapsed > DURATION_TO_ADD_AUTOMATICALLY),
+        ),
     }
 
-    if (isLastPeriod) {
-        log('finished last period', timerState.value, 10)
-        playSound('timerEnd')
-    } else {
-        log('finished current period', timerState.value, 10)
+    log('finished current period', timerState.value, 10)
+}
+
+// handler for the last period
+export const handleTimerFinish = () => {
+    if (timerState.value.currentPeriodIndex === null) return
+
+    stopTick()
+
+    timerState.value = {
+        ...timerState.value,
+        shouldGoToNextPeriod: false,
+        timestampStarted: null,
+        currentPeriodIndex: null,
+        periods: timerState.value.periods.map((period, index) =>
+            index !== timerState.value.currentPeriodIndex ? period : {
+                ...period,
+                periodDuration: period.periodDurationElapsed,
+                periodDurationRemaining: 0,
+                periodHasFinished: true,
+            }
+        ).filter(period => period.periodDurationElapsed > DURATION_TO_ADD_AUTOMATICALLY)
     }
+
+    log('finished last period', timerState.value, 10)
+    playSound('timerEnd')
 }
 
 // checks if two numbers are divisible without remainder or almost
