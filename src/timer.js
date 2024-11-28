@@ -58,7 +58,7 @@ export const initializeTimer = () => {
     if (timerHasFinished.value || timerState.value.timestampPaused) return
 
     if (timerState.value.runningIntervalId) { // continue (restart) the timer if it was running
-        updatePeriod()
+        updateCurrentPeriod()
         startTick()
     } else { // prepare a new timer
         resetTimer()
@@ -94,7 +94,7 @@ export const startTimer = () => {
         timestampStarted: Date.now()
     }
 
-    updatePeriod()
+    updateCurrentPeriod()
 
     startTick()
 
@@ -116,7 +116,7 @@ export const resumeTimer = () => {
         timestampStarted: timerState.value.timestampStarted + durationPaused,
     }
 
-    updatePeriod()
+    updateCurrentPeriod()
 
     startTick()
 
@@ -136,7 +136,7 @@ export const pauseTimer = () => {
 
     stopTick()
 
-    updatePeriod()
+    updateCurrentPeriod()
 
     log('timer paused', timerState.value, 8)
 }
@@ -169,7 +169,7 @@ export const adjustDuration = (durationDelta) => {
         )
     }
 
-    updatePeriod()
+    updateCurrentPeriod()
 
     log('duration adjusted', timerState.value, 9)
 }
@@ -180,7 +180,7 @@ export const adjustElapsed = (elapsedDelta) => {
     // nothing to do if timer has finished or there is no current period
     if (timerState.value.currentPeriodIndex === null) return
 
-    updatePeriod()
+    updateCurrentPeriod()
 
     timerState.value = {
         ...timerState.value,
@@ -192,7 +192,7 @@ export const adjustElapsed = (elapsedDelta) => {
             ),
     }
 
-    updatePeriod()
+    updateCurrentPeriod()
 
     log('time adjusted', timerState.value, 6)
 }
@@ -231,7 +231,7 @@ const handlePeriodCompletion = () => {
 }
 
 // main update period function
-const updatePeriod = () => {
+const updateCurrentPeriod = () => {
     const currentPeriod = timerState.value.periods[timerState.value.currentPeriodIndex]
     // guard clause for no current period
     if (!currentPeriod) return
@@ -268,7 +268,7 @@ export const finishCurrentPeriod = (isLastPeriod) => {
     if (isLastPeriod) stopTick()
 
     const hasCurrentPeriodNotFinished = !timerState.value.periods[timerState.value.currentPeriodIndex].periodHasFinished
-    if (hasCurrentPeriodNotFinished) updatePeriod()
+    if (hasCurrentPeriodNotFinished) updateCurrentPeriod()
 
     timerState.value = {
         ...timerState.value,
@@ -316,7 +316,7 @@ const playSoundEvery = (interval) => {
 
 // update function called by interval timer
 const tick = () => {
-    updatePeriod()
+    updateCurrentPeriod()
     playSoundEvery(12 * 60 * 1000)
     log('tick', timerState.value, 14)
 }
