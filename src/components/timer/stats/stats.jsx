@@ -3,10 +3,9 @@ import { msToMinutes } from '../../../format'
 import { StatsBars } from './stats-bars'
 
 export const Stats = () => {
-    const calculateTypeSums = ({periods, type}) => {
-        const sumByKey = (key) => periods.reduce((sum, period) =>
-            period.type === type ? sum + period[key] : sum, 0
-        )
+    const calculateTypeSums = ({ periods, type }) => {
+        const sumByKey = key =>
+            periods.reduce((sum, period) => (period.type === type ? sum + period[key] : sum), 0)
 
         return {
             duration: sumByKey('periodDuration'),
@@ -15,22 +14,25 @@ export const Stats = () => {
         }
     }
 
-    const calculatePeriodSums = ({initialPeriods, currentPeriods}) => {
-        const calculateFor = (periods) => (type) => calculateTypeSums({periods, type})
+    const calculatePeriodSums = ({ initialPeriods, currentPeriods }) => {
+        const calculateFor = periods => type => calculateTypeSums({ periods, type })
 
         const types = ['work', 'break']
-        return types.reduce((acc, type) => ({
-            ...acc,
-            [type]: {
-                original: calculateFor(initialPeriods)(type),
-                current: calculateFor(currentPeriods)(type)
-            }
-        }), {})
+        return types.reduce(
+            (acc, type) => ({
+                ...acc,
+                [type]: {
+                    original: calculateFor(initialPeriods)(type),
+                    current: calculateFor(currentPeriods)(type),
+                },
+            }),
+            {},
+        )
     }
 
     const periodSums = calculatePeriodSums({
         initialPeriods: initialState.periods,
-        currentPeriods: timerState.value.periods
+        currentPeriods: timerState.value.periods,
     })
 
     return (
@@ -50,4 +52,4 @@ export const Stats = () => {
             <StatsBars periodSums={periodSums} />
         </div>
     )
-} 
+}

@@ -11,7 +11,7 @@ import {
     pauseTimer,
     resumeTimer,
     startTimer,
-    resetTimer
+    resetTimer,
 } from '../../../timer'
 
 export const TimerControls = () => {
@@ -26,13 +26,17 @@ export const TimerControls = () => {
             <div>Timer</div>
             <button
                 onClick={() => adjustElapsed(-6 * 60 * 1000)}
-                disabled={timerState.value.currentPeriodIndex === null || timerDurationElapsed.value === 0}
+                disabled={
+                    timerState.value.currentPeriodIndex === null || timerDurationElapsed.value === 0
+                }
             >
                 ◀ 6 min
             </button>
             <button
                 onClick={() => adjustElapsed(-1 * 60 * 1000)}
-                disabled={timerState.value.currentPeriodIndex === null || timerDurationElapsed.value === 0}
+                disabled={
+                    timerState.value.currentPeriodIndex === null || timerDurationElapsed.value === 0
+                }
             >
                 ◀ 1 min
             </button>
@@ -40,14 +44,18 @@ export const TimerControls = () => {
                 onClick={handleStartPause}
                 disabled={timerHasFinished.value || !timerDurationRemaining.value}
             >
-                {timerState.value.runningIntervalId ? 'Pause' : (timerState.value.timestampPaused ? 'Resume' : 'Start')}
+                {timerState.value.runningIntervalId
+                    ? 'Pause'
+                    : timerState.value.timestampPaused
+                      ? 'Resume'
+                      : 'Start'}
             </button>
             <button
                 onClick={resetTimer}
                 disabled={
-                    initialState.timerDuration === timerDuration.value &&
-                    !timerState.value.timestampStarted &&
-                    timerDurationRemaining.value !== 0
+                    initialState.timerDuration === timerDuration.value
+                    && !timerState.value.timestampStarted
+                    && timerDurationRemaining.value !== 0
                 }
                 class={timerHasFinished.value ? 'highlighted' : ''}
             >
@@ -56,11 +64,15 @@ export const TimerControls = () => {
             <button
                 onClick={handleTimerCompletion}
                 disabled={
-                    timerHasFinished.value ||
-                    timerState.value.currentPeriodIndex === null ||
-                    timerDurationElapsed < 1 * 60 * 1000
+                    timerHasFinished.value
+                    || timerState.value.currentPeriodIndex === null
+                    || timerDurationElapsed < 1 * 60 * 1000
                 }
-                class={timerOnLastPeriod.value && timerState.value.shouldGoToNextPeriod ? 'highlighted' : ''}
+                class={
+                    timerOnLastPeriod.value && timerState.value.shouldGoToNextPeriod
+                        ? 'highlighted'
+                        : ''
+                }
             >
                 Finish
             </button>
@@ -78,4 +90,4 @@ export const TimerControls = () => {
             </button>
         </section>
     )
-} 
+}

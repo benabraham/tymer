@@ -14,4 +14,4 @@ export const formatTime = (ms, floor, debug) => {
 }
 
 // converts milliseconds to minutes (rounding down by milliseconds)
-export const msToMinutes = (ms) => Math.floor(ms / 60000)
+export const msToMinutes = ms => Math.floor(ms / 60000)

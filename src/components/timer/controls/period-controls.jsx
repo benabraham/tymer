@@ -4,7 +4,7 @@ import {
     timerState,
     timerOnLastPeriod,
     moveToNextPeriod,
-    moveToPreviousPeriod
+    moveToPreviousPeriod,
 } from '../../../timer'
 
 export const PeriodControls = () => (
@@ -13,9 +13,9 @@ export const PeriodControls = () => (
         <button
             onClick={() => adjustDuration(-6 * 60 * 1000)}
             disabled={
-                timerHasFinished.value ||
-                timerState.value.currentPeriodIndex === null ||
-                !timerState.value.periods.some(p => p.periodDurationRemaining > 0)
+                timerHasFinished.value
+                || timerState.value.currentPeriodIndex === null
+                || !timerState.value.periods.some(p => p.periodDurationRemaining > 0)
             }
         >
             −6 min
@@ -23,9 +23,9 @@ export const PeriodControls = () => (
         <button
             onClick={() => adjustDuration(-1 * 60 * 1000)}
             disabled={
-                timerHasFinished.value ||
-                timerState.value.currentPeriodIndex === null ||
-                !timerState.value.periods.some(p => p.periodDurationRemaining > 0)
+                timerHasFinished.value
+                || timerState.value.currentPeriodIndex === null
+                || !timerState.value.periods.some(p => p.periodDurationRemaining > 0)
             }
         >
             −1 min
@@ -33,9 +33,9 @@ export const PeriodControls = () => (
         <button
             onClick={moveToPreviousPeriod}
             disabled={
-                timerHasFinished.value ||
-                timerState.value.currentPeriodIndex === null ||
-                timerState.value.currentPeriodIndex === 0
+                timerHasFinished.value
+                || timerState.value.currentPeriodIndex === null
+                || timerState.value.currentPeriodIndex === 0
             }
         >
             Previous
@@ -43,29 +43,27 @@ export const PeriodControls = () => (
         <button
             onClick={moveToNextPeriod}
             disabled={
-                timerHasFinished.value ||
-                timerState.value.currentPeriodIndex === null ||
-                timerOnLastPeriod.value
+                timerHasFinished.value
+                || timerState.value.currentPeriodIndex === null
+                || timerOnLastPeriod.value
             }
-            class={!timerOnLastPeriod.value && timerState.value.shouldGoToNextPeriod ? 'highlighted' : ''}
+            class={
+                !timerOnLastPeriod.value && timerState.value.shouldGoToNextPeriod
+                    ? 'highlighted'
+                    : ''
+            }
         >
             Next
         </button>
         <button
             onClick={() => adjustDuration(1 * 60 * 1000)}
-            disabled={
-                timerHasFinished.value ||
-                timerState.value.currentPeriodIndex === null
-            }
+            disabled={timerHasFinished.value || timerState.value.currentPeriodIndex === null}
         >
             +1 min
         </button>
         <button
             onClick={() => adjustDuration(6 * 60 * 1000)}
-            disabled={
-                timerHasFinished.value ||
-                timerState.value.currentPeriodIndex === null
-            }
+            disabled={timerHasFinished.value || timerState.value.currentPeriodIndex === null}
         >
             +6 min
         </button>
