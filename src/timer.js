@@ -1,7 +1,7 @@
-import {signal, effect, computed, batch} from '@preact/signals'
-import {saveState, loadState} from './storage'
-import {playSound} from './sounds'
-import {log} from './log.js'
+import { signal, effect, computed, batch } from '@preact/signals'
+import { saveState, loadState } from './storage'
+import { playSound } from './sounds'
+import { log } from './log.js'
 
 const UI_UPDATE_INTERVAL = 1000 // time between timer updates in milliseconds
 const DURATION_TO_ADD_AUTOMATICALLY = 1 * 60 * 1000
@@ -254,9 +254,12 @@ const updateCurrentPeriod = () => {
     })
 }
 
-// handler for non-last periods
-export const handlePeriodCompletion = () => {
+// jump to the next period
+export const moveToNextPeriod = () => {
     if (timerState.value.currentPeriodIndex === null) return
+
+    const nextPeriodIndex = timerState.value.currentPeriodIndex + 1
+    const nextPeriod = timerState.value.periods[nextPeriodIndex]
 
     updateTimerState({
         currentPeriodProperties: {
@@ -266,8 +269,8 @@ export const handlePeriodCompletion = () => {
         },
         timerProperties: {
             shouldGoToNextPeriod: false,
-            // reset start time for the new period if not paused
-            timestampStarted: timerState.value.timestampPaused || Date.now(),
+            // reset start time for the next period if not paused, if the next period has already some time elapsed, compensate for it
+            timestampStarted: (timerState.value.timestampPaused || Date.now()) - nextPeriod.periodDurationElapsed,
             currentPeriodIndex: timerState.value.currentPeriodIndex + 1,
         },
     })
@@ -275,11 +278,44 @@ export const handlePeriodCompletion = () => {
     log('finished current period', timerState.value, 10)
 }
 
-// handler for the last period
-export const handleTimerCompletion = () => {
-    if (timerState.value.currentPeriodIndex === null) return
+// jump to the previous period
+export const moveToPreviousPeriod = () => {
+    if (timerState.value.currentPeriodIndex === null || timerState.value.currentPeriodIndex === 0) return
 
+    const previousPeriodIndex = timerState.value.currentPeriodIndex - 1
+    const previousPeriod = timerState.value.periods[previousPeriodIndex]
+
+    // add duration to the previous period's duration so it doesn't finish right away
+    const extendedDuration = previousPeriod.periodDuration + DURATION_TO_ADD_AUTOMATICALLY
+    const compensatedTimestampStarted = timerState.value.timestampStarted
+        - previousPeriod.periodDurationElapsed // move start back as some time already elapsed
+        + currentPeriod.value.periodDurationElapsed // move start forward to account for time elapsed in the current period
+   
+    updateTimerState({
+        previousPeriodProperties: {
+            periodDuration: extendedDuration,
+            periodHasFinished: false,
+        },
+        currentPeriodProperties: {
+            periodHasFinished: false,
+        },
+        timerProperties: {
+            shouldGoToNextPeriod: false,
+            timestampStarted: compensatedTimestampStarted,
+            currentPeriodIndex: previousPeriodIndex,
+        }
+    })
+
+    updateCurrentPeriod()
+
+    log('jumped to previous period and added some time to the duration', timerState.value, 13)
+}
+
+// the whole timer completion
+export const handleTimerCompletion = () => {
     stopTick()
+
+    // updates are not combined because they need to be run sequentially
 
     updateTimerState({
         currentPeriodProperties: {
@@ -287,6 +323,10 @@ export const handleTimerCompletion = () => {
             periodDurationRemaining: 0,
             periodHasFinished: true,
         },
+      
+    })
+   
+    updateTimerState({
         timerProperties: {
             shouldGoToNextPeriod: false,
             timestampStarted: null,
@@ -297,19 +337,35 @@ export const handleTimerCompletion = () => {
         },
     })
 
-    log('finished last period', timerState.value, 10)
+    log('finished last period', timerState.value, 1)
     playSound('timerEnd')
 }
 
 // helper function to update state
-const updateTimerState = (updateConfig) => {
+const updateTimerState = (updateParams) => {
     const {
+        previousPeriodProperties = {},
         currentPeriodProperties = {},
         timerProperties = {},
-    } = updateConfig
+    } = updateParams
 
     batch(() => {
-        // First, update the current period
+        // Update the previous period
+        if (timerState.value.currentPeriodIndex === 0 && Object.keys(previousPeriodProperties).length > 0) {
+            console.error('Tried to update the previous period but there is none. Aborting. State not changed.')
+            return
+        } else {
+            timerState.value = {
+                ...timerState.value,
+                periods: timerState.value.periods.map((period, index) =>
+                    index !== timerState.value.currentPeriodIndex - 1 ? period : {
+                        ...period,
+                        ...previousPeriodProperties
+                    }
+                )
+            }
+        }
+        // Update the current period
         if (Object.keys(currentPeriodProperties).length > 0) {
             timerState.value = {
                 ...timerState.value,
