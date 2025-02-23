@@ -1,5 +1,5 @@
 import { msToMinutes, formatTime } from '../../../lib/format'
-import { TimelinePeriodDetails } from './timeline-period-details'
+import { TimelineCurrentTime } from './timeline-current-time'
 
 export const TimelinePeriod = ({ period, isActive }) => {
     return (
@@ -15,7 +15,12 @@ export const TimelinePeriod = ({ period, isActive }) => {
                 {period.type} {formatTime(period.periodDuration)}
             </div>
 
-            {isActive && <TimelinePeriodDetails period={period} />}
+            <div
+                class="timeline__elapsed-time"
+                style={`--elapsed-minutes: ${msToMinutes(period.periodDurationElapsed)};`}
+            >
+                {isActive && <TimelineCurrentTime period={period} />}
+            </div>
         </div>
     )
 }
