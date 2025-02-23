@@ -1,7 +1,7 @@
 import { msToMinutes, formatTime } from '../../../lib/format'
 import { currentPeriod, timerState } from '../../../lib/timer'
 
-export const TimelinePeriodDetails = ({ period }) => (
+export const TimelineCurrentTime = ({ period }) => (
     <>
         <div
             class="timeline__current-time"
