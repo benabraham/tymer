@@ -1,5 +1,5 @@
-import { msToMinutes, formatTime } from '../../../format'
-import { currentPeriod, timerState } from '../../../timer'
+import { msToMinutes, formatTime } from '../../../lib/format'
+import { currentPeriod, timerState } from '../../../lib/timer'
 
 export const TimelinePeriodDetails = ({ period }) => (
     <>

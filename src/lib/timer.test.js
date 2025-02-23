@@ -1,16 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import {
-    timerState,
-    initialState,
-    startTimer,
-    pauseTimer,
-    resetTimer,
-    adjustDuration,
-    timerDuration,
-    timerDurationElapsed,
-    timerDurationRemaining,
-    timerHasFinished,
-} from './timer'
+import { describe, beforeEach, it, expect, vi } from 'vitest'
+import { startTimer, pauseTimer, resetTimer, timerState, initialState } from './timer'
 
 describe('Timer Logic', () => {
     beforeEach(() => {

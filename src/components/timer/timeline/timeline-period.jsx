@@ -1,4 +1,4 @@
-import { msToMinutes, formatTime } from '../../../format'
+import { msToMinutes, formatTime } from '../../../lib/format'
 import { TimelinePeriodDetails } from './timeline-period-details'
 
 export const TimelinePeriod = ({ period, isActive }) => {

@@ -1,5 +1,5 @@
-import { timerDuration, timerState } from '../../../timer'
-import { msToMinutes } from '../../../format'
+import { timerDuration, timerState } from '../../../lib/timer'
+import { msToMinutes } from '../../../lib/format'
 import { TimelinePeriod } from './timeline-period'
 
 export const Timeline = () => {

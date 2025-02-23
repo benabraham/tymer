@@ -5,7 +5,7 @@ import {
     timerOnLastPeriod,
     moveToNextPeriod,
     moveToPreviousPeriod,
-} from '../../../timer'
+} from '../../../lib/timer'
 
 export const PeriodControls = () => (
     <section class="controls">

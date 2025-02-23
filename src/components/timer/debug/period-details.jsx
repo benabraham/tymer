@@ -1,5 +1,5 @@
-import { formatTime } from '../../../format'
-import { timerState } from '../../../timer'
+import { formatTime } from '../../../lib/format'
+import { timerState } from '../../../lib/timer'
 
 export const PeriodDetails = () => (
     <div class="tempPeriods">

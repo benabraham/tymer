@@ -1,5 +1,5 @@
-import { initialState, timerState } from '../../../timer'
-import { msToMinutes } from '../../../format'
+import { initialState, timerState } from '../../../lib/timer'
+import { msToMinutes } from '../../../lib/format'
 import { StatsBars } from './stats-bars'
 
 export const Stats = () => {
