@@ -1,4 +1,4 @@
-import { formatTime } from '../../../format'
+import { formatTime } from '../../../lib/format'
 
 export const StatsBars = ({ periodSums }) => {
     const renderStatBar = (type, variant) => {

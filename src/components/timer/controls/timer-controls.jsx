@@ -12,7 +12,7 @@ import {
     resumeTimer,
     startTimer,
     resetTimer,
-} from '../../../timer'
+} from '../../../lib/timer'
 
 export const TimerControls = () => {
     const handleStartPause = () => {

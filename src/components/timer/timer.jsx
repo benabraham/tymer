@@ -1,5 +1,5 @@
 import { useEffect } from 'preact/hooks'
-import { initializeTimer } from '../../timer'
+import { initializeTimer } from '../../lib/timer'
 import { Timeline } from './timeline/timeline'
 import { TimerControls } from './controls/timer-controls'
 import { PeriodControls } from './controls/period-controls'

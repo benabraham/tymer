@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, beforeEach, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/preact'
 import { Timer } from './timer'
-import { timerState, initialState } from './timer'
+import { timerState, initialState } from '../../lib/timer'
 
 // Mock the timer-related functions
-vi.mock('./timer', async () => {
-    const actual = await vi.importActual('./timer')
+vi.mock('../../lib/timer', async () => {
+    const actual = await vi.importActual('../../lib/timer')
     return {
         ...actual,
         initializeTimer: vi.fn(),

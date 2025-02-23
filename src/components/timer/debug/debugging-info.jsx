@@ -1,4 +1,4 @@
-import { formatTime } from '../../../format'
+import { formatTime } from '../../../lib/format'
 import {
     timerDuration,
     timerDurationElapsed,
@@ -6,7 +6,7 @@ import {
     timerState,
     timerOnLastPeriod,
     timerHasFinished,
-} from '../../../timer'
+} from '../../../lib/timer'
 import { PeriodDetails } from './period-details'
 
 export const DebuggingInfo = () => {
