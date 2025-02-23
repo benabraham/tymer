@@ -1,31 +1,31 @@
 {
-    "name": "tymer",
-    "private": true,
-    "version": "0.0.0",
-    "type": "module",
-    "scripts": {
-        "dev": "vite",
-        "build": "vite build",
-        "preview": "vite preview",
-        "test": "vitest",
-        "test:coverage": "vitest run --coverage",
-        "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,css,md}\"",
-        "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,css,md}\""
-    },
-    "dependencies": {
-        "@preact/signals": "^2.0.1",
-        "howler": "^2.2.4",
-        "preact": "^10.26.2",
-        "preact-router": "^4.1.2"
-    },
-    "devDependencies": {
-        "@preact/preset-vite": "^2.10.1",
-        "@testing-library/jest-dom": "^6.6.3",
-        "@testing-library/preact": "^3.2.4",
-        "jsdom": "^26.0.0",
-        "prettier": "^3.5.2",
-        "vite": "^6.1.1",
-        "vite-plugin-pwa": "^0.21.1",
-        "vitest": "^3.0.6"
-    }
+  "name": "tymer",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,css,md}\""
+  },
+  "dependencies": {
+    "@preact/signals": "^2.0.1",
+    "howler": "^2.2.4",
+    "preact": "^10.26.2",
+    "preact-router": "^4.1.2"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.1",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/preact": "^3.2.4",
+    "jsdom": "^26.0.0",
+    "prettier": "^3.5.2",
+    "vite": "^6.1.1",
+    "vite-plugin-pwa": "^0.21.1",
+    "vitest": "^3.0.6"
+  }
 }
