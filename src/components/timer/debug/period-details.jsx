@@ -21,10 +21,14 @@ export const PeriodDetails = () => (
             >
                 <div class="tempPeriod__data">{period.type}</div>
                 <div class="tempPeriod__data">{formatTime(period.periodDuration, false, true)}</div>
-                <div class="tempPeriod__data">{formatTime(period.periodDurationRemaining, false, true)}</div>
-                <div class="tempPeriod__data">{formatTime(period.periodDurationElapsed, true, true)}</div>
+                <div class="tempPeriod__data">
+                    {formatTime(period.periodDurationRemaining, false, true)}
+                </div>
+                <div class="tempPeriod__data">
+                    {formatTime(period.periodDurationElapsed, true, true)}
+                </div>
                 <div class="tempPeriod__data">{period.periodHasFinished ? 'yes' : 'no'}</div>
             </div>
         ))}
     </div>
-) 
+)

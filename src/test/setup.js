@@ -3,12 +3,12 @@ import { vi } from 'vitest'
 
 // Mock localStorage
 const localStorageMock = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  clear: vi.fn(),
-  length: 0,
-  key: vi.fn(),
-  removeItem: vi.fn()
+    getItem: vi.fn(),
+    setItem: vi.fn(),
+    clear: vi.fn(),
+    length: 0,
+    key: vi.fn(),
+    removeItem: vi.fn(),
 }
 global.localStorage = localStorageMock
 
@@ -18,7 +18,7 @@ global.clearInterval = vi.fn()
 
 // Add required DOM environment setup for newer jsdom
 global.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-} 
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+}

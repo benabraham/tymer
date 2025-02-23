@@ -9,7 +9,9 @@ export const StatsBars = ({ periodSums }) => {
         return (
             <div class={`stats-bar stats-bar--${type} stats-bar--${variant}`}>
                 <div class="stats-text">
-                    {isElapsed ? formatTime(periodData.duration) : `${type} ${formatTime(periodData.duration)}`}
+                    {isElapsed
+                        ? formatTime(periodData.duration)
+                        : `${type} ${formatTime(periodData.duration)}`}
                 </div>
                 {showElapsed && (
                     <div
@@ -35,4 +37,4 @@ export const StatsBars = ({ periodSums }) => {
             {renderStatBar('work', 'current')}
         </div>
     )
-} 
+}

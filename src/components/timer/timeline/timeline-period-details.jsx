@@ -15,10 +15,10 @@ export const TimelinePeriodDetails = ({ period }) => (
             <span class="timeline__elapsed timeline__elapsed--timer">
                 {formatTime(
                     timerState.value.periods.reduce((sum, p) => sum + p.periodDurationElapsed, 0),
-                    true
+                    true,
                 )}
             </span>
         </div>
         <div class="timeline__subinterval"></div>
     </>
-) 
+)

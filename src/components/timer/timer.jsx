@@ -11,11 +11,13 @@ export function Timer() {
         initializeTimer()
     }, [])
 
-    return (<>
-        <TimerControls />
-        <Timeline />
-        <PeriodControls />
-        <Stats />
-        <DebuggingInfo />
-    </>)
-} 
+    return (
+        <>
+            <TimerControls />
+            <Timeline />
+            <PeriodControls />
+            <Stats />
+            <DebuggingInfo />
+        </>
+    )
+}

@@ -18,4 +18,4 @@ export const TimelinePeriod = ({ period, isActive }) => {
             {isActive && <TimelinePeriodDetails period={period} />}
         </div>
     )
-} 
+}
