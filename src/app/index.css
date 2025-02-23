@@ -77,17 +77,15 @@ button:focus-visible {
 
 button.highlighted {
     background-color: #ff0000;
-    animation: blink 1s infinite;
+    animation: blink 750ms infinite alternate;
 }
 
 @keyframes blink {
-
-    0%,
-    100% {
+    0% {
         background-color: #800000;
     }
 
-    50% {
+    100% {
         background-color: #9f9f00;
     }
 }
