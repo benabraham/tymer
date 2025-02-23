@@ -35,6 +35,7 @@ export default defineConfig({
     setupFiles: './src/test/setup.js',
     coverage: {
       reporter: ['text', 'json', 'html'],
+      provider: 'v8'
     },
   },
   server: {
