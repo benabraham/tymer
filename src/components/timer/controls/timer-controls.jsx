@@ -6,6 +6,8 @@ import {
     timerDurationRemaining,
     initialState,
     timerDuration,
+    timerOnLastPeriod,
+    handleTimerCompletion,
     pauseTimer,
     resumeTimer,
     startTimer,
@@ -50,6 +52,16 @@ export const TimerControls = () => {
                 class={timerHasFinished.value ? 'highlighted' : ''}
             >
                 Reset
+            </button>
+            <button
+                onClick={handleTimerCompletion}
+                disabled={
+                    timerHasFinished.value ||
+                    timerState.value.currentPeriodIndex === null
+                }
+                class={timerOnLastPeriod.value && timerState.value.shouldGoToNextPeriod ? 'highlighted' : ''}
+            >
+                Finish
             </button>
             <button
                 onClick={() => adjustElapsed(1 * 60 * 1000)}

@@ -4,7 +4,6 @@ import {
     timerState,
     timerOnLastPeriod,
     handlePeriodCompletion,
-    handleTimerCompletion
 } from '../../../timer'
 
 export const PeriodControls = () => (
@@ -40,16 +39,6 @@ export const PeriodControls = () => (
             class={!timerOnLastPeriod.value && timerState.value.shouldGoToNextPeriod ? 'highlighted' : ''}
         >
             Next
-        </button>
-        <button
-            onClick={handleTimerCompletion}
-            disabled={
-                timerHasFinished.value ||
-                timerState.value.currentPeriodIndex === null
-            }
-            class={timerOnLastPeriod.value && timerState.value.shouldGoToNextPeriod ? 'highlighted' : ''}
-        >
-            Finish
         </button>
         <button
             onClick={() => adjustDuration(60 * 1000)}
