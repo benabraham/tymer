@@ -12,8 +12,8 @@ export function Timer() {
     }, [])
 
     return (<>
-        <Timeline />
         <TimerControls />
+        <Timeline />
         <PeriodControls />
         <Stats />
         <DebuggingInfo />
