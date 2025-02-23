@@ -57,7 +57,8 @@ export const TimerControls = () => {
                 onClick={handleTimerCompletion}
                 disabled={
                     timerHasFinished.value ||
-                    timerState.value.currentPeriodIndex === null
+                    timerState.value.currentPeriodIndex === null ||
+                    timerDurationElapsed < 1 * 60 * 1000
                 }
                 class={timerOnLastPeriod.value && timerState.value.shouldGoToNextPeriod ? 'highlighted' : ''}
             >
