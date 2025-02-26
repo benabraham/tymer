@@ -22,10 +22,26 @@
     "@preact/preset-vite": "^2.10.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/preact": "^3.2.4",
+    "autoprefixer": "^10.4.20",
     "jsdom": "^26.0.0",
+    "postcss": "^8.5.3",
+    "postcss-csso": "^6.0.1",
     "prettier": "^3.5.2",
+    "sass": "^1.85.1",
     "vite": "^6.1.1",
     "vite-plugin-pwa": "^0.21.1",
     "vitest": "^3.0.6"
-  }
+  },
+  "browserslist": [
+    ">= 0.5%",
+    "last 2 major versions",
+    "not dead",
+    "Chrome >= 60",
+    "Firefox >= 60",
+    "Firefox ESR",
+    "iOS >= 12",
+    "Safari >= 12",
+    "not Explorer <= 11",
+    "not op_mini all"
+  ]
 }
