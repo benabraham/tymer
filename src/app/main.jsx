@@ -1,5 +1,5 @@
 import { render } from 'preact'
-import './index.css'
+import './index.scss'
 import { Timer } from '../components/timer/timer'
 import 'preact/debug'
 
