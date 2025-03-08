@@ -25,12 +25,20 @@ export const TimerControls = () => {
         <section class="controls">
             <div>Timer</div>
             <button
+                onClick={() => adjustElapsed(-1 * timerDurationElapsed.value)}
+                disabled={
+                    timerState.value.currentPeriodIndex === null || timerDurationElapsed.value === 0
+                }
+            >
+                🔙
+            </button>
+            <button
                 onClick={() => adjustElapsed(-6 * 60 * 1000)}
                 disabled={
                     timerState.value.currentPeriodIndex === null || timerDurationElapsed.value === 0
                 }
             >
-                ◀ 6 min
+                ⏪ 6 min
             </button>
             <button
                 onClick={() => adjustElapsed(-1 * 60 * 1000)}
@@ -38,17 +46,17 @@ export const TimerControls = () => {
                     timerState.value.currentPeriodIndex === null || timerDurationElapsed.value === 0
                 }
             >
-                ◀ 1 min
+                ⏪ 1 min
             </button>
             <button
                 onClick={handleStartPause}
                 disabled={timerHasFinished.value || !timerDurationRemaining.value}
             >
                 {timerState.value.runningIntervalId
-                    ? 'Pause'
+                    ? '⏸️️'
                     : timerState.value.timestampPaused
-                      ? 'Resume'
-                      : 'Start'}
+                      ? '▶️️ Resume'
+                      : '▶️️ Start'}
             </button>
             <button
                 onClick={resetTimer}
@@ -59,7 +67,7 @@ export const TimerControls = () => {
                 }
                 class={timerHasFinished.value ? 'highlighted' : ''}
             >
-                Reset
+                🔁 Reset
             </button>
             <button
                 onClick={handleTimerCompletion}
@@ -74,19 +82,19 @@ export const TimerControls = () => {
                         : ''
                 }
             >
-                Finish
+                🏁 Finish
             </button>
             <button
                 onClick={() => adjustElapsed(1 * 60 * 1000)}
                 disabled={timerState.value.currentPeriodIndex === null}
             >
-                1 min ▶
+                1 min ⏩
             </button>
             <button
                 onClick={() => adjustElapsed(6 * 60 * 1000)}
                 disabled={timerState.value.currentPeriodIndex === null}
             >
-                6 min ▶
+                6 min ⏩
             </button>
         </section>
     )
