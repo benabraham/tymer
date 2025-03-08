@@ -4,13 +4,22 @@ import {
     timerState,
     adjustElapsed,
     timerDurationElapsed,
+    moveElapsedTimeToPreviousPeriod,
 } from '../../../lib/timer'
 
 export const PeriodControls = () => (
     <>
         <section class="controls">
             <button
-                onClick={() => adjustElapsed(-1 * timerDurationElapsed.value)}
+                onClick={moveElapsedTimeToPreviousPeriod}
+                disabled={
+                    timerState.value.currentPeriodIndex === null || timerDurationElapsed.value === 0
+                }
+            >
+                move time to previous
+            </button>
+            <button
+                onClick={() => adjustElapsed(-timerDurationElapsed.value)}
                 disabled={
                     timerState.value.currentPeriodIndex === null || timerDurationElapsed.value === 0
                 }

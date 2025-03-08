@@ -328,6 +328,24 @@ export const moveToPreviousPeriod = () => {
     log('jumped to previous period and added some time to the duration', timerState.value, 13)
 }
 
+// add time elapsed in the current period to previous and remove it from current
+export const moveElapsedTimeToPreviousPeriod = () => {
+    log('move time back', timerState.value, 2)
+    const elapsed = currentPeriod.value.periodDurationElapsed
+    const previousPeriodIndex = timerState.value.currentPeriodIndex - 1
+    const previousPeriod = timerState.value.periods[previousPeriodIndex]
+    const extendedDuration = previousPeriod.periodDuration + elapsed
+
+    updateTimerState({
+        previousPeriodProperties: {
+            periodDuration: extendedDuration,
+            periodDurationElapsed: extendedDuration,
+        },
+    })
+
+    adjustElapsed(-elapsed)
+}
+
 // the whole timer completion
 export const handleTimerCompletion = () => {
     stopTick()
