@@ -18,7 +18,7 @@ export const PeriodControls = () => (
                 || !timerState.value.periods.some(p => p.periodDurationRemaining > 0)
             }
         >
-            −6 min
+            ➖6 min
         </button>
         <button
             onClick={() => adjustDuration(-1 * 60 * 1000)}
@@ -28,7 +28,7 @@ export const PeriodControls = () => (
                 || !timerState.value.periods.some(p => p.periodDurationRemaining > 0)
             }
         >
-            −1 min
+            ➖1 min
         </button>
         <button
             onClick={moveToPreviousPeriod}
@@ -38,7 +38,7 @@ export const PeriodControls = () => (
                 || timerState.value.currentPeriodIndex === 0
             }
         >
-            Previous
+            ⏮️
         </button>
         <button
             onClick={moveToNextPeriod}
@@ -53,19 +53,19 @@ export const PeriodControls = () => (
                     : ''
             }
         >
-            Next
+            ⏭️
         </button>
         <button
             onClick={() => adjustDuration(1 * 60 * 1000)}
             disabled={timerHasFinished.value || timerState.value.currentPeriodIndex === null}
         >
-            +1 min
+            ➕1 min
         </button>
         <button
             onClick={() => adjustDuration(6 * 60 * 1000)}
             disabled={timerHasFinished.value || timerState.value.currentPeriodIndex === null}
         >
-            +6 min
+            ➕6 min
         </button>
     </section>
 )
