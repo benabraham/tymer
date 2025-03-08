@@ -1,5 +1,4 @@
 import {
-    adjustElapsed,
     timerState,
     timerDurationElapsed,
     timerHasFinished,
@@ -12,6 +11,8 @@ import {
     resumeTimer,
     startTimer,
     resetTimer,
+    moveToNextPeriod,
+    moveToPreviousPeriod,
 } from '../../../lib/timer'
 
 export const TimerControls = () => {
@@ -23,31 +24,17 @@ export const TimerControls = () => {
 
     return (
         <section class="controls">
-            <div>Timer</div>
             <button
-                onClick={() => adjustElapsed(-1 * timerDurationElapsed.value)}
+                onClick={moveToPreviousPeriod}
                 disabled={
-                    timerState.value.currentPeriodIndex === null || timerDurationElapsed.value === 0
+                    timerHasFinished.value
+                    || timerState.value.currentPeriodIndex === null
+                    || timerState.value.currentPeriodIndex === 0
                 }
             >
-                🔙
+                ⏮️
             </button>
-            <button
-                onClick={() => adjustElapsed(-6 * 60 * 1000)}
-                disabled={
-                    timerState.value.currentPeriodIndex === null || timerDurationElapsed.value === 0
-                }
-            >
-                ⏪ 6 min
-            </button>
-            <button
-                onClick={() => adjustElapsed(-1 * 60 * 1000)}
-                disabled={
-                    timerState.value.currentPeriodIndex === null || timerDurationElapsed.value === 0
-                }
-            >
-                ⏪ 1 min
-            </button>
+
             <button
                 onClick={handleStartPause}
                 disabled={timerHasFinished.value || !timerDurationRemaining.value}
@@ -84,17 +71,21 @@ export const TimerControls = () => {
             >
                 🏁 Finish
             </button>
+
             <button
-                onClick={() => adjustElapsed(1 * 60 * 1000)}
-                disabled={timerState.value.currentPeriodIndex === null}
+                onClick={moveToNextPeriod}
+                disabled={
+                    timerHasFinished.value
+                    || timerState.value.currentPeriodIndex === null
+                    || timerOnLastPeriod.value
+                }
+                class={
+                    !timerOnLastPeriod.value && timerState.value.shouldGoToNextPeriod
+                        ? 'highlighted'
+                        : ''
+                }
             >
-                1 min ⏩
-            </button>
-            <button
-                onClick={() => adjustElapsed(6 * 60 * 1000)}
-                disabled={timerState.value.currentPeriodIndex === null}
-            >
-                6 min ⏩
+                ⏭️
             </button>
         </section>
     )
