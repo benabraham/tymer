@@ -341,6 +341,9 @@ export const moveElapsedTimeToPreviousPeriod = () => {
             periodDuration: extendedDuration,
             periodDurationElapsed: extendedDuration,
         },
+        timerProperties: {
+            shouldGoToNextPeriod: false,
+        },
     })
 
     adjustElapsed(-elapsed)
