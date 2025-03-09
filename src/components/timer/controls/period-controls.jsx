@@ -13,7 +13,9 @@ export const PeriodControls = () => (
             <button
                 onClick={moveElapsedTimeToPreviousPeriod}
                 disabled={
-                    timerState.value.currentPeriodIndex === null || timerDurationElapsed.value === 0
+                    timerState.value.currentPeriodIndex === null
+                    || timerDurationElapsed.value === 0
+                    || timerState.value.currentPeriodIndex === 0
                 }
             >
                 move time to previous
