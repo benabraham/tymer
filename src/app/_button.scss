@@ -1,0 +1,45 @@
+/* BUTTONS */
+
+button {
+    border-radius: 0.5rem;
+    border: 1px solid transparent;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: inherit;
+    transition: border-color 0.25s;
+    padding: 0.25rem 0.625rem;
+    min-width: 9ch;
+    user-select: none;
+}
+
+button:not(:disabled) {
+    cursor: pointer;
+    background-color: #3d3d3d;
+    color: #ffffff;
+}
+
+button:not(:disabled):hover {
+    background-color: #464646;
+    border-color: #646cff;
+    color: #ffffff;
+}
+
+button:focus,
+button:focus-visible {
+    outline: 4px auto -webkit-focus-ring-color;
+}
+
+button.highlighted {
+    background-color: #ff0000;
+    animation: blink 750ms infinite alternate;
+}
+
+@keyframes blink {
+    0% {
+        background-color: #800000;
+    }
+
+    100% {
+        background-color: #9f9f00;
+    }
+}
