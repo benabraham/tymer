@@ -33,6 +33,8 @@ export const StatsBars = ({ periodSums }) => {
         <div class="stats-bars">
             {renderStatBar('break', 'original')}
             {renderStatBar('break', 'current')}
+            {renderStatBar('fun', 'original')}
+            {renderStatBar('fun', 'current')}
             {renderStatBar('work', 'original')}
             {renderStatBar('work', 'current')}
         </div>
