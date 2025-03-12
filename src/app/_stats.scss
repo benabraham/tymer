@@ -1,0 +1,160 @@
+/* STATS */
+
+.stats {
+    font-weight: 700;
+    margin-bottom: 1rem;
+    /*
+    // test data
+    --break-original: 100;
+    --break-planned: 25;
+    --break-elapsed: 50;
+
+    --fun-original: 100;
+    --fun-planned: 50;
+    --fun-elapsed: 25;
+
+    --work-original: 30;
+    --work-planned: 100;
+    --work-elapsed: 50;
+    */
+    /* calculated */
+    --break-max: max(var(--break-original), var(--break-planned));
+    --break-percentage: calc(var(--break-elapsed) / var(--break-planned) * 100%);
+
+    --fun-max: max(var(--fun-original), var(--fun-planned));
+    --fun-percentage: calc(var(--fun-elapsed) / var(--fun-planned) * 100%);
+
+    --work-max: max(var(--work-original), var(--work-planned));
+    --work-percentage: calc(var(--work-elapsed) / var(--work-planned) * 100%);
+
+    --total-width: calc(var(--break-max) + var(--fun-max) + var(--work-max));
+
+    --middle-line-left: var(--break-max);
+    --middle-line-right: calc(var(--break-max) + var(--fun-max));
+    // --middle-line: calc(var(--break-max) + var(--fun-max) / 2);
+}
+
+.stats-bars {
+    display: grid;
+    grid-template-columns: repeat(var(--total-width), 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    height: 4rem;
+}
+
+.stats-bar,
+.stats-elapsed {
+    font-size: 0.75rem;
+    align-content: end;
+}
+
+.stats-bar {
+    background-color: #000000;
+    position: relative;
+}
+
+.stats-bar--break {
+    text-align: left;
+    background-color: var(--break-bg);
+    grid-column-end: var(--middle-line-left);
+
+    &.stats-bar--original {
+        grid-column-start: calc(var(--middle-line-left) - var(--break-original) + 1);
+    }
+
+    &.stats-bar--current {
+        grid-column-start: calc(var(--middle-line-left) - var(--break-planned) + 1);
+    }
+}
+
+.stats-bar--fun {
+    text-align: center;
+    background-color: var(--fun-bg);
+    grid-column-start: var(--middle-line-left);
+    grid-column-end: var(--middle-line-right);
+
+    &.stats-bar--original {
+        grid-column-start: calc(var(--middle-line-left) + var(--fun-max) - var(--fun-original));
+        grid-column-end: calc(var(--middle-line-right) - var(--fun-max) + var(--fun-original));
+    }
+
+    &.stats-bar--current {
+        grid-column-start: calc(var(--middle-line-left) + var(--fun-max) - var(--fun-planned));
+        grid-column-end: calc(var(--middle-line-right) - var(--fun-max) + var(--fun-planned));
+    }
+}
+
+.stats-bar--work {
+    text-align: right;
+    background-color: var(--work-bg);
+    grid-column-start: var(--middle-line-right);
+
+    &.stats-bar--original {
+        grid-column-end: calc(var(--middle-line-right) + var(--work-original) + 1);
+    }
+
+    &.stats-bar--current {
+        grid-column-end: calc(var(--middle-line-right) + var(--work-planned) + 1);
+    }
+}
+
+.stats-bar--original {
+    grid-row: 1 / 4;
+    border: 1px solid white;
+}
+
+.stats-bar--current {
+    grid-row: 2 / 3;
+    z-index: 1;
+    border: 1px solid white;
+}
+
+.stats-elapsed {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.5);
+
+    .stats-bar--break & {
+        right: 0;
+        border-left: 2px solid white;
+        width: var(--break-percentage);
+    }
+
+    .stats-bar--fun & {
+        left: calc((100% - var(--fun-percentage)) / 2);
+        border-right: 2px solid white;
+        border-left: 2px solid white;
+        width: var(--fun-percentage);
+    }
+
+    .stats-bar--work & {
+        left: 0;
+        border-right: 2px solid white;
+        width: var(--work-percentage);
+    }
+}
+
+.stats-elapsed--none {
+    display: none;
+}
+.stats-text {
+    padding: 0.125rem;
+}
+
+.stats-elapsed-text {
+    position: relative;
+    top: -100%;
+
+    .stats-bar--break & {
+        position: absolute;
+        right: 100%;
+    }
+
+    .stats-bar--fun & {
+        text-align: center;
+    }
+
+    .stats-bar--work & {
+        text-align: right;
+    }
+}
