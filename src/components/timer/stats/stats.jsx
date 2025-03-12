@@ -17,7 +17,7 @@ export const Stats = () => {
     const calculatePeriodSums = ({ initialPeriods, currentPeriods }) => {
         const calculateFor = periods => type => calculateTypeSums({ periods, type })
 
-        const types = ['work', 'break']
+        const types = timerState.value.types
         return types.reduce(
             (acc, type) => ({
                 ...acc,
@@ -42,6 +42,10 @@ export const Stats = () => {
                 --break-original: ${msToMinutes(periodSums.break.original.duration)};
                 --break-planned: ${msToMinutes(periodSums.break.current.duration)};
                 --break-elapsed: ${msToMinutes(periodSums.break.current.durationElapsed)};
+            
+                --fun-original: ${msToMinutes(periodSums.fun.original.duration)};
+                --fun-planned: ${msToMinutes(periodSums.fun.current.duration)};
+                --fun-elapsed: ${msToMinutes(periodSums.fun.current.durationElapsed)};
             
                 --work-original: ${msToMinutes(periodSums.work.original.duration)};
                 --work-planned: ${msToMinutes(periodSums.work.current.duration)};

@@ -39,6 +39,7 @@ export const initialState = {
     timestampPaused: null, // timestamp when timer was paused
     timestampStarted: null, // timestamp when timer was started
     shouldGoToNextPeriod: null, // used only visually to blink the button
+    types: ['work', 'break', 'fun'],
     periods: PERIOD_CONFIG.map(createPeriod),
 }
 
@@ -347,6 +348,21 @@ export const moveElapsedTimeToPreviousPeriod = () => {
     })
 
     adjustElapsed(-elapsed)
+}
+
+// change work type
+export const changeType = () => {
+    const types = timerState.value.types
+    const currentType = currentPeriod.value.type
+    const currentIndex = types.indexOf(currentType) // Find the index of the current type
+    const nextIndex = (currentIndex + 1) % types.length // Calculate the next index (with wrap-around)
+
+    updateTimerState({
+        currentPeriodProperties: {
+            type: types[nextIndex], // Set the new type
+        },
+    })
+    log('changed current type', timerState.value, 8)
 }
 
 // the whole timer completion

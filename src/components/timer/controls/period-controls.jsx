@@ -5,6 +5,7 @@ import {
     adjustElapsed,
     timerDurationElapsed,
     moveElapsedTimeToPreviousPeriod,
+    changeType,
 } from '../../../lib/timer'
 
 export const PeriodControls = () => (
@@ -91,6 +92,9 @@ export const PeriodControls = () => (
                 disabled={timerHasFinished.value || timerState.value.currentPeriodIndex === null}
             >
                 ➕ 6 min
+            </button>
+            <button onClick={changeType} disabled={timerState.value.currentPeriodIndex === null}>
+                change type
             </button>
         </section>
     </>
