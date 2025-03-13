@@ -1,6 +1,7 @@
-import { initialState, timerState } from '../../../lib/timer'
+import { initialState, timerState, timerDuration } from '../../../lib/timer'
 import { msToMinutes } from '../../../lib/format'
 import { StatsBars } from './stats-bars'
+import { formatTime } from '../../../lib/format'
 
 export const Stats = () => {
     const calculateTypeSums = ({ periods, type }) => {
@@ -52,7 +53,11 @@ export const Stats = () => {
                 --work-elapsed: ${msToMinutes(periodSums.work.current.durationElapsed)};
             `}
         >
-            <h2>Stats</h2>
+            <h2>
+                Stats
+                <br />
+                <small>{formatTime(timerDuration.value)} total</small>
+            </h2>
             <StatsBars periodSums={periodSums} />
         </div>
     )
