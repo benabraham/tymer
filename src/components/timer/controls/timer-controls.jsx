@@ -31,7 +31,7 @@ export const TimerControls = () => {
                         (initialState.timerDuration === timerDuration.value
                             && !timerState.value.timestampStarted
                             && timerDurationRemaining.value !== 0)
-                        || timerState.value.currentPeriodIndex === null
+                        || (timerState.value.currentPeriodIndex === null && ! timerHasFinished.value)
                     }
                     class={timerHasFinished.value ? 'highlighted' : ''}
                 >
