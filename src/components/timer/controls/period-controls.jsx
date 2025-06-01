@@ -7,6 +7,8 @@ import {
     moveElapsedTimeToPreviousPeriod,
     changeType,
     currentPeriod,
+    addPeriod,
+    removePeriod,
 } from '../../../lib/timer'
 
 export const PeriodControls = () => (
@@ -97,6 +99,21 @@ export const PeriodControls = () => (
             </button>
             <button onClick={changeType} disabled={timerState.value.currentPeriodIndex === null}>
                 change type
+            </button>
+            <button 
+                onClick={addPeriod} 
+                disabled={timerState.value.currentPeriodIndex === null}
+            >
+                add period
+            </button>
+            <button 
+                onClick={removePeriod} 
+                disabled={
+                    timerState.value.currentPeriodIndex === null || 
+                    timerState.value.periods.length <= 1
+                }
+            >
+                remove period
             </button>
         </section>
     </>
