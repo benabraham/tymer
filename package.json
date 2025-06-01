@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "start": "npm run dev",
     "dev": "vite",
@@ -14,9 +17,9 @@
     "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,css,md}\""
   },
   "dependencies": {
-    "@preact/signals": "^2.0.1",
+    "@preact/signals": "^2.2.0",
     "howler": "^2.2.4",
-    "preact": "^10.26.4",
+    "preact": "^10.26.8",
     "preact-router": "^4.1.2"
   },
   "devDependencies": {
@@ -24,14 +27,14 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/preact": "^3.2.4",
     "autoprefixer": "^10.4.21",
-    "jsdom": "^26.0.0",
-    "postcss": "^8.5.3",
+    "jsdom": "^26.1.0",
+    "postcss": "^8.5.4",
     "postcss-csso": "^6.0.1",
     "prettier": "^3.5.3",
-    "sass": "^1.85.1",
-    "vite": "^6.2.1",
-    "vite-plugin-pwa": "^0.21.1",
-    "vitest": "^3.0.8"
+    "sass": "^1.89.1",
+    "vite": "^6.3.5",
+    "vite-plugin-pwa": "^1.0.0",
+    "vitest": "^3.1.4"
   },
   "browserslist": [
     ">= 0.5%",
