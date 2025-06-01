@@ -365,6 +365,68 @@ export const changeType = () => {
     log('changed current type', timerState.value, 8)
 }
 
+// add a new period after the current one
+export const addPeriod = () => {
+    if (timerState.value.currentPeriodIndex === null) return
+
+    const newPeriod = createPeriod({
+        duration: 24 * 60 * 1000, // 24 minutes
+        type: 'fun',
+    })
+
+    const currentIndex = timerState.value.currentPeriodIndex
+    const newPeriods = [...timerState.value.periods]
+    newPeriods.splice(currentIndex + 1, 0, newPeriod) // Insert after current period
+
+    updateTimerState({
+        timerProperties: {
+            periods: newPeriods
+        }
+    })
+
+    log('added new period', timerState.value, 5)
+}
+
+// remove the current period and move to next period (or previous if on last period)
+export const removePeriod = () => {
+    if (timerState.value.currentPeriodIndex === null) return
+    if (timerState.value.periods.length <= 1) return // Prevent removing the last period
+
+    const currentIndex = timerState.value.currentPeriodIndex
+    const isLastPeriod = currentIndex === timerState.value.periods.length - 1
+
+    // Store the period to remove
+    const periodToRemove = currentIndex
+
+    // First move to the next or previous period
+    if (isLastPeriod) {
+        // If we're on the last period, move to the previous period
+        moveToPreviousPeriod()
+    } else {
+        // Otherwise move to next period
+        moveToNextPeriod()
+    }
+
+    // After navigation, remove the original period
+    const newPeriods = timerState.value.periods.filter((_, index) => index !== periodToRemove)
+
+    // Adjust current index if needed
+    // If we moved to next, we need to subtract 1 from currentPeriodIndex
+    // because removing a period shifts all indices down by 1
+    const newIndex = isLastPeriod
+        ? timerState.value.currentPeriodIndex
+        : timerState.value.currentPeriodIndex - 1
+
+    updateTimerState({
+        timerProperties: {
+            periods: newPeriods,
+            currentPeriodIndex: newIndex
+        }
+    })
+
+    log('removed period', timerState.value, 5)
+}
+
 // the whole timer completion
 export const handleTimerCompletion = () => {
     stopTick()
