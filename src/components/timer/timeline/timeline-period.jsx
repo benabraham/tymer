@@ -1,7 +1,7 @@
 import { msToMinutes, formatTime } from '../../../lib/format'
 import { TimelineCurrentTime } from './timeline-current-time'
 
-export const TimelinePeriod = ({ period, isActive }) => {
+export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) => {
     return (
         <div
             class={`
@@ -13,7 +13,10 @@ export const TimelinePeriod = ({ period, isActive }) => {
         >
             <div class="timeline__text">
                 {period.type} {formatTime(period.periodDuration)}
+                {endTime && (<span class="timeline__end-time">{endTime}</span>)}
             </div>
+
+            {index === 0 && startTime && (<span class="timeline__start-time">{startTime}</span>)}
 
             <div
                 class="timeline__elapsed-time"
@@ -24,3 +27,4 @@ export const TimelinePeriod = ({ period, isActive }) => {
         </div>
     )
 }
+
