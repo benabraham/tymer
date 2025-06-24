@@ -7,19 +7,19 @@ const UI_UPDATE_INTERVAL = 1000 // time between timer updates in milliseconds
 const DURATION_TO_ADD_AUTOMATICALLY = 1 * 60 * 1000
 
 // period configuration
-const PERIOD_CONFIG = [
+export const PERIOD_CONFIG = [
     { duration: 48 * 60 * 1000, type: 'work' },
-    { duration: 24 * 60 * 1000, type: 'break' },
+    { duration: 12 * 60 * 1000, type: 'break' },
     { duration: 48 * 60 * 1000, type: 'work' },
-    { duration: 24 * 60 * 1000, type: 'break' },
+    { duration: 12 * 60 * 1000, type: 'break' },
     { duration: 48 * 60 * 1000, type: 'work' },
-    { duration: 60 * 60 * 1000, type: 'break' },
+    { duration: 12 * 60 * 1000, type: 'break' },
     { duration: 48 * 60 * 1000, type: 'work' },
-    { duration: 24 * 60 * 1000, type: 'break' },
+    { duration: 48 * 60 * 1000, type: 'break' },
     { duration: 48 * 60 * 1000, type: 'work' },
-    { duration: 24 * 60 * 1000, type: 'break' },
+    { duration: 12 * 60 * 1000, type: 'break' },
     { duration: 48 * 60 * 1000, type: 'work' },
-    { duration: 24 * 60 * 1000, type: 'break' },
+    { duration: 12 * 60 * 1000, type: 'break' },
     { duration: 48 * 60 * 1000, type: 'work' },
 ]
 
