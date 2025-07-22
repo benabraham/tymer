@@ -1,30 +1,30 @@
-import { signal, effect, computed, batch } from '@preact/signals'
-import { saveState, loadState } from './storage'
-import { playSound } from './sounds'
-import { log } from './log.js'
+import {signal, effect, computed, batch} from '@preact/signals'
+import {saveState, loadState} from './storage'
+import {playSound} from './sounds'
+import {log} from './log.js'
 
 const UI_UPDATE_INTERVAL = 1000 // time between timer updates in milliseconds
 const DURATION_TO_ADD_AUTOMATICALLY = 1 * 60 * 1000
 
 // period configuration
 export const PERIOD_CONFIG = [
-    { duration: 48 * 60 * 1000, type: 'work' },
-    { duration: 12 * 60 * 1000, type: 'break' },
-    { duration: 48 * 60 * 1000, type: 'work' },
-    { duration: 12 * 60 * 1000, type: 'break' },
-    { duration: 48 * 60 * 1000, type: 'work' },
-    { duration: 12 * 60 * 1000, type: 'break' },
-    { duration: 48 * 60 * 1000, type: 'work' },
-    { duration: 48 * 60 * 1000, type: 'break' },
-    { duration: 48 * 60 * 1000, type: 'work' },
-    { duration: 12 * 60 * 1000, type: 'break' },
-    { duration: 48 * 60 * 1000, type: 'work' },
-    { duration: 12 * 60 * 1000, type: 'break' },
-    { duration: 48 * 60 * 1000, type: 'work' },
+    {duration: 48 * 60 * 1000, type: 'work'},
+    {duration: 12 * 60 * 1000, type: 'break'},
+    {duration: 48 * 60 * 1000, type: 'work'},
+    {duration: 12 * 60 * 1000, type: 'break'},
+    {duration: 48 * 60 * 1000, type: 'work'},
+    {duration: 12 * 60 * 1000, type: 'break'},
+    {duration: 48 * 60 * 1000, type: 'work'},
+    {duration: 48 * 60 * 1000, type: 'break'},
+    {duration: 48 * 60 * 1000, type: 'work'},
+    {duration: 12 * 60 * 1000, type: 'break'},
+    {duration: 48 * 60 * 1000, type: 'work'},
+    {duration: 12 * 60 * 1000, type: 'break'},
+    {duration: 48 * 60 * 1000, type: 'work'},
 ]
 
 // function to create a period from a period config
-const createPeriod = ({ duration, type }) => ({
+const createPeriod = ({duration, type}) => ({
     periodDuration: duration,
     periodDurationElapsed: 0,
     periodDurationRemaining: duration, // initialize with full duration
@@ -88,7 +88,7 @@ export const initializeTimer = () => {
 // starts repeating the tick function to update UI periodically
 const startTick = () => {
     updateTimerState({
-        timerProperties: { runningIntervalId: setInterval(tick, UI_UPDATE_INTERVAL) },
+        timerProperties: {runningIntervalId: setInterval(tick, UI_UPDATE_INTERVAL)},
     })
 }
 
@@ -96,7 +96,7 @@ const startTick = () => {
 const stopTick = () => {
     clearInterval(timerState.value.runningIntervalId)
     updateTimerState({
-        timerProperties: { runningIntervalId: null },
+        timerProperties: {runningIntervalId: null},
     })
 }
 
@@ -150,7 +150,7 @@ export const pauseTimer = () => {
     playSound('button')
 
     updateTimerState({
-        timerProperties: { timestampPaused: Date.now() },
+        timerProperties: {timestampPaused: Date.now()},
     })
 
     stopTick()
@@ -164,7 +164,7 @@ export const pauseTimer = () => {
 export const resetTimer = () => {
     stopTick()
 
-    timerState.value = { ...initialState }
+    timerState.value = {...initialState}
 
     console.clear()
     log('timer reset', timerState.value, 7)
@@ -234,7 +234,7 @@ const hasPeriodReachedCompletion = (periodDurationElapsed, periodDuration) =>
 // handle actions when a period is completed
 const handlePeriodElapsed = () => {
     updateTimerState({
-        timerProperties: { shouldGoToNextPeriod: true },
+        timerProperties: {shouldGoToNextPeriod: true},
     })
 
     // automatically extend duration
@@ -250,7 +250,7 @@ const updateCurrentPeriod = () => {
     if (!currentPeriod.value) return
 
     // calculate period times
-    const { periodDurationElapsed, periodDurationRemaining } = calculatePeriodTimes(
+    const {periodDurationElapsed, periodDurationRemaining} = calculatePeriodTimes(
         timerState.value.timestampStarted,
         timerState.value.timestampPaused,
         currentPeriod.value.periodDuration,
@@ -375,16 +375,58 @@ export const addPeriod = () => {
     })
 
     const currentIndex = timerState.value.currentPeriodIndex
-    const newPeriods = [...timerState.value.periods]
-    newPeriods.splice(currentIndex + 1, 0, newPeriod) // Insert after current period
+    const hasElapsedMoreThan60Seconds = currentPeriod.value.periodDurationElapsed > 60 * 1000
 
-    updateTimerState({
-        timerProperties: {
-            periods: newPeriods
-        }
-    })
+    if (hasElapsedMoreThan60Seconds) {
+        // Insert after current period and move to it
+        const newPeriods = [...timerState.value.periods]
+        newPeriods.splice(currentIndex + 1, 0, newPeriod)
 
-    log('added new period', timerState.value, 5)
+        updateTimerState({
+            timerProperties: {
+                periods: newPeriods
+            }
+        })
+
+        moveToNextPeriod()
+        log('added new period after current and moved to it', timerState.value, 5)
+    } else {
+        // Insert before current period and make it current
+        const newPeriods = [...timerState.value.periods]
+        newPeriods.splice(currentIndex, 0, newPeriod)
+
+        // Use the current period's original duration (before any adjustments)
+        const currentPeriodOriginalDuration = currentPeriod.value.periodDuration
+
+        updateTimerState({
+            timerProperties: {
+                periods: newPeriods,
+                currentPeriodIndex: currentIndex, // Stay at same index (now the new period)
+                // Reset timestamp to current time so new period starts fresh
+                timestampStarted: timerState.value.timestampPaused || Date.now(),
+                shouldGoToNextPeriod: false,
+            }
+        })
+
+        // Reset the next period (originally current) to have 0 elapsed time and full duration
+        updateTimerState({
+            timerProperties: {
+                periods: timerState.value.periods.map((period, index) =>
+                    index !== currentIndex + 1
+                        ? period
+                        : {
+                              ...period,
+                              periodDuration: currentPeriodOriginalDuration,
+                              periodDurationElapsed: 0,
+                              periodDurationRemaining: currentPeriodOriginalDuration,
+                              periodHasFinished: false,
+                          }
+                ),
+            }
+        })
+
+        log('added new period before current, reset current period elapsed time', timerState.value, 5)
+    }
 }
 
 // remove the current period and move to next period (or previous if on last period)
@@ -481,9 +523,9 @@ const updateTimerState = updateParams => {
                     index !== timerState.value.currentPeriodIndex - 1
                         ? period
                         : {
-                              ...period,
-                              ...previousPeriodProperties,
-                          },
+                            ...period,
+                            ...previousPeriodProperties,
+                        },
                 ),
             }
         }
@@ -495,9 +537,9 @@ const updateTimerState = updateParams => {
                     index !== timerState.value.currentPeriodIndex
                         ? period
                         : {
-                              ...period,
-                              ...currentPeriodProperties,
-                          },
+                            ...period,
+                            ...currentPeriodProperties,
+                        },
                 ),
             }
         }
