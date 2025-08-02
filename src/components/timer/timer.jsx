@@ -1,5 +1,6 @@
 import { useEffect } from 'preact/hooks'
-import { initializeTimer } from '../../lib/timer'
+import { initializeTimer, timerState, currentPeriod } from '../../lib/timer'
+import { formatTime } from '../../lib/format'
 import { Timeline } from './timeline/timeline'
 import { TimerControls } from './controls/timer-controls'
 import { PeriodControls } from './controls/period-controls'
@@ -10,6 +11,19 @@ export function Timer() {
     useEffect(() => {
         initializeTimer()
     }, [])
+
+    // Update document title based on timer state
+    useEffect(() => {
+        const isRunning = timerState.value.runningIntervalId !== null
+        const period = currentPeriod.value
+        
+        if (isRunning && period) {
+            const remainingTime = formatTime(period.periodDurationRemaining, true)
+            document.title = `${remainingTime} ${period.type} | Tymer`
+        } else {
+            document.title = 'Tymer'
+        }
+    }, [timerState.value.runningIntervalId, currentPeriod.value?.periodDurationRemaining, currentPeriod.value?.type])
 
     return (
         <>
