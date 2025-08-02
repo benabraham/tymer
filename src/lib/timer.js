@@ -39,7 +39,6 @@ export const initialState = {
     runningIntervalId: null, // ID of the interval timer, null when not running
     timestampPaused: null, // timestamp when timer was paused
     timestampStarted: null, // timestamp when timer was started
-    shouldGoToNextPeriod: null, // used only visually to blink the button
     types: ['work', 'break', 'fun'],
     periods: PERIOD_CONFIG.map(createPeriod),
 }
@@ -73,6 +72,9 @@ export const timerDurationElapsed = computed(() =>
 )
 export const timerDurationRemaining = computed(() =>
     timerState.value.periods.reduce((sum, period) => sum + period.periodDurationRemaining, 0),
+)
+export const shouldGoToNextPeriod = computed(() =>
+    currentPeriod.value && currentPeriod.value.periodDuration !== currentPeriod.value.periodUserIntendedDuration
 )
 
 // prepares timer for use, continuing an running timer or prepare a new one
@@ -267,10 +269,6 @@ const hasPeriodReachedCompletion = (periodDurationElapsed, periodDuration) =>
 
 // handle actions when a period is completed
 const handlePeriodElapsed = () => {
-    updateTimerState({
-        timerProperties: { shouldGoToNextPeriod: true },
-    })
-
     // automatically extend duration (don't invalidate sound windows)
     adjustDuration(DURATION_TO_ADD_AUTOMATICALLY, true)
 
@@ -331,7 +329,6 @@ export const moveToNextPeriod = () => {
             periodHasFinished: true,
         },
         timerProperties: {
-            shouldGoToNextPeriod: false,
             // reset start time for the next period if not paused, if the next period has already some time elapsed, compensate for it
             // also subtract the remainder so it gets added to the next period's elapsed time
             timestampStarted:
@@ -372,7 +369,6 @@ export const moveToPreviousPeriod = () => {
             periodHasFinished: false,
         },
         timerProperties: {
-            shouldGoToNextPeriod: false,
             timestampStarted: compensatedTimestampStarted,
             currentPeriodIndex: previousPeriodIndex,
         },
@@ -399,9 +395,7 @@ export const moveElapsedTimeToPreviousPeriod = () => {
             periodDuration: extendedDuration,
             periodDurationElapsed: extendedDuration,
         },
-        timerProperties: {
-            shouldGoToNextPeriod: false,
-        },
+        timerProperties: {},
     })
 
     adjustElapsed(-elapsed)
@@ -461,7 +455,6 @@ export const addPeriod = () => {
                 currentPeriodIndex: currentIndex, // Stay at same index (now the new period)
                 // Reset timestamp to current time so new period starts fresh
                 timestampStarted: timerState.value.timestampPaused || Date.now(),
-                shouldGoToNextPeriod: false,
             },
         })
 
@@ -555,7 +548,6 @@ export const handleTimerCompletion = () => {
 
     updateTimerState({
         timerProperties: {
-            shouldGoToNextPeriod: false,
             timestampStarted: null,
             currentPeriodIndex: null,
             periods: timerState.value.periods.filter(

@@ -6,6 +6,7 @@ import {
     timerState,
     timerOnLastPeriod,
     timerHasFinished,
+    shouldGoToNextPeriod,
 } from '../../../lib/timer'
 import { PeriodDetails } from './period-details'
 
@@ -31,7 +32,7 @@ export const DebuggingInfo = () => {
                 {(timerState.value.timestampPaused || 0).toLocaleString()}
                 <br />
                 <code>shouldGoToNextPeriod </code>{' '}
-                {timerState.value.shouldGoToNextPeriod ? 'YES' : 'no'}
+                {shouldGoToNextPeriod.value ? 'YES' : 'no'}
                 <br />
                 <code>timerOnLastPeriod </code> {timerOnLastPeriod.value ? 'YES' : 'no'}
                 <br />

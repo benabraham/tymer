@@ -6,6 +6,7 @@ import {
     initialState,
     timerDuration,
     timerOnLastPeriod,
+    shouldGoToNextPeriod,
     handleTimerCompletion,
     pauseTimer,
     resumeTimer,
@@ -60,7 +61,7 @@ export const TimerControls = () => {
                         || timerDurationElapsed < 1 * 60 * 1000
                     }
                     class={
-                        timerOnLastPeriod.value && timerState.value.shouldGoToNextPeriod
+                        timerOnLastPeriod.value && shouldGoToNextPeriod.value
                             ? 'highlighted'
                             : ''
                     }
@@ -88,7 +89,7 @@ export const TimerControls = () => {
                         || timerOnLastPeriod.value
                     }
                     class={
-                        !timerOnLastPeriod.value && timerState.value.shouldGoToNextPeriod
+                        !timerOnLastPeriod.value && shouldGoToNextPeriod.value
                             ? 'highlighted'
                             : ''
                     }
