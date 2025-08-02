@@ -13,10 +13,10 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
         >
             <div class="timeline__text">
                 {period.type} {formatTime(period.periodDuration)}
-                {endTime && (<span class="timeline__end-time">{endTime}</span>)}
+                {endTime && <span class="timeline__end-time">{endTime}</span>}
             </div>
 
-            {index === 0 && startTime && (<span class="timeline__start-time">{startTime}</span>)}
+            {index === 0 && startTime && <span class="timeline__start-time">{startTime}</span>}
 
             <div
                 class="timeline__elapsed-time"
@@ -27,4 +27,3 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
         </div>
     )
 }
-

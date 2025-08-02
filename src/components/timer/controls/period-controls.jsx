@@ -100,17 +100,14 @@ export const PeriodControls = () => (
             <button onClick={changeType} disabled={timerState.value.currentPeriodIndex === null}>
                 change type
             </button>
-            <button 
-                onClick={addPeriod} 
-                disabled={timerState.value.currentPeriodIndex === null}
-            >
+            <button onClick={addPeriod} disabled={timerState.value.currentPeriodIndex === null}>
                 add period
             </button>
-            <button 
-                onClick={removePeriod} 
+            <button
+                onClick={removePeriod}
                 disabled={
-                    timerState.value.currentPeriodIndex === null || 
-                    timerState.value.periods.length <= 1
+                    timerState.value.currentPeriodIndex === null
+                    || timerState.value.periods.length <= 1
                 }
             >
                 remove period

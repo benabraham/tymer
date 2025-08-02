@@ -36,4 +36,9 @@ https://benabraham.github.io/tymer/
 
 ## Tests
 
+```bash
+npm test           # Run tests with Vitest
+npm run test:coverage  # Run tests with coverage report
+```
+
 There are a few tests but they are just a generated skeleton and not really working yet.
