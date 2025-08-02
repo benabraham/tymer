@@ -24,6 +24,9 @@ global.localStorage = localStorageMock
 // Mock audio
 vi.mock('./sounds', () => ({
     playSound: vi.fn(),
+    playTimerNotifications: vi.fn(),
+    playPeriodEndNotification: vi.fn(),
+    invalidateSoundWindows: vi.fn(),
 }))
 
 describe('Timer Logic - Simple Tests', () => {

@@ -38,7 +38,7 @@ export const PeriodControls = () => (
                     timerState.value.currentPeriodIndex === null || timerDurationElapsed.value === 0
                 }
             >
-                ⏪ 6 min
+                &lt;--- 6 m
             </button>
             <button
                 onClick={() => adjustElapsed(-1 * 60 * 1000)}
@@ -46,20 +46,33 @@ export const PeriodControls = () => (
                     timerState.value.currentPeriodIndex === null || timerDurationElapsed.value === 0
                 }
             >
-                ⏪ 1 min
+                &lt;-- 1 m
             </button>
-
+            {/*<button
+                onClick={() => adjustElapsed(-12 * 1000)}
+                disabled={
+                    timerState.value.currentPeriodIndex === null || timerDurationElapsed.value === 0
+                }
+            >
+                &lt;- 12 s
+            </button>
+            <button
+                onClick={() => adjustElapsed(12 * 1000)}
+                disabled={timerState.value.currentPeriodIndex === null}
+            >
+                12 s -&gt;
+            </button>*/}
             <button
                 onClick={() => adjustElapsed(1 * 60 * 1000)}
                 disabled={timerState.value.currentPeriodIndex === null}
             >
-                1 min ⏩
+                1 m --&gt;
             </button>
             <button
                 onClick={() => adjustElapsed(6 * 60 * 1000)}
                 disabled={timerState.value.currentPeriodIndex === null}
             >
-                6 min ⏩
+                6 m ---&gt;
             </button>
         </section>
         <section class="controls">

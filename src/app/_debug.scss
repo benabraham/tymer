@@ -7,7 +7,7 @@ details {
 
     .tempPeriods {
         display: grid;
-        grid-template-columns: min-content repeat(4, min-content);
+        grid-template-columns: min-content repeat(5, min-content);
         gap: 0.25rem 2rem;
     }
 

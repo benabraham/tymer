@@ -1,6 +1,6 @@
 import { signal, effect, computed, batch } from '@preact/signals'
 import { saveState, loadState } from './storage'
-import { playSound } from './sounds'
+import { playSound, playTimerNotifications, playPeriodEndNotification, invalidateSoundWindows } from './sounds'
 import { log } from './log.js'
 
 const UI_UPDATE_INTERVAL = 1000 // time between timer updates in milliseconds
@@ -29,6 +29,7 @@ const createPeriod = ({ duration, type }) => ({
     periodDurationElapsed: 0,
     periodDurationRemaining: duration, // initialize with full duration
     periodHasFinished: false,
+    periodUserIntendedDuration: duration, // track user's intended duration (excludes automatic extensions)
     type,
 })
 
@@ -145,6 +146,9 @@ export const resumeTimer = () => {
 
     updateCurrentPeriod()
 
+    // Invalidate sound windows since timestampStarted changed during resume
+    invalidateSoundWindows('timer resumed - timestamp adjusted')
+
     startTick()
 
     log('resumed timer', timerState.value, 13)
@@ -164,12 +168,18 @@ export const pauseTimer = () => {
 
     updateCurrentPeriod()
 
+    // Invalidate sound windows since timer is paused (will be recreated on resume)
+    invalidateSoundWindows('timer paused')
+
     log('timer paused', timerState.value, 8)
 }
 
 // resets timer to the initial state
 export const resetTimer = () => {
     stopTick()
+
+    // Clear all sound windows before resetting state
+    invalidateSoundWindows('timer reset')
 
     timerState.value = { ...initialState }
 
@@ -178,20 +188,34 @@ export const resetTimer = () => {
 }
 
 // adjusts the duration of period
-export const adjustDuration = durationDelta => {
+export const adjustDuration = (durationDelta, isAutomaticExtension = false) => {
     // nothing to do if timer has finished or there is no current period
     if (timerHasFinished.value || timerState.value.currentPeriodIndex === null) return
 
+    const newDuration = Math.max(
+        currentPeriod.value.periodDurationElapsed,
+        currentPeriod.value.periodDuration + durationDelta,
+    )
+
+    const updateProperties = {
+        periodDuration: newDuration,
+    }
+
+    // Only update user intended duration for manual changes, not automatic extensions
+    if (!isAutomaticExtension) {
+        updateProperties.periodUserIntendedDuration = newDuration
+    }
+
     updateTimerState({
-        currentPeriodProperties: {
-            periodDuration: Math.max(
-                currentPeriod.value.periodDurationElapsed,
-                currentPeriod.value.periodDuration + durationDelta,
-            ),
-        },
+        currentPeriodProperties: updateProperties,
     })
 
     updateCurrentPeriod()
+
+    // Only invalidate sound windows for manual adjustments, not automatic extensions
+    if (!isAutomaticExtension) {
+        invalidateSoundWindows('duration adjustment')
+    }
 
     log('duration adjusted', timerState.value, 9)
 }
@@ -216,6 +240,9 @@ export const adjustElapsed = elapsedDelta => {
     })
 
     updateCurrentPeriod()
+
+    // Invalidate sound windows since timestamp changed
+    invalidateSoundWindows('time adjustment')
 
     log('time adjusted', timerState.value, 6)
 }
@@ -244,10 +271,19 @@ const handlePeriodElapsed = () => {
         timerProperties: { shouldGoToNextPeriod: true },
     })
 
-    // automatically extend duration
-    adjustDuration(DURATION_TO_ADD_AUTOMATICALLY)
+    // automatically extend duration (don't invalidate sound windows)
+    adjustDuration(DURATION_TO_ADD_AUTOMATICALLY, true)
 
-    playSound('periodEnd')
+    // Get the next period type for the appropriate sound
+    const nextPeriodIndex = timerState.value.currentPeriodIndex + 1
+    const nextPeriod = timerState.value.periods[nextPeriodIndex]
+    const nextPeriodType = nextPeriod?.type || 'work'
+
+    playPeriodEndNotification(
+        nextPeriodType,
+        currentPeriod.value.periodDurationElapsed,
+        currentPeriod.value.periodUserIntendedDuration
+    )
     log('period automatically extended', timerState.value, 2)
 }
 
@@ -306,6 +342,9 @@ export const moveToNextPeriod = () => {
         },
     })
 
+    // Invalidate sound windows since we moved to next period
+    invalidateSoundWindows('moved to next period')
+
     log('finished current period', timerState.value, 10)
 }
 
@@ -340,6 +379,9 @@ export const moveToPreviousPeriod = () => {
     })
 
     updateCurrentPeriod()
+
+    // Invalidate sound windows since we moved to previous period
+    invalidateSoundWindows('moved to previous period')
 
     log('jumped to previous period and added some time to the duration', timerState.value, 13)
 }
@@ -423,6 +465,9 @@ export const addPeriod = () => {
             },
         })
 
+        // Invalidate sound windows since timestampStarted was reset
+        invalidateSoundWindows('period added - timestamp reset')
+
         // Reset the next period (originally current) to have 0 elapsed time and full duration
         updateTimerState({
             timerProperties: {
@@ -492,6 +537,9 @@ export const removePeriod = () => {
 export const handleTimerCompletion = () => {
     stopTick()
 
+    // Invalidate sound windows since timer is completing
+    invalidateSoundWindows('timer completion')
+
     // updates are not combined because they need to be run sequentially
 
     const { roundedDown } = roundDownToBaseMinute(currentPeriod.value.periodDurationElapsed)
@@ -517,7 +565,7 @@ export const handleTimerCompletion = () => {
     })
 
     log('finished last period', timerState.value, 1)
-    playSound('timerEnd')
+    playSound('timerFinished')
 }
 
 // helper function to update state
@@ -575,24 +623,24 @@ const updateTimerState = updateParams => {
     })
 }
 
-// checks if two numbers are divisible without remainder or almost
-const isDivisibleWithTolerance = (dividend, divisor, tolerance) => {
-    if (divisor === 0) return false // avoid division by zero
-    const remainder = Math.abs(dividend % divisor)
-    return remainder <= tolerance || Math.abs(remainder - divisor) <= tolerance
-}
-
-// plays sound around the time of each interval
-const playSoundEvery = interval => {
-    if (isDivisibleWithTolerance(currentPeriod.value.periodDurationElapsed, interval, 400)) {
-        playSound('tick')
-    }
-}
-
 // update function called by interval timer
 const tick = () => {
     updateCurrentPeriod()
-    playSoundEvery(12 * 60 * 1000)
+
+    // Play timer notifications if there's a current period
+    if (currentPeriod.value) {
+        const nextPeriodIndex = timerState.value.currentPeriodIndex + 1
+        const nextPeriod = timerState.value.periods[nextPeriodIndex]
+        const nextPeriodType = nextPeriod?.type || 'work'
+
+        playTimerNotifications(
+            currentPeriod.value.periodDurationElapsed,
+            currentPeriod.value.periodDuration,
+            timerState.value.timestampStarted,
+            currentPeriod.value.periodUserIntendedDuration,
+        )
+    }
+
     log('tick', timerState.value, 14)
 }
 

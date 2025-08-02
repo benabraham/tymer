@@ -3,11 +3,13 @@ import preact from '@preact/preset-vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import autoprefixer from 'autoprefixer'
 import csso from 'postcss-csso'
+import { soundPreloadPlugin } from './build-tools/sound-preloader.js'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     preact(),
+    soundPreloadPlugin(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: [

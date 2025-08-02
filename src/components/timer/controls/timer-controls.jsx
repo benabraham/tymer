@@ -14,9 +14,13 @@ import {
     moveToNextPeriod,
     moveToPreviousPeriod,
 } from '../../../lib/timer'
+import {unlockAudio} from '../../../lib/sounds'
 
 export const TimerControls = () => {
-    const handleStartPause = () => {
+    const handleStartPause = async () => {
+        // Unlock audio on first user interaction
+        await unlockAudio()
+
         if (timerState.value.runningIntervalId) pauseTimer()
         else if (timerState.value.timestampPaused) resumeTimer()
         else startTimer()
@@ -44,8 +48,8 @@ export const TimerControls = () => {
                     {timerState.value.runningIntervalId
                         ? '⏸️️'
                         : timerState.value.timestampPaused
-                          ? '▶️️'
-                          : '▶️️ Start'}
+                            ? '▶️️'
+                            : '▶️️ Start'}
                 </button>
 
                 <button

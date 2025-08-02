@@ -6,6 +6,7 @@ export const PeriodDetails = () => (
         <div class="tempPeriod">
             <div class="tempPeriod__data">Type</div>
             <div class="tempPeriod__data">Duration</div>
+            <div class="tempPeriod__data">User Intended</div>
             <div class="tempPeriod__data">Remaining</div>
             <div class="tempPeriod__data">Elapsed</div>
             <div class="tempPeriod__data">Finished</div>
@@ -21,6 +22,12 @@ export const PeriodDetails = () => (
             >
                 <div class="tempPeriod__data">{period.type}</div>
                 <div class="tempPeriod__data">{formatTime(period.periodDuration, false, true)}</div>
+                <div class="tempPeriod__data">
+                    {period.periodUserIntendedDuration === period.periodDuration 
+                        ? "same as duration" 
+                        : formatTime(period.periodUserIntendedDuration, false, true)
+                    }
+                </div>
                 <div class="tempPeriod__data">
                     {formatTime(period.periodDurationRemaining, false, true)}
                 </div>
