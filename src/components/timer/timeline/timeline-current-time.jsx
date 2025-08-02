@@ -19,6 +19,5 @@ export const TimelineCurrentTime = ({ period }) => (
                 )}
             </span>
         </div>
-        <div class="timeline__subinterval"></div>
     </>
 )
