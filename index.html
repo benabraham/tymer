@@ -10,12 +10,12 @@
             href="https://fonts.bunny.net/css2?family=Inter:ital,wght@0,100..900;1,100..900&display=swap"
             rel="stylesheet"
         />
-        <link rel="icon" type="image/png" href="/tymer/favicon-96x96.png" sizes="96x96" />
-        <link rel="icon" type="image/svg+xml" href="/tymer/favicon.svg" />
-        <link rel="shortcut icon" href="/tymer/favicon.ico" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/tymer/apple-touch-icon.png" />
+        <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="shortcut icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-title" content="Tymer" />
-        <link rel="manifest" href="/tymer/site.webmanifest" />
+        <link rel="manifest" href="/site.webmanifest" />
     </head>
     <body>
         <div id="app"></div>
@@ -30,6 +30,8 @@
                     .catch(error => {
                         console.log('SW registration failed:', error)
                     })
+            } else {
+                console.log('Service workers are not supported in this browser.')
             }
         </script>
     </body>
