@@ -50,13 +50,15 @@
         <script>
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker
-                    .register('/tymer/sw.js')
+                    .register('/sw.js')
                     .then(registration => {
                         console.log('SW registered:', registration)
                     })
                     .catch(error => {
                         console.log('SW registration failed:', error)
                     })
+            } else {
+                console.log('Service workers are not supported in this browser.')
             }
         </script>
     </body>
