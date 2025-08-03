@@ -1,6 +1,7 @@
 {
   "name": "Tymer",
   "short_name": "Tymer",
+  "start_url": "/tymer/",
   "icons": [
     {
       "src": "/tymer/web-app-manifest-192x192.png",
