@@ -31,7 +31,7 @@
                 <link rel="icon" type="image/svg+xml" href="/vite.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Tymer</title>
-        <link rel="manifest" href="/tymer/manifest.json" />
+        <link rel="manifest" href="/manifest.json" />
         <link
             href="https://fonts.bunny.net/css2?family=Inter:ital,wght@0,100..900;1,100..900&display=swap"
             rel="stylesheet"
@@ -50,7 +50,7 @@
         <script>
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker
-                    .register('/sw.js')
+                    .register('/tymer/sw.js')
                     .then(registration => {
                         console.log('SW registered:', registration)
                     })
