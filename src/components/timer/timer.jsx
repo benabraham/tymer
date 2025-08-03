@@ -18,8 +18,10 @@ export function Timer() {
         const period = currentPeriod.value
         
         if (isRunning && period) {
-            const remainingTime = formatTime(period.periodDurationRemaining, true)
-            document.title = `${remainingTime} ${period.type} | Tymer`
+            const formattedPeriodDurationRemaining = formatTime(period.periodDurationRemaining, true)
+            const formattedPeriodDuration = formatTime(period.periodDuration, true)
+            const periodTypeInitial = period.type.charAt(0).toUpperCase()
+            document.title = `${formattedPeriodDurationRemaining}/${formattedPeriodDuration} ${periodTypeInitial} | Tymer`
         } else {
             document.title = 'Tymer'
         }
