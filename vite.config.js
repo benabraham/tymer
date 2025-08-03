@@ -9,7 +9,6 @@ import { soundPreloadPlugin } from './build-tools/sound-preloader.js'
 export default defineConfig({
   plugins: [
     preact(),
-    soundPreloadPlugin(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: [
@@ -18,6 +17,13 @@ export default defineConfig({
         'masked-icon.svg',
         'icon-192x192.png',
         'icon-512x512.png',
+        'sounds/button.webm',
+        'sounds/timer-end.webm',
+        'sounds/alternatives/*.webm',
+        'sounds/elapsed/*.webm',
+        'sounds/overtime/*.webm',
+        'sounds/remaining/*.webm',
+        'sounds/timesup/*.webm',
       ],
       manifest: {
         name: 'Linear Pomodoro Timer',
