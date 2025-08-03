@@ -1,0 +1,22 @@
+{
+  "name": "Tymer",
+  "short_name": "Tymer",
+  "start_url": "/tymer/",
+  "icons": [
+    {
+      "src": "/tymer/web-app-manifest-192x192-alt.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/tymer/web-app-manifest-512x512-alt.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "theme_color": "#242424",
+  "background_color": "#242424",
+  "display": "standalone"
+}
