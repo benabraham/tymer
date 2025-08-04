@@ -24,13 +24,17 @@ export function Timer() {
             )
             const formattedPeriodDuration = formatTime(period.periodDuration, true)
             const periodTypeInitial = period.type.charAt(0).toUpperCase()
-            document.title = `${formattedPeriodDurationRemaining}/${formattedPeriodDuration} ${periodTypeInitial} | Tymer`
+            const isOvertime = period.periodDurationElapsed > period.periodUserIntendedDuration
+            const overtimeIndicator = isOvertime ? '‼ ' : ''
+            document.title = `${overtimeIndicator}${formattedPeriodDurationRemaining}/${formattedPeriodDuration} ${periodTypeInitial} | Tymer`
         } else {
             document.title = 'Tymer'
         }
     }, [
         timerState.value.runningIntervalId,
         currentPeriod.value?.periodDurationRemaining,
+        currentPeriod.value?.periodDurationElapsed,
+        currentPeriod.value?.periodUserIntendedDuration,
         currentPeriod.value?.type,
     ])
 
