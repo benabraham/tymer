@@ -1,7 +1,7 @@
-import { msToMinutes, formatTime } from '../../../lib/format'
-import { TimelineCurrentTime } from './timeline-current-time'
+import {msToMinutes, formatTime} from '../../../lib/format'
+import {TimelineCurrentTime} from './timeline-current-time'
 
-export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) => {
+export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) => {
     return (
         <div
             className={`
@@ -12,11 +12,18 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
             style={`--period-minutes: ${msToMinutes(period.periodDuration)};`}
         >
             <div className="timeline__text">
-                {period.type} {formatTime(period.periodDuration)}
-                {endTime && <span class="timeline__end-time">{endTime}</span>}
+                <div class="timeline__type">
+                    {period.type}
+                    {period.note && <div className="timeline__note">{period.note}</div>}
+                </div>
+                <div class="timeline__period-duration">
+                    {formatTime(period.periodDuration)}
+                </div>
+
+                {index === 0 && startTime && <div class="timeline__start-time">{startTime}</div>}
+                <div class="timeline__end-time">{endTime}</div>
             </div>
 
-            {index === 0 && startTime && <span class="timeline__start-time">{startTime}</span>}
 
             <div
                 className="timeline__elapsed-time"
@@ -25,7 +32,7 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                 {isActive && <TimelineCurrentTime period={period}/>}
             </div>
             {isActive && <div className="timeline__subinterval"></div>}
-            {isActive && period.periodDurationElapsed > period.periodUserIntendedDuration && 
+            {isActive && period.periodDurationElapsed > period.periodUserIntendedDuration &&
                 <div className="timeline__userintended"></div>
             }
         </div>

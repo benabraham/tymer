@@ -6,13 +6,14 @@ import {PERIOD_CONFIG, UI_UPDATE_INTERVAL, DURATION_TO_ADD_AUTOMATICALLY} from '
 
 
 // function to create a period from a period config
-const createPeriod = ({duration, type}) => ({
+const createPeriod = ({duration, type, note}) => ({
     periodDuration: duration,
     periodDurationElapsed: 0,
     periodDurationRemaining: duration, // initialize with full duration
     periodHasFinished: false,
     periodUserIntendedDuration: duration, // track user's intended duration (excludes automatic extensions)
     type,
+    note,
 })
 
 // default timer configuration
