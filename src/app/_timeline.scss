@@ -93,6 +93,15 @@
 
 .timeline__end-time {
   grid-column-end: -1;
+  position: absolute;
+  top: 100%;
+  right: 0%;
+  translate: 0 30%;
+  opacity: 50%;
+}
+
+.timeline__period:not(:last-child) .timeline__end-time {
+  translate: 50% 30%;
 }
 
 .timeline__end-time,
