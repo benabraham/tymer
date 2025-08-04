@@ -9,8 +9,8 @@ import {
     roundDownToBaseMinute,
     moveToNextPeriod,
     handleTimerCompletion,
-    PERIOD_CONFIG,
 } from './timer'
+import { PERIOD_CONFIG } from './config'
 
 // Mock localStorage
 const localStorageMock = {
