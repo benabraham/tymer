@@ -628,6 +628,33 @@ export const removePeriodByIndex = periodIndex => {
     log('removed period by index', { periodIndex, newLength: newPeriods.length }, 5)
 }
 
+// add a new period at a specific index
+export const addPeriodAtIndex = (
+    afterIndex,
+    periodConfig = { duration: 24 * 60 * 1000, type: 'fun', note: '' },
+) => {
+    const newPeriod = createPeriod(periodConfig)
+    const newPeriods = [...timerState.value.periods]
+
+    // Insert after the specified index
+    newPeriods.splice(afterIndex + 1, 0, newPeriod)
+
+    // Adjust current period index if needed
+    let newCurrentPeriodIndex = timerState.value.currentPeriodIndex
+    if (newCurrentPeriodIndex !== null && newCurrentPeriodIndex > afterIndex) {
+        newCurrentPeriodIndex = newCurrentPeriodIndex + 1
+    }
+
+    updateTimerState({
+        timerProperties: {
+            periods: newPeriods,
+            currentPeriodIndex: newCurrentPeriodIndex,
+        },
+    })
+
+    log('added period at index', { afterIndex, newLength: newPeriods.length }, 5)
+}
+
 // helper function to update state
 const updateTimerState = updateParams => {
     const {
