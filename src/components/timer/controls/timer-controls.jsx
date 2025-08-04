@@ -7,6 +7,7 @@ import {
     timerDuration,
     timerOnLastPeriod,
     shouldGoToNextPeriod,
+    periodsModifiedFromInitial,
     handleTimerCompletion,
     pauseTimer,
     resumeTimer,
@@ -15,7 +16,7 @@ import {
     moveToNextPeriod,
     moveToPreviousPeriod,
 } from '../../../lib/timer'
-import {unlockAudio} from '../../../lib/sounds'
+import { unlockAudio } from '../../../lib/sounds'
 
 export const TimerControls = () => {
     const handleStartPause = async () => {
@@ -33,10 +34,12 @@ export const TimerControls = () => {
                 <button
                     onClick={resetTimer}
                     disabled={
-                        (initialState.timerDuration === timerDuration.value
+                        (!periodsModifiedFromInitial.value
                             && !timerState.value.timestampStarted
                             && timerDurationRemaining.value !== 0)
-                        || (timerState.value.currentPeriodIndex === null && !timerHasFinished.value)
+                        || (timerState.value.currentPeriodIndex === null
+                            && !timerHasFinished.value
+                            && !periodsModifiedFromInitial.value)
                     }
                     class={timerHasFinished.value ? 'highlighted' : ''}
                 >
@@ -49,8 +52,8 @@ export const TimerControls = () => {
                     {timerState.value.runningIntervalId
                         ? '⏸️️'
                         : timerState.value.timestampPaused
-                            ? '▶️️'
-                            : '▶️️ Start'}
+                          ? '▶️️'
+                          : '▶️️ Start'}
                 </button>
 
                 <button
@@ -61,9 +64,7 @@ export const TimerControls = () => {
                         || timerDurationElapsed < 1 * 60 * 1000
                     }
                     class={
-                        timerOnLastPeriod.value && shouldGoToNextPeriod.value
-                            ? 'highlighted'
-                            : ''
+                        timerOnLastPeriod.value && shouldGoToNextPeriod.value ? 'highlighted' : ''
                     }
                 >
                     🏁 Finish
@@ -89,9 +90,7 @@ export const TimerControls = () => {
                         || timerOnLastPeriod.value
                     }
                     class={
-                        !timerOnLastPeriod.value && shouldGoToNextPeriod.value
-                            ? 'highlighted'
-                            : ''
+                        !timerOnLastPeriod.value && shouldGoToNextPeriod.value ? 'highlighted' : ''
                     }
                 >
                     ⏭️

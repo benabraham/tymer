@@ -6,20 +6,22 @@ let audioUnlocked = false
 // Function to unlock audio context on user interaction
 export const unlockAudio = async () => {
     if (audioUnlocked) return true
-    
+
     try {
         // Try to unlock by creating and playing a silent sound
         const unlockSound = new Howl({
-            src: ['data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA='],
+            src: [
+                'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=',
+            ],
             volume: 0,
-            html5: false
+            html5: false,
         })
-        
+
         const playPromise = unlockSound.play()
         if (playPromise) {
             await playPromise
         }
-        
+
         audioUnlocked = true
         console.log('🔊 Audio context unlocked successfully')
         return true
@@ -84,10 +86,10 @@ const sounds = Object.fromEntries(
         Object.fromEntries(
             Object.entries(setConfig).map(([key, path]) => [
                 key,
-                new Howl({ src: [path], loop: false })
-            ])
-        )
-    ])
+                new Howl({ src: [path], loop: false }),
+            ]),
+        ),
+    ]),
 )
 
 // Play sound from specific set
@@ -98,10 +100,10 @@ const playFromSet = async (setName, soundKey) => {
         if (!audioUnlocked) {
             await unlockAudio()
         }
-        
+
         Howler.stop()
         sound.play()
-        
+
         // Add error handling for Howler
         sound.on('loaderror', (id, error) => {
             console.error(`Failed to load sound ${setName}/${soundKey}:`, error)
@@ -109,7 +111,7 @@ const playFromSet = async (setName, soundKey) => {
         sound.on('playerror', (id, error) => {
             console.error(`Failed to play sound ${setName}/${soundKey}:`, error)
         })
-        
+
         return true
     } else {
         console.error(`Sound not found: ${setName}/${soundKey}`)
@@ -130,10 +132,10 @@ let currentPeriodId = null // Track period changes to invalidate windows
 
 // Priority levels for conflict resolution (higher number = higher priority)
 const SOUND_PRIORITIES = {
-    overtime: 4,    // Set 4: Highest priority when in overtime
-    periodEnd: 3,   // Set 3: Period end announcements
-    remaining: 2,   // Set 2: Remaining time warnings
-    elapsed: 1,     // Set 1: Lowest priority
+    overtime: 4, // Set 4: Highest priority when in overtime
+    periodEnd: 3, // Set 3: Period end announcements
+    remaining: 2, // Set 2: Remaining time warnings
+    elapsed: 1, // Set 1: Lowest priority
 }
 
 // Helper to check if we're within the collection window (5 seconds before target)
@@ -160,7 +162,7 @@ const addSoundToWindow = (targetTime, soundData) => {
 }
 
 // Resolve conflicts and play the highest priority sound
-const resolveAndPlaySounds = (targetTime) => {
+const resolveAndPlaySounds = targetTime => {
     const window = activeCollectionWindows.get(targetTime)
     if (!window || window.resolved || window.sounds.length === 0) return
 
@@ -173,8 +175,11 @@ const resolveAndPlaySounds = (targetTime) => {
 
     // Play the highest priority sound
     const winningSound = sortedSounds[0]
-    console.log(`🔊 Playing ${winningSound.type} sound:`, winningSound.soundKey,
-                `(beat ${sortedSounds.length - 1} other sounds)`)
+    console.log(
+        `🔊 Playing ${winningSound.type} sound:`,
+        winningSound.soundKey,
+        `(beat ${sortedSounds.length - 1} other sounds)`,
+    )
 
     playFromSet(winningSound.setName, winningSound.soundKey)
     lastPlayedSound = Date.now()
@@ -186,7 +191,7 @@ const resolveAndPlaySounds = (targetTime) => {
 }
 
 // Clean up old windows that were never resolved
-const cleanupOldWindows = (currentTime) => {
+const cleanupOldWindows = currentTime => {
     for (const [targetTime, window] of activeCollectionWindows.entries()) {
         // Remove unresolved windows that are past their time
         if (!window.resolved && currentTime > targetTime + COLLECTION_WINDOW) {
@@ -236,7 +241,7 @@ const scheduleElapsedTimeNotifications = (periodElapsed, periodStartTime) => {
     const currentTime = Date.now()
 
     for (const minutes of intervals) {
-        const targetTime = periodStartTime + (minutes * 60 * 1000)
+        const targetTime = periodStartTime + minutes * 60 * 1000
 
         if (isInCollectionWindow(currentTime, targetTime)) {
             addSoundToWindow(targetTime, {
@@ -285,14 +290,19 @@ const scheduleRemainingTimeNotifications = (periodDuration, periodStartTime) => 
 }
 
 // Set 3: Period end announcements based on next period type
-export const playPeriodEndNotification = (nextPeriodType, periodElapsed, periodUserIntendedDuration) => {
+export const playPeriodEndNotification = (
+    nextPeriodType,
+    periodElapsed,
+    periodUserIntendedDuration,
+) => {
     const soundKey = nextPeriodType || 'work'
     const currentTime = Date.now()
 
     // Only play period-end sound when we first reach the user intended duration
     // Check if we're within 1 minute of the user intended duration (first automatic extension)
     const timeSinceUserIntendedEnd = periodElapsed - periodUserIntendedDuration
-    const isFirstTimeReachingEnd = timeSinceUserIntendedEnd >= 0 && timeSinceUserIntendedEnd <= 60000 // 1 minute
+    const isFirstTimeReachingEnd =
+        timeSinceUserIntendedEnd >= 0 && timeSinceUserIntendedEnd <= 60000 // 1 minute
 
     if (isFirstTimeReachingEnd) {
         // Period end sounds have highest priority and play immediately
@@ -314,12 +324,15 @@ export const playPeriodEndNotification = (nextPeriodType, periodElapsed, periodU
 const scheduleOvertimeNotifications = (overtimeElapsed, overtimeStartTime) => {
     const intervals = [6, 12, 18, 24, 30, 36, 42, 48] // minutes
     const currentTime = Date.now()
-    
-    console.log(`🔍 Scheduling overtime: ${Math.floor(overtimeElapsed / 60000)}min elapsed, checking intervals:`, intervals)
+
+    console.log(
+        `🔍 Scheduling overtime: ${Math.floor(overtimeElapsed / 60000)}min elapsed, checking intervals:`,
+        intervals,
+    )
 
     // Check 6-minute intervals
     for (const minutes of intervals) {
-        const targetTime = overtimeStartTime + (minutes * 60 * 1000)
+        const targetTime = overtimeStartTime + minutes * 60 * 1000
 
         if (isInCollectionWindow(currentTime, targetTime)) {
             addSoundToWindow(targetTime, {
@@ -336,7 +349,7 @@ const scheduleOvertimeNotifications = (overtimeElapsed, overtimeStartTime) => {
     }
 
     // Check hour milestone
-    const oneHourTarget = overtimeStartTime + (60 * 60 * 1000)
+    const oneHourTarget = overtimeStartTime + 60 * 60 * 1000
     if (isInCollectionWindow(currentTime, oneHourTarget)) {
         addSoundToWindow(oneHourTarget, {
             type: 'overtime',
@@ -352,10 +365,15 @@ const scheduleOvertimeNotifications = (overtimeElapsed, overtimeStartTime) => {
 }
 
 // Main notification coordinator with windowed scheduling
-export const playTimerNotifications = (periodElapsed, periodDuration, timestampStarted, periodUserIntendedDuration) => {
+export const playTimerNotifications = (
+    periodElapsed,
+    periodDuration,
+    timestampStarted,
+    periodUserIntendedDuration,
+) => {
     const currentTime = Date.now()
     const periodStartTime = timestampStarted
-    
+
     // Use user intended duration for sound calculations, fallback to actual duration if not provided
     const userIntendedDuration = periodUserIntendedDuration || periodDuration
     const isOvertime = periodElapsed > userIntendedDuration
@@ -382,6 +400,6 @@ export const playTimerNotifications = (periodElapsed, periodDuration, timestampS
 }
 
 // Export function for manual window invalidation (called by timer when timing changes)
-export const invalidateSoundWindows = (reason) => {
+export const invalidateSoundWindows = reason => {
     invalidateAllWindows(reason)
 }

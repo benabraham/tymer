@@ -16,16 +16,23 @@ export function Timer() {
     useEffect(() => {
         const isRunning = timerState.value.runningIntervalId !== null
         const period = currentPeriod.value
-        
+
         if (isRunning && period) {
-            const formattedPeriodDurationRemaining = formatTime(period.periodDurationRemaining, true)
+            const formattedPeriodDurationRemaining = formatTime(
+                period.periodDurationRemaining,
+                true,
+            )
             const formattedPeriodDuration = formatTime(period.periodDuration, true)
             const periodTypeInitial = period.type.charAt(0).toUpperCase()
             document.title = `${formattedPeriodDurationRemaining}/${formattedPeriodDuration} ${periodTypeInitial} | Tymer`
         } else {
             document.title = 'Tymer'
         }
-    }, [timerState.value.runningIntervalId, currentPeriod.value?.periodDurationRemaining, currentPeriod.value?.type])
+    }, [
+        timerState.value.runningIntervalId,
+        currentPeriod.value?.periodDurationRemaining,
+        currentPeriod.value?.type,
+    ])
 
     return (
         <>

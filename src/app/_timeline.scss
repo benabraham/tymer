@@ -90,9 +90,11 @@
 .timeline__note {
   font-weight: normal;
 }
-.timeline__end-time{
+
+.timeline__end-time {
   grid-column-end: -1;
 }
+
 .timeline__end-time,
 .timeline__start-time {
   font-size: 0.625rem;
@@ -154,4 +156,90 @@
   grid-column-start: 1;
   grid-column-end: 48;
   background-color: #000000;
+}
+
+/* Editing styles */
+.timeline__period--editable {
+  cursor: pointer;
+}
+
+.timeline__period--editable:hover {
+  outline: 4px solid rgb(255 255 255 / 90%);
+  z-index: 10;
+}
+
+.timeline__period--editing {
+  z-index: 10;
+  outline: 4px solid #ffffff;
+}
+
+.timeline__edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.timeline__edit-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.timeline__edit-type {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  padding: 0.25rem;
+  font-size: 0.75rem;
+  color: #333;
+  min-width: 60px;
+}
+
+.timeline__edit-duration {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  padding: 0.25rem;
+  font-size: 0.75rem;
+  color: #333;
+  width: 50px;
+  text-align: center;
+}
+
+.timeline__duration-unit {
+  font-size: 0.75rem;
+  color: white;
+}
+
+.timeline__edit-note {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  padding: 0.25rem;
+  font-size: 0.75rem;
+  color: #333;
+  flex: 1;
+  min-width: 100px;
+}
+
+.timeline__edit-delete {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  padding: 0.25rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  color: #333;
+  min-width: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.timeline__edit-delete:hover {
+  background: rgba(255, 0, 0, 0.8);
+  color: white;
 }

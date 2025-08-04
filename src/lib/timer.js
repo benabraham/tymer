@@ -1,12 +1,16 @@
-import {signal, effect, computed, batch} from '@preact/signals'
-import {saveState, loadState} from './storage'
-import {playSound, playTimerNotifications, playPeriodEndNotification, invalidateSoundWindows} from './sounds'
-import {log} from './log.js'
-import {PERIOD_CONFIG, UI_UPDATE_INTERVAL, DURATION_TO_ADD_AUTOMATICALLY} from './config.js'
-
+import { signal, effect, computed, batch } from '@preact/signals'
+import { saveState, loadState } from './storage'
+import {
+    playSound,
+    playTimerNotifications,
+    playPeriodEndNotification,
+    invalidateSoundWindows,
+} from './sounds'
+import { log } from './log.js'
+import { PERIOD_CONFIG, UI_UPDATE_INTERVAL, DURATION_TO_ADD_AUTOMATICALLY } from './config.js'
 
 // function to create a period from a period config
-const createPeriod = ({duration, type, note}) => ({
+const createPeriod = ({ duration, type, note }) => ({
     periodDuration: duration,
     periodDurationElapsed: 0,
     periodDurationRemaining: duration, // initialize with full duration
@@ -30,11 +34,11 @@ export const roundDownToBaseMinute = timeInMs => {
     const oneMinute = 60 * 1000
     const roundedDown = Math.floor(timeInMs / oneMinute) * oneMinute
     const remainder = timeInMs - roundedDown
-    return {roundedDown, remainder}
+    return { roundedDown, remainder }
 }
 
 // timer state signal, initialized from localStorage or defaults
-export const timerState = signal(saveState(loadState(initialState)))
+export const timerState = signal(loadState(initialState))
 
 // computed signals
 export const timerHasFinished = computed(
@@ -56,9 +60,28 @@ export const timerDurationElapsed = computed(() =>
 export const timerDurationRemaining = computed(() =>
     timerState.value.periods.reduce((sum, period) => sum + period.periodDurationRemaining, 0),
 )
-export const shouldGoToNextPeriod = computed(() =>
-    currentPeriod.value && currentPeriod.value.periodDuration !== currentPeriod.value.periodUserIntendedDuration
+export const shouldGoToNextPeriod = computed(
+    () =>
+        currentPeriod.value
+        && currentPeriod.value.periodDuration !== currentPeriod.value.periodUserIntendedDuration,
 )
+
+// check if periods have been modified from initial configuration
+export const periodsModifiedFromInitial = computed(() => {
+    const currentPeriods = timerState.value.periods
+    const initialPeriods = initialState.periods
+
+    if (currentPeriods.length !== initialPeriods.length) return true
+
+    return currentPeriods.some((period, index) => {
+        const initialPeriod = initialPeriods[index]
+        return (
+            period.type !== initialPeriod.type
+            || period.note !== initialPeriod.note
+            || period.periodDuration !== initialPeriod.periodDuration
+        )
+    })
+})
 
 // prepares timer for use, continuing an running timer or prepare a new one
 export const initializeTimer = () => {
@@ -73,15 +96,36 @@ export const initializeTimer = () => {
         updateCurrentPeriod()
         startTick()
     } else {
-        // prepare a new timer
-        resetTimer()
+        // prepare a new timer (reset runtime state but preserve period customizations)
+        initializeTimerState()
     }
+}
+
+// initialize timer state preserving period customizations but resetting runtime state
+const initializeTimerState = () => {
+    stopTick()
+
+    // Clear all sound windows before resetting state
+    invalidateSoundWindows('timer initialized')
+
+    // Reset only runtime properties, preserve existing periods
+    updateTimerState({
+        timerProperties: {
+            currentPeriodIndex: null,
+            runningIntervalId: null,
+            timestampPaused: null,
+            timestampStarted: null,
+        },
+    })
+
+    console.clear()
+    log('timer initialized (periods preserved)', timerState.value, 7)
 }
 
 // starts repeating the tick function to update UI periodically
 const startTick = () => {
     updateTimerState({
-        timerProperties: {runningIntervalId: setInterval(tick, UI_UPDATE_INTERVAL)},
+        timerProperties: { runningIntervalId: setInterval(tick, UI_UPDATE_INTERVAL) },
     })
 }
 
@@ -89,7 +133,7 @@ const startTick = () => {
 const stopTick = () => {
     clearInterval(timerState.value.runningIntervalId)
     updateTimerState({
-        timerProperties: {runningIntervalId: null},
+        timerProperties: { runningIntervalId: null },
     })
 }
 
@@ -146,7 +190,7 @@ export const pauseTimer = () => {
     playSound('button')
 
     updateTimerState({
-        timerProperties: {timestampPaused: Date.now()},
+        timerProperties: { timestampPaused: Date.now() },
     })
 
     stopTick()
@@ -166,7 +210,7 @@ export const resetTimer = () => {
     // Clear all sound windows before resetting state
     invalidateSoundWindows('timer reset')
 
-    timerState.value = {...initialState}
+    timerState.value = { ...initialState }
 
     console.clear()
     log('timer reset', timerState.value, 7)
@@ -263,7 +307,7 @@ const handlePeriodElapsed = () => {
     playPeriodEndNotification(
         nextPeriodType,
         currentPeriod.value.periodDurationElapsed,
-        currentPeriod.value.periodUserIntendedDuration
+        currentPeriod.value.periodUserIntendedDuration,
     )
     log('period automatically extended', timerState.value, 2)
 }
@@ -274,7 +318,7 @@ const updateCurrentPeriod = () => {
     if (!currentPeriod.value) return
 
     // calculate period times
-    const {periodDurationElapsed, periodDurationRemaining} = calculatePeriodTimes(
+    const { periodDurationElapsed, periodDurationRemaining } = calculatePeriodTimes(
         timerState.value.timestampStarted,
         timerState.value.timestampPaused,
         currentPeriod.value.periodDuration,
@@ -300,7 +344,7 @@ export const moveToNextPeriod = () => {
     const nextPeriodIndex = timerState.value.currentPeriodIndex + 1
     const nextPeriod = timerState.value.periods[nextPeriodIndex]
 
-    const {roundedDown, remainder} = roundDownToBaseMinute(
+    const { roundedDown, remainder } = roundDownToBaseMinute(
         currentPeriod.value.periodDurationElapsed,
     )
 
@@ -451,12 +495,12 @@ export const addPeriod = () => {
                     index !== currentIndex + 1
                         ? period
                         : {
-                            ...period,
-                            periodDuration: currentPeriodOriginalDuration,
-                            periodDurationElapsed: 0,
-                            periodDurationRemaining: currentPeriodOriginalDuration,
-                            periodHasFinished: false,
-                        },
+                              ...period,
+                              periodDuration: currentPeriodOriginalDuration,
+                              periodDurationElapsed: 0,
+                              periodDurationRemaining: currentPeriodOriginalDuration,
+                              periodHasFinished: false,
+                          },
                 ),
             },
         })
@@ -518,7 +562,7 @@ export const handleTimerCompletion = () => {
 
     // updates are not combined because they need to be run sequentially
 
-    const {roundedDown} = roundDownToBaseMinute(currentPeriod.value.periodDurationElapsed)
+    const { roundedDown } = roundDownToBaseMinute(currentPeriod.value.periodDurationElapsed)
 
     updateTimerState({
         currentPeriodProperties: {
@@ -543,6 +587,47 @@ export const handleTimerCompletion = () => {
     playSound('timerFinished')
 }
 
+// update a specific period by index
+export const updatePeriod = (periodIndex, updates) => {
+    const newPeriods = timerState.value.periods.map((period, index) =>
+        index === periodIndex ? { ...period, ...updates } : period,
+    )
+
+    updateTimerState({
+        timerProperties: {
+            periods: newPeriods,
+        },
+    })
+
+    log('updated period', { periodIndex, updates }, 5)
+}
+
+// remove a specific period by index
+export const removePeriodByIndex = periodIndex => {
+    if (timerState.value.periods.length <= 1) return // Prevent removing the last period
+    if (periodIndex < 0 || periodIndex >= timerState.value.periods.length) return // Invalid index
+
+    const newPeriods = timerState.value.periods.filter((_, index) => index !== periodIndex)
+
+    // Adjust current period index if needed
+    let newCurrentPeriodIndex = timerState.value.currentPeriodIndex
+    if (newCurrentPeriodIndex !== null && newCurrentPeriodIndex > periodIndex) {
+        newCurrentPeriodIndex = newCurrentPeriodIndex - 1
+    } else if (newCurrentPeriodIndex === periodIndex) {
+        // If we're removing the current period, set to null (no active period)
+        newCurrentPeriodIndex = null
+    }
+
+    updateTimerState({
+        timerProperties: {
+            periods: newPeriods,
+            currentPeriodIndex: newCurrentPeriodIndex,
+        },
+    })
+
+    log('removed period by index', { periodIndex, newLength: newPeriods.length }, 5)
+}
+
 // helper function to update state
 const updateTimerState = updateParams => {
     const {
@@ -561,16 +646,18 @@ const updateTimerState = updateParams => {
                 'Tried to update the previous period but there is none. Aborting. State not changed.',
             )
             return
-        } else {
+        }
+
+        if (Object.keys(previousPeriodProperties).length > 0) {
             timerState.value = {
                 ...timerState.value,
                 periods: timerState.value.periods.map((period, index) =>
                     index !== timerState.value.currentPeriodIndex - 1
                         ? period
                         : {
-                            ...period,
-                            ...previousPeriodProperties,
-                        },
+                              ...period,
+                              ...previousPeriodProperties,
+                          },
                 ),
             }
         }
@@ -582,9 +669,9 @@ const updateTimerState = updateParams => {
                     index !== timerState.value.currentPeriodIndex
                         ? period
                         : {
-                            ...period,
-                            ...currentPeriodProperties,
-                        },
+                              ...period,
+                              ...currentPeriodProperties,
+                          },
                 ),
             }
         }
