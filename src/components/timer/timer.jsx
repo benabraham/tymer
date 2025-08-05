@@ -18,15 +18,25 @@ export function Timer() {
         const period = currentPeriod.value
 
         if (isRunning && period) {
-            const formattedPeriodDurationRemaining = formatTime(
-                period.periodDurationRemaining,
-                true,
-            )
-            const formattedPeriodDuration = formatTime(period.periodDuration, true)
+            // Check if both times are under 60 minutes to determine format
+            const bothUnderOneHour = period.periodDurationRemaining < 60 * 60 * 1000 && period.periodDuration < 60 * 60 * 1000
+
+            let formattedPeriodDurationElapsed, periodUserIntendedDuration
+
+            if (bothUnderOneHour) {
+                // Show only minutes when both are under 60 minutes
+                formattedPeriodDurationElapsed = Math.ceil(period.periodDurationElapsed / (60 * 1000)).toString()
+                periodUserIntendedDuration = Math.ceil(period.periodUserIntendedDuration / (60 * 1000)).toString()
+            } else {
+                // Use full hours:minutes format
+                formattedPeriodDurationElapsed = formatTime(period.periodDurationElapsed, true)
+                periodUserIntendedDuration = formatTime(period.periodUserIntendedDuration, true)
+            }
+
             const periodTypeInitial = period.type.charAt(0).toUpperCase()
             const isOvertime = period.periodDurationElapsed > period.periodUserIntendedDuration
-            const overtimeIndicator = isOvertime ? '‼ ' : ''
-            document.title = `${overtimeIndicator}${formattedPeriodDurationRemaining}/${formattedPeriodDuration} ${periodTypeInitial} | Tymer`
+            const overtimeIndicator = isOvertime ? '🛑 ' : ''
+            document.title = `${periodTypeInitial} ${overtimeIndicator}${formattedPeriodDurationElapsed}/${periodUserIntendedDuration}`
         } else {
             document.title = 'Tymer'
         }
@@ -40,7 +50,7 @@ export function Timer() {
 
     return (
         <>
-            <TimerControls />
+            <TimerControls />ove
             <Timeline />
             <PeriodControls />
             <Stats />
