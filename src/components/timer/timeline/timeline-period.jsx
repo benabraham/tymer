@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from 'preact/hooks'
-import { msToMinutes, formatTime } from '../../../lib/format'
+import {useState, useRef, useEffect, useCallback} from 'preact/hooks'
+import {msToMinutes, formatTime} from '../../../lib/format'
 import {
     updatePeriod,
     pauseTimer,
@@ -8,9 +8,9 @@ import {
     removePeriodByIndex,
     addPeriodAtIndex,
 } from '../../../lib/timer'
-import { TimelineCurrentTime } from './timeline-current-time'
+import {TimelineCurrentTime} from './timeline-current-time'
 
-export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) => {
+export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) => {
     const [isEditing, setIsEditing] = useState(false)
     const [wasTimerRunning, setWasTimerRunning] = useState(false)
     const [originalValues, setOriginalValues] = useState(null)
@@ -67,7 +67,7 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
 
     // Update timer state immediately when values change
     const handleTypeChange = newType => {
-        updatePeriod(index, { type: newType })
+        updatePeriod(index, {type: newType})
     }
 
     const handleDurationChange = newDuration => {
@@ -94,7 +94,7 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
     }
 
     const handleNoteChange = newNote => {
-        updatePeriod(index, { note: newNote })
+        updatePeriod(index, {note: newNote})
     }
 
     const handleDelete = () => {
@@ -156,33 +156,27 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
             >
                 <div class="timeline__text timeline__edit-form">
                     <div class="timeline__edit-row">
-                        <select
-                            value={period.type}
-                            onChange={e => handleTypeChange(e.target.value)}
-                            class="timeline__edit-type"
-                        >
+                        <div class="timeline__edit-type-group">
                             {availableTypes.map(type => (
-                                <option key={type} value={type}>
+                                <button
+                                    key={type}
+                                    type="button"
+                                    className={`timeline__edit-type-button ${period.type === type ? 'timeline__edit-type-button--active' : ''}`}
+                                    onClick={() => handleTypeChange(type)}
+                                >
                                     {type}
-                                </option>
+                                </button>
                             ))}
-                        </select>
+                        </div>
                         <input
                             type="number"
                             value={Math.round(period.periodDuration / (60 * 1000))}
                             onChange={e => handleDurationChange(parseInt(e.target.value) || 1)}
-                            class="timeline__edit-duration"
+                            className="timeline__edit-duration"
                             min="1"
                             max="999"
                         />
-                        <button
-                            onClick={handleDelete}
-                            class="timeline__edit-delete"
-                            title="Delete period"
-                            disabled={isActive && timerState.value.periods.length === 1}
-                        >
-                            🗑️
-                        </button>
+
                     </div>
                     <div class="timeline__edit-row">
                         <input
@@ -192,6 +186,15 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                             placeholder="Note…"
                             class="timeline__edit-note"
                         />
+                        <button
+                            onClick={handleDelete}
+                            className="timeline__edit-delete"
+                            title="Delete period"
+                            disabled={isActive && timerState.value.periods.length === 1}
+                        >
+                            🗑️
+                        </button>
+
                     </div>
                 </div>
             </div>
@@ -206,7 +209,7 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                     ${isActive ? 'timeline__period--active' : ''}
                     timeline__period--editable
                 `}
-            style={`--period-minutes: ${msToMinutes(period.periodDuration)};`}
+            style={`--period-minutes: ${msToMinutes(period.periodDuration)};--userintended-minutes: ${msToMinutes(period.periodUserIntendedDuration)};`}
             onDblClick={handleDoubleClick}
         >
             <div class="timeline__text">
@@ -224,7 +227,7 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                 class="timeline__elapsed-time"
                 style={`--elapsed-minutes: ${msToMinutes(period.periodDurationElapsed)};`}
             >
-                {isActive && <TimelineCurrentTime period={period} />}
+                {isActive && <TimelineCurrentTime period={period}/>}
             </div>
             {isActive && <div class="timeline__subinterval"></div>}
             {isActive && period.periodDurationElapsed > period.periodUserIntendedDuration && (
