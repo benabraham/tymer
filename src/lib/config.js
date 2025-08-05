@@ -1,6 +1,7 @@
 // Timer configuration constants
 export const UI_UPDATE_INTERVAL = 1000 // time between timer updates in milliseconds
 export const DURATION_TO_ADD_AUTOMATICALLY = 1 * 60 * 1000
+export const COLLECTION_WINDOW = 1500 // seconds before and after target time
 
 // Timer period configuration
 export const PERIOD_CONFIG = [

@@ -1,4 +1,5 @@
 import { Howl, Howler } from 'howler'
+import { COLLECTION_WINDOW } from './config.js'
 
 // Audio context unlock state
 let audioUnlocked = false
@@ -125,7 +126,6 @@ export const playSound = soundName => {
 }
 
 // Sound scheduling system with collection windows
-const COLLECTION_WINDOW = 3000 // 3 seconds before target time
 let lastPlayedSound = 0
 let activeCollectionWindows = new Map() // targetTime -> { sounds: [], resolved: boolean }
 let currentPeriodId = null // Track period changes to invalidate windows
@@ -138,15 +138,15 @@ const SOUND_PRIORITIES = {
     elapsed: 1, // Set 1: Lowest priority
 }
 
-// Helper to check if we're within the collection window (5 seconds before target)
+// Helper to check if we're within the collection window (before AND after target)
 const isInCollectionWindow = (currentTime, targetTime) => {
-    const timeUntilTarget = targetTime - currentTime
-    return timeUntilTarget <= COLLECTION_WINDOW && timeUntilTarget >= 0
+    const timeDifference = Math.abs(currentTime - targetTime)
+    return timeDifference <= COLLECTION_WINDOW
 }
 
-// Helper to check if target time has been reached
-const hasTargetTimePassed = (currentTime, targetTime) => {
-    return currentTime >= targetTime
+// Helper to check if collection window has closed (sound should be played)
+const shouldPlaySound = (currentTime, targetTime) => {
+    return currentTime >= targetTime + COLLECTION_WINDOW
 }
 
 // Add a sound to the collection window
@@ -193,12 +193,12 @@ const resolveAndPlaySounds = targetTime => {
 // Clean up old windows that were never resolved
 const cleanupOldWindows = currentTime => {
     for (const [targetTime, window] of activeCollectionWindows.entries()) {
-        // Remove unresolved windows that are past their time
-        if (!window.resolved && currentTime > targetTime + COLLECTION_WINDOW) {
+        // Remove unresolved windows that are well past their collection window
+        if (!window.resolved && currentTime > targetTime + COLLECTION_WINDOW * 2) {
             activeCollectionWindows.delete(targetTime)
         }
         // Remove resolved windows after 10 seconds for debugging
-        else if (window.resolved && currentTime > targetTime + 10000) {
+        else if (window.resolved && currentTime > targetTime + COLLECTION_WINDOW + 10000) {
             activeCollectionWindows.delete(targetTime)
         }
     }
@@ -252,7 +252,7 @@ const scheduleElapsedTimeNotifications = (periodElapsed, periodStartTime) => {
             })
         }
 
-        if (hasTargetTimePassed(currentTime, targetTime)) {
+        if (shouldPlaySound(currentTime, targetTime)) {
             resolveAndPlaySounds(targetTime)
         }
     }
@@ -283,7 +283,7 @@ const scheduleRemainingTimeNotifications = (periodDuration, periodStartTime) => 
             })
         }
 
-        if (hasTargetTimePassed(currentTime, targetTime)) {
+        if (shouldPlaySound(currentTime, targetTime)) {
             resolveAndPlaySounds(targetTime)
         }
     }
@@ -343,7 +343,7 @@ const scheduleOvertimeNotifications = (overtimeElapsed, overtimeStartTime) => {
             })
         }
 
-        if (hasTargetTimePassed(currentTime, targetTime)) {
+        if (shouldPlaySound(currentTime, targetTime)) {
             resolveAndPlaySounds(targetTime)
         }
     }
@@ -359,7 +359,7 @@ const scheduleOvertimeNotifications = (overtimeElapsed, overtimeStartTime) => {
         })
     }
 
-    if (hasTargetTimePassed(currentTime, oneHourTarget)) {
+    if (shouldPlaySound(currentTime, oneHourTarget)) {
         resolveAndPlaySounds(oneHourTarget)
     }
 }
