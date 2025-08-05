@@ -1,5 +1,5 @@
-import {useState, useRef, useEffect, useCallback} from 'preact/hooks'
-import {msToMinutes, formatTime} from '../../../lib/format'
+import { useState, useRef, useEffect, useCallback } from 'preact/hooks'
+import { msToMinutes, formatTime } from '../../../lib/format'
 import {
     updatePeriod,
     pauseTimer,
@@ -8,9 +8,9 @@ import {
     removePeriodByIndex,
     addPeriodAtIndex,
 } from '../../../lib/timer'
-import {TimelineCurrentTime} from './timeline-current-time'
+import { TimelineCurrentTime } from './timeline-current-time'
 
-export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) => {
+export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) => {
     const [isEditing, setIsEditing] = useState(false)
     const [wasTimerRunning, setWasTimerRunning] = useState(false)
     const [originalValues, setOriginalValues] = useState(null)
@@ -19,8 +19,6 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
     const availableTypes = ['work', 'break', 'fun']
 
     const handleDoubleClick = () => {
-        if (isActive) return // Don't allow editing active periods
-
         // Check if timer is running and pause it
         const isTimerRunning = timerState.value.runningIntervalId !== null
         setWasTimerRunning(isTimerRunning)
@@ -69,23 +67,42 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
 
     // Update timer state immediately when values change
     const handleTypeChange = newType => {
-        updatePeriod(index, {type: newType})
+        updatePeriod(index, { type: newType })
     }
 
     const handleDurationChange = newDuration => {
         const durationMs = newDuration * 60 * 1000
-        updatePeriod(index, {
+
+        // For active periods, preserve elapsed time and update remaining time accordingly
+        const updatedProps = {
             periodDuration: durationMs,
             periodUserIntendedDuration: durationMs,
-            periodDurationRemaining: durationMs - period.periodDurationElapsed,
-        })
+        }
+
+        // Calculate new remaining time based on current elapsed time
+        if (isActive) {
+            updatedProps.periodDurationRemaining = Math.max(
+                0,
+                durationMs - period.periodDurationElapsed,
+            )
+        } else {
+            // For inactive periods, reset remaining time to match new duration
+            updatedProps.periodDurationRemaining = durationMs
+        }
+
+        updatePeriod(index, updatedProps)
     }
 
     const handleNoteChange = newNote => {
-        updatePeriod(index, {note: newNote})
+        updatePeriod(index, { note: newNote })
     }
 
     const handleDelete = () => {
+        // Don't allow deleting the active period if it's the only one
+        if (isActive && timerState.value.periods.length === 1) {
+            return
+        }
+
         removePeriodByIndex(index)
         setIsEditing(false)
 
@@ -162,6 +179,7 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
                             onClick={handleDelete}
                             class="timeline__edit-delete"
                             title="Delete period"
+                            disabled={isActive && timerState.value.periods.length === 1}
                         >
                             🗑️
                         </button>
@@ -186,7 +204,7 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
                     timeline__period
                     timeline__period--${period.type}
                     ${isActive ? 'timeline__period--active' : ''}
-                    ${!isActive ? 'timeline__period--editable' : ''}
+                    timeline__period--editable
                 `}
             style={`--period-minutes: ${msToMinutes(period.periodDuration)};`}
             onDblClick={handleDoubleClick}
@@ -198,9 +216,7 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
                 </div>
                 <div class="timeline__period-duration">{formatTime(period.periodDuration)}</div>
 
-                {index === 0 && startTime && (
-                    <div class="timeline__start-time">{startTime}</div>
-                )}
+                {index === 0 && startTime && <div class="timeline__start-time">{startTime}</div>}
                 <div class="timeline__end-time">{endTime}</div>
             </div>
 
@@ -208,7 +224,7 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
                 class="timeline__elapsed-time"
                 style={`--elapsed-minutes: ${msToMinutes(period.periodDurationElapsed)};`}
             >
-                {isActive && <TimelineCurrentTime period={period}/>}
+                {isActive && <TimelineCurrentTime period={period} />}
             </div>
             {isActive && <div class="timeline__subinterval"></div>}
             {isActive && period.periodDurationElapsed > period.periodUserIntendedDuration && (
