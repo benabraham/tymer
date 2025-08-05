@@ -18,7 +18,7 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
 
     const availableTypes = ['work', 'break', 'fun']
 
-    const handleDoubleClick = () => {
+    const handleClickOnPeriod = () => {
         // Check if timer is running and pause it
         const isTimerRunning = timerState.value.runningIntervalId !== null
         setWasTimerRunning(isTimerRunning)
@@ -210,7 +210,7 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
                     timeline__period--editable
                 `}
             style={`--period-minutes: ${msToMinutes(period.periodDuration)};--userintended-minutes: ${msToMinutes(period.periodUserIntendedDuration)};`}
-            onDblClick={handleDoubleClick}
+            onClick={handleClickOnPeriod}
         >
             <div class="timeline__text">
                 <div class="timeline__type">

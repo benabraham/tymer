@@ -5,7 +5,7 @@ export const COLLECTION_WINDOW = 1500 // seconds before and after target time
 
 // Timer period configuration
 export const PERIOD_CONFIG = [
-cm    { duration: 36 * 60 * 1000, type: 'work', note: 'start A' },
+    { duration: 36 * 60 * 1000, type: 'work', note: 'start A' },
     { duration: 6 * 60 * 1000, type: 'break', note: '' },
     { duration: 36 * 60 * 1000, type: 'work', note: 'check direction' },
     { duration: 6 * 60 * 1000, type: 'break', note: '' },
