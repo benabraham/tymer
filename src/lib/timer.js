@@ -743,6 +743,7 @@ const tick = () => {
             currentPeriod.value.periodDuration,
             timerState.value.timestampStarted,
             currentPeriod.value.periodUserIntendedDuration,
+            currentPeriod.value.type,
         )
     }
 

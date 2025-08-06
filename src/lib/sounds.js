@@ -79,6 +79,19 @@ export const soundConfig = {
         48: '/tymer/sounds/overtime/048.webm',
         60: '/tymer/sounds/overtime/060.webm',
     },
+
+    // Set 5: Break overtime announcements (same intervals, different sounds)
+    overtimeBreak: {
+        6: '/tymer/sounds/overtime/break/006.webm',
+        12: '/tymer/sounds/overtime/break/012.webm',
+        18: '/tymer/sounds/overtime/break/018.webm',
+        24: '/tymer/sounds/overtime/break/024.webm',
+        30: '/tymer/sounds/overtime/break/030.webm',
+        36: '/tymer/sounds/overtime/break/036.webm',
+        42: '/tymer/sounds/overtime/break/042.webm',
+        48: '/tymer/sounds/overtime/break/048.webm',
+        60: '/tymer/sounds/overtime/break/060.webm',
+    },
 }
 
 // Create Howl instances from the configuration
@@ -103,33 +116,51 @@ const getRemainingIntervals = () => {
     return Object.keys(soundConfig.remaining).map(Number).sort((a, b) => a - b)
 }
 
-const getOvertimeIntervals = () => {
-    const allKeys = Object.keys(soundConfig.overtime).map(Number).sort((a, b) => a - b)
+const getOvertimeIntervals = (periodType = 'work') => {
+    const configKey = periodType === 'break' ? 'overtimeBreak' : 'overtime'
+    const allKeys = Object.keys(soundConfig[configKey]).map(Number).sort((a, b) => a - b)
     // Return all keys except the last one (which is used for looping)
     return allKeys.slice(0, -1)
 }
 
 // Get the last overtime sound configuration for looping
-const getLastOvertimeConfig = () => {
-    const overtimeKeys = Object.keys(soundConfig.overtime).map(Number).sort((a, b) => a - b)
+const getLastOvertimeConfig = (periodType = 'work') => {
+    const configKey = periodType === 'break' ? 'overtimeBreak' : 'overtime'
+    const overtimeKeys = Object.keys(soundConfig[configKey]).map(Number).sort((a, b) => a - b)
     const lastKey = overtimeKeys[overtimeKeys.length - 1]
-    return { key: lastKey, path: soundConfig.overtime[lastKey] }
+    return { key: lastKey, path: soundConfig[configKey][lastKey], configKey }
 }
 
-// Create a special looping version of the last overtime sound
-const lastOvertimeConfig = getLastOvertimeConfig()
-const overtimeLoopingSound = new Howl({
-    src: [lastOvertimeConfig.path],
-    loop: true,
-    volume: 1.0,
-})
+// Create special looping versions of the last overtime sounds for both types
+const workOvertimeConfig = getLastOvertimeConfig('work')
+const breakOvertimeConfig = getLastOvertimeConfig('break')
+
+const overtimeLoopingSounds = {
+    work: new Howl({
+        src: [workOvertimeConfig.path],
+        loop: true,
+        volume: 1.0,
+    }),
+    break: new Howl({
+        src: [breakOvertimeConfig.path],
+        loop: true,
+        volume: 1.0,
+    })
+}
 
 // Track looping sound state
 let isOvertimeLoopingActive = false
+let currentOvertimeLoopType = null
 
 // Start the continuous overtime looping sound
-const startOvertimeLoop = async () => {
-    if (isOvertimeLoopingActive) return // Already playing
+const startOvertimeLoop = async (periodType = 'work') => {
+    // If already playing the same type, do nothing
+    if (isOvertimeLoopingActive && currentOvertimeLoopType === periodType) return
+    
+    // If playing different type, stop current first
+    if (isOvertimeLoopingActive && currentOvertimeLoopType !== periodType) {
+        stopOvertimeLoop()
+    }
     
     // Try to unlock audio if not already unlocked
     if (!audioUnlocked) {
@@ -139,17 +170,21 @@ const startOvertimeLoop = async () => {
     // Stop any other sounds before starting the loop
     Howler.stop()
     
-    overtimeLoopingSound.play()
+    const loopSound = overtimeLoopingSounds[periodType] || overtimeLoopingSounds.work
+    loopSound.play()
     isOvertimeLoopingActive = true
-    console.log('🔊 Started continuous overtime loop')
+    currentOvertimeLoopType = periodType
+    console.log(`🔊 Started continuous overtime loop for ${periodType}`)
 }
 
 // Stop the continuous overtime looping sound
 const stopOvertimeLoop = () => {
     if (!isOvertimeLoopingActive) return // Not playing
     
-    overtimeLoopingSound.stop()
+    // Stop all overtime looping sounds
+    Object.values(overtimeLoopingSounds).forEach(sound => sound.stop())
     isOvertimeLoopingActive = false
+    currentOvertimeLoopType = null
     console.log('🔇 Stopped continuous overtime loop')
 }
 
@@ -381,8 +416,8 @@ export const playPeriodEndNotification = (
 }
 
 // Set 4: Check for overtime announcements (dynamic intervals from config)
-const scheduleOvertimeNotifications = (overtimeElapsed, overtimeStartTime) => {
-    const intervals = getOvertimeIntervals() // Get intervals from config keys (excluding last)
+const scheduleOvertimeNotifications = (overtimeElapsed, overtimeStartTime, periodType = 'work') => {
+    const intervals = getOvertimeIntervals(periodType) // Get intervals from config keys (excluding last)
     const currentTime = Date.now()
 
     console.log(
@@ -390,14 +425,17 @@ const scheduleOvertimeNotifications = (overtimeElapsed, overtimeStartTime) => {
         intervals,
     )
 
-    // Check 6-minute intervals
+    // Determine sound set name based on period type
+    const soundSetName = periodType === 'break' ? 'overtimeBreak' : 'overtime'
+
+    // Check intervals for this period type
     for (const minutes of intervals) {
         const targetTime = overtimeStartTime + minutes * 60 * 1000
 
         if (isInCollectionWindow(currentTime, targetTime)) {
             addSoundToWindow(targetTime, {
                 type: 'overtime',
-                setName: 'overtime',
+                setName: soundSetName,
                 soundKey: minutes,
                 targetMinutes: minutes,
             })
@@ -409,18 +447,19 @@ const scheduleOvertimeNotifications = (overtimeElapsed, overtimeStartTime) => {
     }
 
     // Check last overtime milestone and start continuous loop thereafter
+    const lastOvertimeConfig = getLastOvertimeConfig(periodType)
     const lastOvertimeThreshold = lastOvertimeConfig.key * 60 * 1000 // Convert minutes to milliseconds
     
     if (overtimeElapsed >= lastOvertimeThreshold) {
         // After reaching the last overtime milestone, start continuous looping sound
-        startOvertimeLoop()
+        startOvertimeLoop(periodType)
     } else {
         // Before last milestone, check for the initial milestone
         const lastOvertimeTarget = overtimeStartTime + lastOvertimeThreshold
         if (isInCollectionWindow(currentTime, lastOvertimeTarget)) {
             addSoundToWindow(lastOvertimeTarget, {
                 type: 'overtime',
-                setName: 'overtime',
+                setName: soundSetName,
                 soundKey: lastOvertimeConfig.key,
                 targetMinutes: lastOvertimeConfig.key,
             })
@@ -438,6 +477,7 @@ export const playTimerNotifications = (
     periodDuration,
     timestampStarted,
     periodUserIntendedDuration,
+    periodType = 'work',
 ) => {
     const currentTime = Date.now()
     const periodStartTime = timestampStarted
@@ -457,7 +497,7 @@ export const playTimerNotifications = (
         const overtimeStartTime = periodStartTime + userIntendedDuration
         const overtimeElapsed = periodElapsed - userIntendedDuration
         console.log(`🕐 In overtime: ${Math.floor(overtimeElapsed / 60000)} minutes overtime`)
-        scheduleOvertimeNotifications(overtimeElapsed, overtimeStartTime)
+        scheduleOvertimeNotifications(overtimeElapsed, overtimeStartTime, periodType)
     } else {
         // Stop overtime loop if we're no longer in overtime
         if (isOvertimeLoopingActive) {
