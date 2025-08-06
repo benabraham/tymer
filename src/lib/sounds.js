@@ -77,7 +77,7 @@ export const soundConfig = {
         36: '/tymer/sounds/overtime/036.webm',
         42: '/tymer/sounds/overtime/042.webm',
         48: '/tymer/sounds/overtime/048.webm',
-        60: '/tymer/sounds/overtime/last.webm',
+        60: '/tymer/sounds/overtime/060.webm',
     },
 }
 
