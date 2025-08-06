@@ -53,10 +53,11 @@ export const soundConfig = {
         108: '/tymer/sounds/elapsed/108.webm',
     },
 
-    // Set 2: Remaining time warnings (24 and 12 minutes before end)
+    // Set 2: Remaining time warnings (24, 12, and 6 minutes before end)
     remaining: {
         24: '/tymer/sounds/remaining/024.webm',
         12: '/tymer/sounds/remaining/012.webm',
+        6: '/tymer/sounds/remaining/006.wav',
     },
 
     // Set 3: Period end announcements (based on next period type)
@@ -258,9 +259,9 @@ const scheduleElapsedTimeNotifications = (periodElapsed, periodStartTime) => {
     }
 }
 
-// Set 2: Check for remaining time warnings (24 and 12 minutes before end)
+// Set 2: Check for remaining time warnings (24, 12, and 6 minutes before end)
 const scheduleRemainingTimeNotifications = (periodDuration, periodStartTime) => {
-    const warnings = [24, 12] // minutes before end
+    const warnings = [24, 12, 6] // minutes before end
     const currentTime = Date.now()
     const periodEndTime = periodStartTime + periodDuration
 
