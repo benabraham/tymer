@@ -94,6 +94,65 @@ const sounds = Object.fromEntries(
     ]),
 )
 
+// Get sound configuration intervals from config keys
+const getElapsedIntervals = () => {
+    return Object.keys(soundConfig.elapsed).map(Number).sort((a, b) => a - b)
+}
+
+const getRemainingIntervals = () => {
+    return Object.keys(soundConfig.remaining).map(Number).sort((a, b) => a - b)
+}
+
+const getOvertimeIntervals = () => {
+    const allKeys = Object.keys(soundConfig.overtime).map(Number).sort((a, b) => a - b)
+    // Return all keys except the last one (which is used for looping)
+    return allKeys.slice(0, -1)
+}
+
+// Get the last overtime sound configuration for looping
+const getLastOvertimeConfig = () => {
+    const overtimeKeys = Object.keys(soundConfig.overtime).map(Number).sort((a, b) => a - b)
+    const lastKey = overtimeKeys[overtimeKeys.length - 1]
+    return { key: lastKey, path: soundConfig.overtime[lastKey] }
+}
+
+// Create a special looping version of the last overtime sound
+const lastOvertimeConfig = getLastOvertimeConfig()
+const overtimeLoopingSound = new Howl({
+    src: [lastOvertimeConfig.path],
+    loop: true,
+    volume: 1.0,
+})
+
+// Track looping sound state
+let isOvertimeLoopingActive = false
+
+// Start the continuous overtime looping sound
+const startOvertimeLoop = async () => {
+    if (isOvertimeLoopingActive) return // Already playing
+    
+    // Try to unlock audio if not already unlocked
+    if (!audioUnlocked) {
+        await unlockAudio()
+    }
+    
+    // Stop any other sounds before starting the loop
+    Howler.stop()
+    
+    overtimeLoopingSound.play()
+    isOvertimeLoopingActive = true
+    console.log('🔊 Started continuous overtime loop')
+}
+
+// Stop the continuous overtime looping sound
+const stopOvertimeLoop = () => {
+    if (!isOvertimeLoopingActive) return // Not playing
+    
+    overtimeLoopingSound.stop()
+    isOvertimeLoopingActive = false
+    console.log('🔇 Stopped continuous overtime loop')
+}
+
 // Play sound from specific set
 const playFromSet = async (setName, soundKey) => {
     const sound = sounds[setName]?.[soundKey]
@@ -236,9 +295,9 @@ const checkPeriodChange = (periodStartTime, periodDuration, periodUserIntendedDu
     return false
 }
 
-// Set 1: Check for elapsed time announcements (every 12 minutes)
+// Set 1: Check for elapsed time announcements (dynamic intervals from config)
 const scheduleElapsedTimeNotifications = (periodElapsed, periodStartTime) => {
-    const intervals = [12, 24, 36, 48, 60, 72, 84, 96, 108] // minutes
+    const intervals = getElapsedIntervals() // Get intervals from config keys
     const currentTime = Date.now()
 
     for (const minutes of intervals) {
@@ -259,9 +318,9 @@ const scheduleElapsedTimeNotifications = (periodElapsed, periodStartTime) => {
     }
 }
 
-// Set 2: Check for remaining time warnings (24, 12, and 6 minutes before end)
+// Set 2: Check for remaining time warnings (dynamic intervals from config)
 const scheduleRemainingTimeNotifications = (periodDuration, periodStartTime) => {
-    const warnings = [24, 12, 6] // minutes before end
+    const warnings = getRemainingIntervals() // Get intervals from config keys
     const currentTime = Date.now()
     const periodEndTime = periodStartTime + periodDuration
 
@@ -321,9 +380,9 @@ export const playPeriodEndNotification = (
     }
 }
 
-// Set 4: Check for overtime announcements (every 6 minutes + hour milestone)
+// Set 4: Check for overtime announcements (dynamic intervals from config)
 const scheduleOvertimeNotifications = (overtimeElapsed, overtimeStartTime) => {
-    const intervals = [6, 12, 18, 24, 30, 36, 42, 48] // minutes
+    const intervals = getOvertimeIntervals() // Get intervals from config keys (excluding last)
     const currentTime = Date.now()
 
     console.log(
@@ -349,19 +408,27 @@ const scheduleOvertimeNotifications = (overtimeElapsed, overtimeStartTime) => {
         }
     }
 
-    // Check hour milestone
-    const oneHourTarget = overtimeStartTime + 60 * 60 * 1000
-    if (isInCollectionWindow(currentTime, oneHourTarget)) {
-        addSoundToWindow(oneHourTarget, {
-            type: 'overtime',
-            setName: 'overtime',
-            soundKey: 60,
-            targetMinutes: 60,
-        })
-    }
+    // Check last overtime milestone and start continuous loop thereafter
+    const lastOvertimeThreshold = lastOvertimeConfig.key * 60 * 1000 // Convert minutes to milliseconds
+    
+    if (overtimeElapsed >= lastOvertimeThreshold) {
+        // After reaching the last overtime milestone, start continuous looping sound
+        startOvertimeLoop()
+    } else {
+        // Before last milestone, check for the initial milestone
+        const lastOvertimeTarget = overtimeStartTime + lastOvertimeThreshold
+        if (isInCollectionWindow(currentTime, lastOvertimeTarget)) {
+            addSoundToWindow(lastOvertimeTarget, {
+                type: 'overtime',
+                setName: 'overtime',
+                soundKey: lastOvertimeConfig.key,
+                targetMinutes: lastOvertimeConfig.key,
+            })
+        }
 
-    if (shouldPlaySound(currentTime, oneHourTarget)) {
-        resolveAndPlaySounds(oneHourTarget)
+        if (shouldPlaySound(currentTime, lastOvertimeTarget)) {
+            resolveAndPlaySounds(lastOvertimeTarget)
+        }
     }
 }
 
@@ -392,6 +459,11 @@ export const playTimerNotifications = (
         console.log(`🕐 In overtime: ${Math.floor(overtimeElapsed / 60000)} minutes overtime`)
         scheduleOvertimeNotifications(overtimeElapsed, overtimeStartTime)
     } else {
+        // Stop overtime loop if we're no longer in overtime
+        if (isOvertimeLoopingActive) {
+            stopOvertimeLoop()
+        }
+        
         // Set 1: Elapsed time announcements
         scheduleElapsedTimeNotifications(periodElapsed, periodStartTime)
 
@@ -403,4 +475,9 @@ export const playTimerNotifications = (
 // Export function for manual window invalidation (called by timer when timing changes)
 export const invalidateSoundWindows = reason => {
     invalidateAllWindows(reason)
+    
+    // Stop overtime loop when timing changes significantly
+    if (isOvertimeLoopingActive) {
+        stopOvertimeLoop()
+    }
 }
