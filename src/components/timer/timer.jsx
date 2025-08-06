@@ -50,7 +50,7 @@ export function Timer() {
 
     return (
         <>
-            <TimerControls />ove
+            <TimerControls />
             <Timeline />
             <PeriodControls />
             <Stats />
