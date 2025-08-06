@@ -86,8 +86,14 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
                 durationMs - period.periodDurationElapsed,
             )
         } else {
-            // For inactive periods, reset remaining time to match new duration
-            updatedProps.periodDurationRemaining = durationMs
+            // For finished periods, set elapsed time to match new duration and remaining to 0
+            if (period.periodHasFinished || period.periodDurationRemaining === 0) {
+                updatedProps.periodDurationElapsed = durationMs
+                updatedProps.periodDurationRemaining = 0
+            } else {
+                // For unstarted periods, reset remaining time to match new duration
+                updatedProps.periodDurationRemaining = durationMs
+            }
         }
 
         updatePeriod(index, updatedProps)
