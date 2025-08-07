@@ -57,7 +57,7 @@ export const soundConfig = {
     remaining: {
         24: '/tymer/sounds/remaining/024.webm',
         12: '/tymer/sounds/remaining/012.webm',
-        6: '/tymer/sounds/remaining/006.wav',
+        6: '/tymer/sounds/remaining/006.webm',
     },
 
     // Set 3: Period end announcements (based on next period type)
