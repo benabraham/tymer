@@ -354,6 +354,7 @@ export const moveToNextPeriod = () => {
             periodDurationElapsed: roundedDown,
             periodDurationRemaining: 0,
             periodHasFinished: true,
+            periodUserIntendedDuration: roundedDown,
         },
         timerProperties: {
             // reset start time for the next period if not paused, if the next period has already some time elapsed, compensate for it
