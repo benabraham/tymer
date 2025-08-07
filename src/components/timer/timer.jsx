@@ -1,6 +1,7 @@
 import { useEffect } from 'preact/hooks'
 import { initializeTimer, timerState, currentPeriod } from '../../lib/timer'
 import { formatTime } from '../../lib/format'
+import { unlockAudio } from '../../lib/sounds'
 import { Timeline } from './timeline/timeline'
 import { TimerControls } from './controls/timer-controls'
 import { PeriodControls } from './controls/period-controls'
@@ -10,6 +11,25 @@ import { DebuggingInfo } from './debug/debugging-info'
 export function Timer() {
     useEffect(() => {
         initializeTimer()
+    }, [])
+
+    // Global audio unlock on any user interaction for PWA
+    useEffect(() => {
+        const unlockOnInteraction = async () => {
+            await unlockAudio()
+        }
+
+        // Listen for multiple interaction types to ensure audio unlock
+        const events = ['click', 'touchstart', 'keydown']
+        events.forEach(event => {
+            document.addEventListener(event, unlockOnInteraction, { once: true })
+        })
+
+        return () => {
+            events.forEach(event => {
+                document.removeEventListener(event, unlockOnInteraction)
+            })
+        }
     }, [])
 
     // Update document title based on timer state

@@ -3,6 +3,7 @@ import { COLLECTION_WINDOW } from './config.js'
 
 // Audio context unlock state
 let audioUnlocked = false
+let audioContextKeepAlive = null
 
 // Function to unlock audio context on user interaction
 export const unlockAudio = async () => {
@@ -25,11 +26,45 @@ export const unlockAudio = async () => {
 
         audioUnlocked = true
         console.log('🔊 Audio context unlocked successfully')
+        
+        // Keep audio context alive for PWA
+        startAudioContextKeepAlive()
+        
         return true
     } catch (error) {
         console.warn('Failed to unlock audio context:', error)
         return false
     }
+}
+
+// Keep audio context alive with periodic silent sounds (PWA optimization)
+const startAudioContextKeepAlive = () => {
+    if (audioContextKeepAlive) return // Already running
+    
+    const keepAliveSilentSound = new Howl({
+        src: [
+            'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=',
+        ],
+        volume: 0,
+        html5: false,
+    })
+    
+    // Play silent sound every 30 seconds to keep context alive
+    audioContextKeepAlive = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+            keepAliveSilentSound.play()
+        }
+    }, 30000)
+    
+    // Handle visibility changes for PWA
+    const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible' && audioUnlocked) {
+            // Re-activate audio context when app becomes visible
+            keepAliveSilentSound.play()
+        }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
 }
 
 // Sound configuration - paths organized by notification type
