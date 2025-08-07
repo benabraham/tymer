@@ -7,6 +7,7 @@ import {
     timerState,
     removePeriodByIndex,
     addPeriodAtIndex,
+    autoEditIndex,
 } from '../../../lib/timer'
 import {TimelineCurrentTime} from './timeline-current-time'
 
@@ -121,7 +122,17 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
     const handleAddPeriod = (event) => {
         event.stopPropagation()
         addPeriodAtIndex(index)
+        // The new period at index + 1 will automatically open for editing
+        // via the autoEditIndex signal set in addPeriodAtIndex
     }
+
+    // Auto-open editing when this period is flagged for auto-edit
+    useEffect(() => {
+        if (autoEditIndex.value === index) {
+            autoEditIndex.value = null // Clear the signal
+            handleClickOnPeriod() // Open edit mode
+        }
+    }, [autoEditIndex.value, index])
 
     // Handle click outside to save
     useEffect(() => {

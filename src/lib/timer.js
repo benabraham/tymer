@@ -644,6 +644,9 @@ export const removePeriodByIndex = periodIndex => {
     log('removed period by index', { periodIndex, newLength: newPeriods.length }, 5)
 }
 
+// Signal to track which period should auto-open for editing
+export const autoEditIndex = signal(null)
+
 // add a new period at a specific index
 export const addPeriodAtIndex = (
     afterIndex,
@@ -653,7 +656,8 @@ export const addPeriodAtIndex = (
     const newPeriods = [...timerState.value.periods]
 
     // Insert after the specified index
-    newPeriods.splice(afterIndex + 1, 0, newPeriod)
+    const newPeriodIndex = afterIndex + 1
+    newPeriods.splice(newPeriodIndex, 0, newPeriod)
 
     // Adjust current period index if needed
     let newCurrentPeriodIndex = timerState.value.currentPeriodIndex
@@ -667,6 +671,9 @@ export const addPeriodAtIndex = (
             currentPeriodIndex: newCurrentPeriodIndex,
         },
     })
+
+    // Signal that the new period should auto-open for editing
+    autoEditIndex.value = newPeriodIndex
 
     log('added period at index', { afterIndex, newLength: newPeriods.length }, 5)
 }
