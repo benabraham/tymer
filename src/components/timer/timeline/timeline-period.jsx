@@ -118,7 +118,8 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
         }
     }
 
-    const handleAddPeriod = () => {
+    const handleAddPeriod = (event) => {
+        event.stopPropagation()
         addPeriodAtIndex(index)
     }
 
