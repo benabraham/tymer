@@ -1,5 +1,6 @@
 import { Howl, Howler } from 'howler'
 import { COLLECTION_WINDOW } from './config.js'
+import { logSoundEvent } from './sound-events.js'
 
 // Audio context unlock state
 let audioUnlocked = false
@@ -210,6 +211,12 @@ const startOvertimeLoop = async (periodType = 'work') => {
     isOvertimeLoopingActive = true
     currentOvertimeLoopType = periodType
     console.log(`🔊 Started continuous overtime loop for ${periodType}`)
+    
+    // Log overtime loop start
+    logSoundEvent('overtimeLoop', `continuous-${periodType}`, {
+        action: 'start',
+        periodType
+    })
 }
 
 // Stop the continuous overtime looping sound
@@ -218,9 +225,18 @@ const stopOvertimeLoop = () => {
     
     // Stop all overtime looping sounds
     Object.values(overtimeLoopingSounds).forEach(sound => sound.stop())
+    const previousType = currentOvertimeLoopType
     isOvertimeLoopingActive = false
     currentOvertimeLoopType = null
     console.log('🔇 Stopped continuous overtime loop')
+    
+    // Log overtime loop stop
+    if (previousType) {
+        logSoundEvent('overtimeLoop', `continuous-${previousType}`, {
+            action: 'stop',
+            periodType: previousType
+        })
+    }
 }
 
 // Play sound from specific set
@@ -310,6 +326,14 @@ const resolveAndPlaySounds = targetTime => {
         winningSound.soundKey,
         `(beat ${sortedSounds.length - 1} other sounds)`,
     )
+
+    // Log sound event for debugging
+    logSoundEvent(winningSound.type, winningSound.soundKey, {
+        setName: winningSound.setName,
+        targetMinutes: winningSound.targetMinutes,
+        beatenSounds: sortedSounds.length - 1,
+        allSounds: sortedSounds.map(s => `${s.type}/${s.soundKey}`)
+    })
 
     playFromSet(winningSound.setName, winningSound.soundKey)
     lastPlayedSound = Date.now()
@@ -445,6 +469,13 @@ export const playPeriodEndNotification = (
 
         resolveAndPlaySounds(currentTime)
         console.log(`🔊 Period-end notification played for ${soundKey}`)
+        
+        // Log period end notification
+        logSoundEvent('periodEnd', soundKey, {
+            nextPeriodType: nextPeriodType,
+            elapsedMinutes: Math.floor(periodElapsed / 60000),
+            userIntendedMinutes: Math.floor(periodUserIntendedDuration / 60000)
+        })
     } else {
         console.log(`🔇 Period-end notification skipped (already played or not first extension)`)
     }
