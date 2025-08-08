@@ -254,27 +254,46 @@ const stopOvertimeLoop = () => {
 
 // Play sound from specific set
 const playFromSet = async (setName, soundKey) => {
+    console.log(`🎵 [PLAY] Attempting to play sound: ${setName}/${soundKey}`)
+    
     const sound = sounds[setName]?.[soundKey]
     if (sound) {
+        console.log(`🎵 [PLAY] Sound object found, audioUnlocked: ${audioUnlocked}`)
+        
         // Try to unlock audio if not already unlocked
         if (!audioUnlocked) {
-            await unlockAudio()
+            console.log(`🔓 [PLAY] Attempting to unlock audio...`)
+            const unlocked = await unlockAudio()
+            console.log(`🔓 [PLAY] Audio unlock result: ${unlocked}`)
         }
 
+        console.log(`🔇 [PLAY] Stopping all sounds before playing new one`)
         Howler.stop()
-        sound.play()
+        
+        console.log(`🎵 [PLAY] Playing sound: ${setName}/${soundKey}`)
+        const playId = sound.play()
+        console.log(`🎵 [PLAY] Sound play() returned ID: ${playId}`)
 
         // Add error handling for Howler
         sound.on('loaderror', (id, error) => {
-            console.error(`Failed to load sound ${setName}/${soundKey}:`, error)
+            console.error(`❌ [PLAY] Failed to load sound ${setName}/${soundKey}:`, error)
         })
         sound.on('playerror', (id, error) => {
-            console.error(`Failed to play sound ${setName}/${soundKey}:`, error)
+            console.error(`❌ [PLAY] Failed to play sound ${setName}/${soundKey}:`, error)
+        })
+        
+        sound.on('play', (id) => {
+            console.log(`✅ [PLAY] Sound ${setName}/${soundKey} started playing (ID: ${id})`)
+        })
+        
+        sound.on('end', (id) => {
+            console.log(`🏁 [PLAY] Sound ${setName}/${soundKey} finished (ID: ${id})`)
         })
 
         return true
     } else {
-        console.error(`Sound not found: ${setName}/${soundKey}`)
+        console.error(`❌ [PLAY] Sound not found: ${setName}/${soundKey}`)
+        console.log(`🔍 [PLAY] Available sounds in ${setName}:`, Object.keys(sounds[setName] || {}))
         return false
     }
 }
@@ -300,30 +319,58 @@ const SOUND_PRIORITIES = {
 // Helper to check if we're within the collection window (before AND after target)
 const isInCollectionWindow = (currentTime, targetTime) => {
     const timeDifference = Math.abs(currentTime - targetTime)
-    return timeDifference <= COLLECTION_WINDOW
+    const inWindow = timeDifference <= COLLECTION_WINDOW
+    console.log(`🪟 [WINDOW] isInCollectionWindow: currentTime=${new Date(currentTime).toISOString()}, targetTime=${new Date(targetTime).toISOString()}, diff=${Math.round(timeDifference/1000)}s, window=${COLLECTION_WINDOW/1000}s, inWindow=${inWindow}`)
+    return inWindow
 }
 
 // Helper to check if collection window has closed (sound should be played)
 const shouldPlaySound = (currentTime, targetTime) => {
-    return currentTime >= targetTime + COLLECTION_WINDOW
+    const shouldPlay = currentTime >= targetTime + COLLECTION_WINDOW
+    const windowCloseTime = targetTime + COLLECTION_WINDOW
+    const timePastClose = Math.round((currentTime - windowCloseTime) / 1000)
+    console.log(`🔔 [SHOULD_PLAY] shouldPlaySound: currentTime=${new Date(currentTime).toISOString()}, windowClose=${new Date(windowCloseTime).toISOString()}, timePastClose=${timePastClose}s, shouldPlay=${shouldPlay}`)
+    return shouldPlay
 }
 
 // Add a sound to the collection window
 const addSoundToWindow = (targetTime, soundData) => {
     if (!activeCollectionWindows.has(targetTime)) {
+        console.log(`📁 [WINDOW] Creating new collection window for ${new Date(targetTime).toISOString()}`)
         activeCollectionWindows.set(targetTime, { sounds: [], resolved: false })
     }
 
     const window = activeCollectionWindows.get(targetTime)
     if (!window.resolved) {
+        console.log(`📁 [WINDOW] Adding ${soundData.type}/${soundData.soundKey} to window ${new Date(targetTime).toISOString()} (${window.sounds.length + 1} sounds total)`)
         window.sounds.push(soundData)
+    } else {
+        console.log(`📁 [WINDOW] Skipping add to resolved window ${new Date(targetTime).toISOString()}`)
     }
 }
 
 // Resolve conflicts and play the highest priority sound
 const resolveAndPlaySounds = (targetTime, durationElapsed, periodDuration, periodUserIntendedDuration) => {
     const window = activeCollectionWindows.get(targetTime)
-    if (!window || window.resolved || window.sounds.length === 0) return
+    
+    console.log(`\n🎯 [RESOLVE] Attempting to resolve sounds for ${new Date(targetTime).toISOString()}`)
+    
+    if (!window) {
+        console.log(`🔄 [RESOLVE] No window found for target time`)
+        return
+    }
+    
+    if (window.resolved) {
+        console.log(`🔄 [RESOLVE] Window already resolved`)
+        return
+    }
+    
+    if (window.sounds.length === 0) {
+        console.log(`🔄 [RESOLVE] No sounds in window`)
+        return
+    }
+
+    console.log(`🎯 [RESOLVE] Found ${window.sounds.length} sounds in window:`, window.sounds.map(s => `${s.type}/${s.soundKey}`))
 
     // Sort by priority (highest first), then by type for consistency
     const sortedSounds = window.sounds.sort((a, b) => {
@@ -332,10 +379,12 @@ const resolveAndPlaySounds = (targetTime, durationElapsed, periodDuration, perio
         return a.type.localeCompare(b.type) // Alphabetical for consistency
     })
 
+    console.log(`🎯 [RESOLVE] After sorting by priority:`, sortedSounds.map(s => `${s.type}(${SOUND_PRIORITIES[s.type]})/${s.soundKey}`))
+
     // Play the highest priority sound
     const winningSound = sortedSounds[0]
     console.log(
-        `🔊 Playing ${winningSound.type} sound:`,
+        `🔊 [RESOLVE] Playing ${winningSound.type} sound:`,
         winningSound.soundKey,
         `(beat ${sortedSounds.length - 1} other sounds)`,
     )
@@ -356,6 +405,7 @@ const resolveAndPlaySounds = (targetTime, durationElapsed, periodDuration, perio
 
     // Mark window as resolved
     window.resolved = true
+    console.log(`🔒 [RESOLVE] Window marked as resolved`)
 
     // Note: Window cleanup is handled by cleanupOldWindows() called every tick
 }
@@ -409,11 +459,28 @@ const checkPeriodChange = (periodStartTime, periodDuration, periodUserIntendedDu
 const scheduleElapsedTimeNotifications = (periodElapsed, periodStartTime, periodDuration, periodUserIntendedDuration) => {
     const intervals = getElapsedIntervals() // Get intervals from config keys
     const currentTime = Date.now()
+    const periodElapsedMinutes = Math.floor(periodElapsed / 60000)
+    
+    // Only log when we're within 2 minutes of key elapsed times or have active windows
+    const nearElapsedTarget = intervals.some(min => Math.abs(periodElapsedMinutes - min) <= 2)
+    if (nearElapsedTarget || periodElapsedMinutes % 5 === 0) { // Log every 5 minutes or near targets
+        console.log(`🔍 [ELAPSED] t=${periodElapsedMinutes}min checking intervals:`, intervals)
+        console.log(`🔍 [ELAPSED] Period start: ${new Date(periodStartTime).toISOString()}, Current: ${new Date(currentTime).toISOString()}`)
+    }
 
     for (const minutes of intervals) {
         const targetTime = periodStartTime + minutes * 60 * 1000
+        const inWindow = isInCollectionWindow(currentTime, targetTime)
+        const shouldPlay = shouldPlaySound(currentTime, targetTime)
+        const timeDiff = Math.round((currentTime - targetTime) / 1000)
+        
+        // Always log when in window, should play, or near the target time
+        if (inWindow || shouldPlay || Math.abs(timeDiff) <= 60) {
+            console.log(`🔍 [ELAPSED] ${minutes}min target: ${new Date(targetTime).toISOString()}, timeDiff: ${timeDiff}s, inWindow: ${inWindow}, shouldPlay: ${shouldPlay}`)
+        }
 
-        if (isInCollectionWindow(currentTime, targetTime)) {
+        if (inWindow) {
+            console.log(`🔊 [ELAPSED] Adding ${minutes}min elapsed sound to collection window`)
             addSoundToWindow(targetTime, {
                 type: 'elapsed',
                 setName: 'elapsed',
@@ -422,7 +489,8 @@ const scheduleElapsedTimeNotifications = (periodElapsed, periodStartTime, period
             })
         }
 
-        if (shouldPlaySound(currentTime, targetTime)) {
+        if (shouldPlay) {
+            console.log(`🎵 [ELAPSED] Resolving ${minutes}min elapsed sound (past collection window)`)
             resolveAndPlaySounds(targetTime, periodElapsed, periodDuration, periodUserIntendedDuration)
         }
     }
@@ -433,18 +501,48 @@ const scheduleRemainingTimeNotifications = (periodDuration, periodStartTime, per
     const warnings = getRemainingIntervals() // Get intervals from config keys
     const currentTime = Date.now()
     const periodEndTime = periodStartTime + periodDuration
+    const periodElapsedMinutes = Math.floor(periodElapsed / 60000)
+    const periodDurationMinutes = Math.floor(periodDuration / 60000)
+    
+    // Calculate how much time is remaining
+    const timeRemainingMinutes = Math.floor((periodDuration - periodElapsed) / 60000)
+    // Only log when we're within 2 minutes of key remaining times or have active windows
+    const nearRemainingTarget = warnings.some(min => Math.abs(timeRemainingMinutes - min) <= 2)
+    if (nearRemainingTarget || periodElapsedMinutes % 5 === 0) { // Log every 5 minutes or near targets
+        console.log(`🔍 [REMAINING] t=${periodElapsedMinutes}min (${timeRemainingMinutes}min left) checking warnings:`, warnings)
+        console.log(`🔍 [REMAINING] Period end: ${new Date(periodEndTime).toISOString()}, Current: ${new Date(currentTime).toISOString()}`)
+    }
 
     for (const minutes of warnings) {
         // Skip warnings for periods shorter than the warning interval
         const warningDuration = minutes * 60 * 1000
-        if (periodDuration <= warningDuration) continue
+        if (periodDuration <= warningDuration) {
+            if (nearRemainingTarget) {
+            console.log(`🔍 [REMAINING] Skipping ${minutes}min warning (period ${periodDurationMinutes}min too short)`)
+        }
+            continue
+        }
 
         const targetTime = periodEndTime - warningDuration
+        const inWindow = isInCollectionWindow(currentTime, targetTime)
+        const shouldPlay = shouldPlaySound(currentTime, targetTime)
+        const timeDiff = Math.round((currentTime - targetTime) / 1000)
 
         // Skip if target time is before period start (safety check)
-        if (targetTime < periodStartTime) continue
+        if (targetTime < periodStartTime) {
+            if (nearRemainingTarget) {
+                console.log(`🔍 [REMAINING] Skipping ${minutes}min warning (target before period start)`)
+            }
+            continue
+        }
+        
+        // Always log when in window, should play, or near the target time
+        if (inWindow || shouldPlay || Math.abs(timeDiff) <= 60) {
+            console.log(`🔍 [REMAINING] ${minutes}min remaining target: ${new Date(targetTime).toISOString()}, timeDiff: ${timeDiff}s, inWindow: ${inWindow}, shouldPlay: ${shouldPlay}`)
+        }
 
-        if (isInCollectionWindow(currentTime, targetTime)) {
+        if (inWindow) {
+            console.log(`🔊 [REMAINING] Adding ${minutes}min remaining sound to collection window`)
             addSoundToWindow(targetTime, {
                 type: 'remaining',
                 setName: 'remaining',
@@ -453,7 +551,8 @@ const scheduleRemainingTimeNotifications = (periodDuration, periodStartTime, per
             })
         }
 
-        if (shouldPlaySound(currentTime, targetTime)) {
+        if (shouldPlay) {
+            console.log(`🎵 [REMAINING] Resolving ${minutes}min remaining sound (past collection window)`)
             resolveAndPlaySounds(targetTime, periodElapsed, periodDuration, periodUserIntendedDuration)
         }
     }
@@ -467,14 +566,27 @@ export const playPeriodEndNotification = (
 ) => {
     const soundKey = nextPeriodType || 'work'
     const currentTime = Date.now()
+    const periodElapsedMinutes = Math.floor(periodElapsed / 60000)
+    const userIntendedMinutes = Math.floor(periodUserIntendedDuration / 60000)
 
     // Only play period-end sound when we first reach the user intended duration
     // Check if we're within 1 minute of the user intended duration (first automatic extension)
     const timeSinceUserIntendedEnd = periodElapsed - periodUserIntendedDuration
     const isFirstTimeReachingEnd =
         timeSinceUserIntendedEnd >= 0 && timeSinceUserIntendedEnd <= 60000 // 1 minute
+        
+    console.log(`\n🔔 [PERIOD_END] Called with:`, {
+        nextPeriodType,
+        periodElapsed: `${periodElapsedMinutes}min`,
+        periodUserIntendedDuration: `${userIntendedMinutes}min`,
+        timeSinceUserIntendedEnd: `${Math.round(timeSinceUserIntendedEnd / 1000)}s`,
+        isFirstTimeReachingEnd,
+        soundKey
+    })
 
     if (isFirstTimeReachingEnd) {
+        console.log(`🔊 [PERIOD_END] Playing period-end notification for ${soundKey} (first time reaching end)`)
+        
         // Period end sounds have highest priority and play immediately
         addSoundToWindow(currentTime, {
             type: 'periodEnd',
@@ -496,7 +608,7 @@ export const playPeriodEndNotification = (
             durationUserPlanned: periodUserIntendedDuration,
         })
     } else {
-        console.log(`🔇 Period-end notification skipped (already played or not first extension)`)
+        console.log(`🔇 [PERIOD_END] Period-end notification skipped - timeSinceEnd: ${Math.round(timeSinceUserIntendedEnd / 1000)}s, isFirstTime: ${isFirstTimeReachingEnd}`)
     }
 }
 
@@ -566,10 +678,29 @@ export const playTimerNotifications = (
 ) => {
     const currentTime = Date.now()
     const periodStartTime = timestampStarted
+    const periodElapsedMinutes = Math.floor(periodElapsed / 60000)
+    const periodDurationMinutes = Math.floor(periodDuration / 60000)
+    const userIntendedMinutes = Math.floor((periodUserIntendedDuration || periodDuration) / 60000)
 
     // Use user intended duration for sound calculations, fallback to actual duration if not provided
     const userIntendedDuration = periodUserIntendedDuration || periodDuration
     const isOvertime = periodElapsed > userIntendedDuration
+    
+    // Only log every 10 seconds to reduce noise, but always log for key minutes
+    const logMinutes = [6, 12, 18, 24, 30] // Key minutes to always log
+    const shouldLog = logMinutes.includes(periodElapsedMinutes) || periodElapsedMinutes % 1 === 0 // Log every minute
+    
+    if (shouldLog) {
+        console.log(`\n🎯 [TIMER_NOTIFICATIONS] t=${periodElapsedMinutes}min:`, {
+            periodElapsed: `${periodElapsedMinutes}min`,
+            periodDuration: `${periodDurationMinutes}min`,
+            userIntendedDuration: `${userIntendedMinutes}min`,
+            periodType,
+            isOvertime,
+            timestampStarted: new Date(timestampStarted).toISOString(),
+            currentTime: new Date(currentTime).toISOString()
+        })
+    }
 
     // Check for period changes and invalidate windows if needed
     checkPeriodChange(periodStartTime, periodDuration, periodUserIntendedDuration)
@@ -589,11 +720,22 @@ export const playTimerNotifications = (
             stopOvertimeLoop()
         }
 
+        if (shouldLog) {
+            console.log(`🔍 [TIMER_NOTIFICATIONS] Scheduling normal period sounds (not overtime)`)
+        }
+        
         // Set 1: Elapsed time announcements
         scheduleElapsedTimeNotifications(periodElapsed, periodStartTime, periodDuration, periodUserIntendedDuration)
 
         // Set 2: Remaining time warnings (based on user intended duration)
         scheduleRemainingTimeNotifications(userIntendedDuration, periodStartTime, periodElapsed, periodUserIntendedDuration)
+    }
+    
+    if (shouldLog || activeCollectionWindows.size > 0) {
+        console.log(`🔍 [TIMER_NOTIFICATIONS] Active collection windows: ${activeCollectionWindows.size}`)
+        for (const [targetTime, window] of activeCollectionWindows.entries()) {
+            console.log(`  - Target: ${new Date(targetTime).toISOString()}, sounds: ${window.sounds.length}, resolved: ${window.resolved}`)
+        }
     }
 }
 
