@@ -49,7 +49,6 @@ export const SoundEventsLog = () => {
                     overflowY: 'auto',
                     fontSize: '12px',
                     fontFamily: 'monospace',
-                    backgroundColor: '#f5f5f5',
                     padding: '8px',
                     borderRadius: '4px'
                 }}>
