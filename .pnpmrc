@@ -1,0 +1,5 @@
+# Package manager enforcement is handled by "packageManager" field in package.json
+# This file contains pnpm-specific configurations
+shamefully-hoist=false
+strict-peer-dependencies=true
+save-exact=true
