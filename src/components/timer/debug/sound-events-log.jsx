@@ -31,18 +31,16 @@ export const SoundEventsLog = () => {
                 style={{
                     display: 'flex',
                     justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '8px',
+                    marginBottom: '1rem',
                 }}
             >
                 <strong>Sound Events Log (Time-based only)</strong>
-                <button
+                <div>
+                    Showing {events.length} event{events.length !== 1 ? 's' : ''} (max 1000 stored)
+                </div>
+                <button 
+                    class="button"
                     onClick={clearSoundEvents}
-                    style={{
-                        fontSize: '12px',
-                        padding: '2px 8px',
-                        cursor: 'pointer',
-                    }}
                 >
                     Clear Log
                 </button>
@@ -51,27 +49,18 @@ export const SoundEventsLog = () => {
             {events.length === 0 ? (
                 <p style={{ fontSize: '12px', color: '#888' }}>No sound events yet</p>
             ) : (
-                <div
-                    style={{
-                        maxHeight: '200px',
-                        overflowY: 'auto',
-                        fontSize: '12px',
-                        fontFamily: 'monospace',
-                        padding: '8px',
-                        borderRadius: '4px',
-                    }}
-                >
+                <div>
                     {events.map((event, index) => (
                         <div
                             key={`${event.timestamp}-${index}`}
                             style={{
-                                marginBottom: '6px',
-                                paddingBottom: '6px',
-                                borderBottom: index < events.length - 1 ? '1px solid #ddd' : 'none',
+                                marginBottom: '12px',
+                                paddingBottom: '12px',
+                                borderBottom: index < events.length - 1 ? '1px solid #555' : 'none',
                             }}
                         >
                             <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>
-                                {event.time} - {formatEventType(event.type)} -{' '}
+                                {event.time} – {formatEventType(event.type)} -{' '}
                                 {formatSoundKey(event.sound)}
                             </div>
 
@@ -116,15 +105,7 @@ export const SoundEventsLog = () => {
                 </div>
             )}
 
-            <div
-                style={{
-                    marginTop: '8px',
-                    fontSize: '10px',
-                    color: '#888',
-                }}
-            >
-                Showing {events.length} event{events.length !== 1 ? 's' : ''} (max 1000 stored)
-            </div>
+            
         </div>
     )
 }
