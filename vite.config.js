@@ -7,6 +7,10 @@ import { soundPreloadPlugin } from './build-tools/sound-preloader.js'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  define: {
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+    __BUILD_HASH__: JSON.stringify(Date.now().toString(36).toUpperCase()),
+  },
   plugins: [
     preact(),
     VitePWA({

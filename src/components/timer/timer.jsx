@@ -7,6 +7,7 @@ import { TimerControls } from './controls/timer-controls'
 import { PeriodControls } from './controls/period-controls'
 import { Stats } from './stats/stats'
 import { DebuggingInfo } from './debug/debugging-info'
+import { BuildInfo } from '../build-info/build-info'
 
 export function Timer() {
     useEffect(() => {
@@ -70,6 +71,7 @@ export function Timer() {
 
     return (
         <>
+            <BuildInfo />
             <TimerControls />
             <Timeline />
             <PeriodControls />
