@@ -6,6 +6,7 @@ import { logSoundEvent } from './sound-events.js'
 let audioUnlocked = false
 let audioContextKeepAlive = null
 
+
 // Function to unlock audio context on user interaction
 export const unlockAudio = async () => {
     if (audioUnlocked) return true
@@ -218,10 +219,13 @@ const startOvertimeLoop = async (periodType = 'work') => {
     currentOvertimeLoopType = periodType
     console.log(`🔊 Started continuous overtime loop for ${periodType}`)
 
-    // Log overtime loop start
+    // Log overtime loop start (duration data not available in this context)
     logSoundEvent('overtimeLoop', `continuous-${periodType}`, {
         action: 'start',
         periodType,
+        durationElapsed: 0,
+        duration: 0,
+        durationUserPlanned: 0,
     })
 }
 
@@ -241,6 +245,9 @@ const stopOvertimeLoop = () => {
         logSoundEvent('overtimeLoop', `continuous-${previousType}`, {
             action: 'stop',
             periodType: previousType,
+            durationElapsed: 0,
+            duration: 0,
+            durationUserPlanned: 0,
         })
     }
 }
@@ -314,7 +321,7 @@ const addSoundToWindow = (targetTime, soundData) => {
 }
 
 // Resolve conflicts and play the highest priority sound
-const resolveAndPlaySounds = targetTime => {
+const resolveAndPlaySounds = (targetTime, durationElapsed, periodDuration, periodUserIntendedDuration) => {
     const window = activeCollectionWindows.get(targetTime)
     if (!window || window.resolved || window.sounds.length === 0) return
 
@@ -339,6 +346,9 @@ const resolveAndPlaySounds = targetTime => {
         targetMinutes: winningSound.targetMinutes,
         beatenSounds: sortedSounds.length - 1,
         allSounds: sortedSounds.map(s => `${s.type}/${s.soundKey}`),
+        durationElapsed,
+        duration: periodDuration,
+        durationUserPlanned: periodUserIntendedDuration || periodDuration,
     })
 
     playFromSet(winningSound.setName, winningSound.soundKey)
@@ -396,7 +406,7 @@ const checkPeriodChange = (periodStartTime, periodDuration, periodUserIntendedDu
 }
 
 // Set 1: Check for elapsed time announcements (dynamic intervals from config)
-const scheduleElapsedTimeNotifications = (periodElapsed, periodStartTime) => {
+const scheduleElapsedTimeNotifications = (periodElapsed, periodStartTime, periodDuration, periodUserIntendedDuration) => {
     const intervals = getElapsedIntervals() // Get intervals from config keys
     const currentTime = Date.now()
 
@@ -413,13 +423,13 @@ const scheduleElapsedTimeNotifications = (periodElapsed, periodStartTime) => {
         }
 
         if (shouldPlaySound(currentTime, targetTime)) {
-            resolveAndPlaySounds(targetTime)
+            resolveAndPlaySounds(targetTime, periodElapsed, periodDuration, periodUserIntendedDuration)
         }
     }
 }
 
 // Set 2: Check for remaining time warnings (dynamic intervals from config)
-const scheduleRemainingTimeNotifications = (periodDuration, periodStartTime) => {
+const scheduleRemainingTimeNotifications = (periodDuration, periodStartTime, periodElapsed, periodUserIntendedDuration) => {
     const warnings = getRemainingIntervals() // Get intervals from config keys
     const currentTime = Date.now()
     const periodEndTime = periodStartTime + periodDuration
@@ -444,7 +454,7 @@ const scheduleRemainingTimeNotifications = (periodDuration, periodStartTime) => 
         }
 
         if (shouldPlaySound(currentTime, targetTime)) {
-            resolveAndPlaySounds(targetTime)
+            resolveAndPlaySounds(targetTime, periodElapsed, periodDuration, periodUserIntendedDuration)
         }
     }
 }
@@ -473,7 +483,7 @@ export const playPeriodEndNotification = (
             targetMinutes: 0,
         })
 
-        resolveAndPlaySounds(currentTime)
+        resolveAndPlaySounds(currentTime, periodElapsed, 0, periodUserIntendedDuration)
         console.log(`🔊 Period-end notification played for ${soundKey}`)
 
         // Log period end notification
@@ -481,6 +491,9 @@ export const playPeriodEndNotification = (
             nextPeriodType: nextPeriodType,
             elapsedMinutes: Math.floor(periodElapsed / 60000),
             userIntendedMinutes: Math.floor(periodUserIntendedDuration / 60000),
+            durationElapsed: periodElapsed,
+            duration: 0, // Period duration not available in this function
+            durationUserPlanned: periodUserIntendedDuration,
         })
     } else {
         console.log(`🔇 Period-end notification skipped (already played or not first extension)`)
@@ -488,7 +501,7 @@ export const playPeriodEndNotification = (
 }
 
 // Set 4: Check for overtime announcements (dynamic intervals from config)
-const scheduleOvertimeNotifications = (overtimeElapsed, overtimeStartTime, periodType = 'work') => {
+const scheduleOvertimeNotifications = (overtimeElapsed, overtimeStartTime, periodType, periodElapsed, periodDuration, periodUserIntendedDuration) => {
     const intervals = getOvertimeIntervals(periodType) // Get intervals from config keys (excluding last)
     const currentTime = Date.now()
 
@@ -514,7 +527,7 @@ const scheduleOvertimeNotifications = (overtimeElapsed, overtimeStartTime, perio
         }
 
         if (shouldPlaySound(currentTime, targetTime)) {
-            resolveAndPlaySounds(targetTime)
+            resolveAndPlaySounds(targetTime, periodElapsed, periodDuration, periodUserIntendedDuration)
         }
     }
 
@@ -538,7 +551,7 @@ const scheduleOvertimeNotifications = (overtimeElapsed, overtimeStartTime, perio
         }
 
         if (shouldPlaySound(currentTime, lastOvertimeTarget)) {
-            resolveAndPlaySounds(lastOvertimeTarget)
+            resolveAndPlaySounds(lastOvertimeTarget, periodElapsed, periodDuration, periodUserIntendedDuration)
         }
     }
 }
@@ -569,7 +582,7 @@ export const playTimerNotifications = (
         const overtimeStartTime = periodStartTime + userIntendedDuration
         const overtimeElapsed = periodElapsed - userIntendedDuration
         console.log(`🕐 In overtime: ${Math.floor(overtimeElapsed / 60000)} minutes overtime`)
-        scheduleOvertimeNotifications(overtimeElapsed, overtimeStartTime, periodType)
+        scheduleOvertimeNotifications(overtimeElapsed, overtimeStartTime, periodType, periodElapsed, periodDuration, periodUserIntendedDuration)
     } else {
         // Stop overtime loop if we're no longer in overtime
         if (isOvertimeLoopingActive) {
@@ -577,10 +590,10 @@ export const playTimerNotifications = (
         }
 
         // Set 1: Elapsed time announcements
-        scheduleElapsedTimeNotifications(periodElapsed, periodStartTime)
+        scheduleElapsedTimeNotifications(periodElapsed, periodStartTime, periodDuration, periodUserIntendedDuration)
 
         // Set 2: Remaining time warnings (based on user intended duration)
-        scheduleRemainingTimeNotifications(userIntendedDuration, periodStartTime)
+        scheduleRemainingTimeNotifications(userIntendedDuration, periodStartTime, periodElapsed, periodUserIntendedDuration)
     }
 }
 

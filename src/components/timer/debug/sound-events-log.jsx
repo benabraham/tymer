@@ -95,6 +95,27 @@ export const SoundEventsLog = () => {
                                 </div>
                             )}
 
+                            {(event.durationElapsed !== undefined || event.duration !== undefined || event.durationUserPlanned !== undefined) && (
+                                <div style={{ color: '#666', fontSize: '11px', marginTop: '4px' }}>
+                                    <div>Duration Info:</div>
+                                    {event.durationElapsed !== undefined && (
+                                        <span style={{ marginRight: '8px' }}>
+                                            Elapsed: {formatTime(event.durationElapsed)}
+                                        </span>
+                                    )}
+                                    {event.duration !== undefined && (
+                                        <span style={{ marginRight: '8px' }}>
+                                            Current: {formatTime(event.duration)}
+                                        </span>
+                                    )}
+                                    {event.durationUserPlanned !== undefined && (
+                                        <span>
+                                            Planned: {formatTime(event.durationUserPlanned)}
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+
                             {event.action && (
                                 <div style={{ color: event.action === 'start' ? '#0a0' : '#a00' }}>
                                     Action: {event.action}
