@@ -1,5 +1,5 @@
-import {useState, useRef, useEffect, useCallback} from 'preact/hooks'
-import {msToMinutes, formatTime} from '../../../lib/format'
+import { useState, useRef, useEffect, useCallback } from 'preact/hooks'
+import { msToMinutes, formatTime } from '../../../lib/format'
 import {
     updatePeriod,
     pauseTimer,
@@ -9,9 +9,9 @@ import {
     addPeriodAtIndex,
     autoEditIndex,
 } from '../../../lib/timer'
-import {TimelineCurrentTime} from './timeline-current-time'
+import { TimelineCurrentTime } from './timeline-current-time'
 
-export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) => {
+export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) => {
     const [isEditing, setIsEditing] = useState(false)
     const [wasTimerRunning, setWasTimerRunning] = useState(false)
     const [originalValues, setOriginalValues] = useState(null)
@@ -68,7 +68,7 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
 
     // Update timer state immediately when values change
     const handleTypeChange = newType => {
-        updatePeriod(index, {type: newType})
+        updatePeriod(index, { type: newType })
     }
 
     const handleDurationChange = newDuration => {
@@ -101,7 +101,7 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
     }
 
     const handleNoteChange = newNote => {
-        updatePeriod(index, {note: newNote})
+        updatePeriod(index, { note: newNote })
     }
 
     const handleDelete = () => {
@@ -119,7 +119,7 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
         }
     }
 
-    const handleAddPeriod = (event) => {
+    const handleAddPeriod = event => {
         event.stopPropagation()
         addPeriodAtIndex(index)
         // The new period at index + 1 will automatically open for editing
@@ -194,7 +194,6 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
                             min="1"
                             max="999"
                         />
-
                     </div>
                     <div class="timeline__edit-row">
                         <input
@@ -212,7 +211,6 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
                         >
                             🗑️
                         </button>
-
                     </div>
                 </div>
             </div>
@@ -245,7 +243,7 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
                 class="timeline__elapsed-time"
                 style={`--elapsed-minutes: ${msToMinutes(period.periodDurationElapsed)};`}
             >
-                {isActive && <TimelineCurrentTime period={period}/>}
+                {isActive && <TimelineCurrentTime period={period} />}
             </div>
             {isActive && <div class="timeline__subinterval"></div>}
             {isActive && period.periodDurationElapsed > period.periodUserIntendedDuration && (

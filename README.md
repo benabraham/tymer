@@ -3,8 +3,8 @@
 ## Develop
 
 ```bash
-npm i
-npm run dev
+pnpm i
+pnpm run dev
 ```
 
 ## What it does
@@ -27,7 +27,7 @@ It uses localStorage to “keep running” after closing the page and opening it
 Builds the app for production to the `dist` folder.
 
 ```bash
-npm run build
+pnpm run build
 ```
 ## Deployment
 
@@ -37,8 +37,8 @@ https://benabraham.github.io/tymer/
 ## Tests
 
 ```bash
-npm test           # Run tests with Vitest
-npm run test:coverage  # Run tests with coverage report
+pnpm test           # Run tests with Vitest
+pnpm run test:coverage  # Run tests with coverage report
 ```
 
 There are a few tests but they are just a generated skeleton and not really working yet.

@@ -611,7 +611,7 @@ export const removePeriodByIndex = periodIndex => {
     // If removing the current period, move to next/previous period first
     if (timerState.value.currentPeriodIndex === periodIndex) {
         const isLastPeriod = periodIndex === timerState.value.periods.length - 1
-        
+
         if (isLastPeriod) {
             // If we're on the last period, move to the previous period
             moveToPreviousPeriod()
@@ -630,8 +630,8 @@ export const removePeriodByIndex = periodIndex => {
     } else if (newCurrentPeriodIndex === periodIndex) {
         // If we moved to next and then removed, adjust index down by 1
         const wasLastPeriod = periodIndex === timerState.value.periods.length - 1
-        newCurrentPeriodIndex = wasLastPeriod 
-            ? timerState.value.currentPeriodIndex 
+        newCurrentPeriodIndex = wasLastPeriod
+            ? timerState.value.currentPeriodIndex
             : timerState.value.currentPeriodIndex - 1
     }
 

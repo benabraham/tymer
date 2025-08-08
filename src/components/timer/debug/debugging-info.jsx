@@ -40,9 +40,9 @@ export const DebuggingInfo = () => {
             </p>
 
             <PeriodDetails />
-            
+
             <hr style={{ margin: '16px 0', borderColor: '#ddd' }} />
-            
+
             <SoundEventsLog />
         </details>
     )

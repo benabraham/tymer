@@ -18,7 +18,7 @@ const loadSoundEvents = () => {
     }
 }
 
-const saveSoundEvents = (events) => {
+const saveSoundEvents = events => {
     try {
         const eventsToSave = events.slice(-MAX_EVENTS)
         localStorage.setItem(STORAGE_KEY, JSON.stringify(eventsToSave))
@@ -33,13 +33,13 @@ export const logSoundEvent = (eventType, soundKey, additionalData = {}) => {
         time: new Date().toLocaleTimeString(),
         type: eventType,
         sound: soundKey,
-        ...additionalData
+        ...additionalData,
     }
-    
+
     const newEvents = [...soundEvents.value, event].slice(-MAX_EVENTS)
     soundEvents.value = newEvents
     saveSoundEvents(newEvents)
-    
+
     console.log(`🔊 Sound Event: ${eventType}/${soundKey}`, additionalData)
 }
 

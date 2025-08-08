@@ -27,10 +27,10 @@ export const unlockAudio = async () => {
 
         audioUnlocked = true
         console.log('🔊 Audio context unlocked successfully')
-        
+
         // Keep audio context alive for PWA
         startAudioContextKeepAlive()
-        
+
         return true
     } catch (error) {
         console.warn('Failed to unlock audio context:', error)
@@ -41,22 +41,20 @@ export const unlockAudio = async () => {
 // Keep audio context alive with periodic silent sounds (PWA optimization)
 const startAudioContextKeepAlive = () => {
     if (audioContextKeepAlive) return // Already running
-    
+
     const keepAliveSilentSound = new Howl({
-        src: [
-            'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=',
-        ],
+        src: ['data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA='],
         volume: 0,
         html5: false,
     })
-    
+
     // Play silent sound every 30 seconds to keep context alive
     audioContextKeepAlive = setInterval(() => {
         if (document.visibilityState === 'visible') {
             keepAliveSilentSound.play()
         }
     }, 30000)
-    
+
     // Handle visibility changes for PWA
     const handleVisibilityChange = () => {
         if (document.visibilityState === 'visible' && audioUnlocked) {
@@ -64,7 +62,7 @@ const startAudioContextKeepAlive = () => {
             keepAliveSilentSound.play()
         }
     }
-    
+
     document.addEventListener('visibilitychange', handleVisibilityChange)
 }
 
@@ -145,16 +143,22 @@ const sounds = Object.fromEntries(
 
 // Get sound configuration intervals from config keys
 const getElapsedIntervals = () => {
-    return Object.keys(soundConfig.elapsed).map(Number).sort((a, b) => a - b)
+    return Object.keys(soundConfig.elapsed)
+        .map(Number)
+        .sort((a, b) => a - b)
 }
 
 const getRemainingIntervals = () => {
-    return Object.keys(soundConfig.remaining).map(Number).sort((a, b) => a - b)
+    return Object.keys(soundConfig.remaining)
+        .map(Number)
+        .sort((a, b) => a - b)
 }
 
 const getOvertimeIntervals = (periodType = 'work') => {
     const configKey = periodType === 'break' ? 'overtimeBreak' : 'overtime'
-    const allKeys = Object.keys(soundConfig[configKey]).map(Number).sort((a, b) => a - b)
+    const allKeys = Object.keys(soundConfig[configKey])
+        .map(Number)
+        .sort((a, b) => a - b)
     // Return all keys except the last one (which is used for looping)
     return allKeys.slice(0, -1)
 }
@@ -162,7 +166,9 @@ const getOvertimeIntervals = (periodType = 'work') => {
 // Get the last overtime sound configuration for looping
 const getLastOvertimeConfig = (periodType = 'work') => {
     const configKey = periodType === 'break' ? 'overtimeBreak' : 'overtime'
-    const overtimeKeys = Object.keys(soundConfig[configKey]).map(Number).sort((a, b) => a - b)
+    const overtimeKeys = Object.keys(soundConfig[configKey])
+        .map(Number)
+        .sort((a, b) => a - b)
     const lastKey = overtimeKeys[overtimeKeys.length - 1]
     return { key: lastKey, path: soundConfig[configKey][lastKey], configKey }
 }
@@ -181,7 +187,7 @@ const overtimeLoopingSounds = {
         src: [breakOvertimeConfig.path],
         loop: true,
         volume: 1.0,
-    })
+    }),
 }
 
 // Track looping sound state
@@ -192,49 +198,49 @@ let currentOvertimeLoopType = null
 const startOvertimeLoop = async (periodType = 'work') => {
     // If already playing the same type, do nothing
     if (isOvertimeLoopingActive && currentOvertimeLoopType === periodType) return
-    
+
     // If playing different type, stop current first
     if (isOvertimeLoopingActive && currentOvertimeLoopType !== periodType) {
         stopOvertimeLoop()
     }
-    
+
     // Try to unlock audio if not already unlocked
     if (!audioUnlocked) {
         await unlockAudio()
     }
-    
+
     // Stop any other sounds before starting the loop
     Howler.stop()
-    
+
     const loopSound = overtimeLoopingSounds[periodType] || overtimeLoopingSounds.work
     loopSound.play()
     isOvertimeLoopingActive = true
     currentOvertimeLoopType = periodType
     console.log(`🔊 Started continuous overtime loop for ${periodType}`)
-    
+
     // Log overtime loop start
     logSoundEvent('overtimeLoop', `continuous-${periodType}`, {
         action: 'start',
-        periodType
+        periodType,
     })
 }
 
 // Stop the continuous overtime looping sound
 const stopOvertimeLoop = () => {
     if (!isOvertimeLoopingActive) return // Not playing
-    
+
     // Stop all overtime looping sounds
     Object.values(overtimeLoopingSounds).forEach(sound => sound.stop())
     const previousType = currentOvertimeLoopType
     isOvertimeLoopingActive = false
     currentOvertimeLoopType = null
     console.log('🔇 Stopped continuous overtime loop')
-    
+
     // Log overtime loop stop
     if (previousType) {
         logSoundEvent('overtimeLoop', `continuous-${previousType}`, {
             action: 'stop',
-            periodType: previousType
+            periodType: previousType,
         })
     }
 }
@@ -332,7 +338,7 @@ const resolveAndPlaySounds = targetTime => {
         setName: winningSound.setName,
         targetMinutes: winningSound.targetMinutes,
         beatenSounds: sortedSounds.length - 1,
-        allSounds: sortedSounds.map(s => `${s.type}/${s.soundKey}`)
+        allSounds: sortedSounds.map(s => `${s.type}/${s.soundKey}`),
     })
 
     playFromSet(winningSound.setName, winningSound.soundKey)
@@ -469,12 +475,12 @@ export const playPeriodEndNotification = (
 
         resolveAndPlaySounds(currentTime)
         console.log(`🔊 Period-end notification played for ${soundKey}`)
-        
+
         // Log period end notification
         logSoundEvent('periodEnd', soundKey, {
             nextPeriodType: nextPeriodType,
             elapsedMinutes: Math.floor(periodElapsed / 60000),
-            userIntendedMinutes: Math.floor(periodUserIntendedDuration / 60000)
+            userIntendedMinutes: Math.floor(periodUserIntendedDuration / 60000),
         })
     } else {
         console.log(`🔇 Period-end notification skipped (already played or not first extension)`)
@@ -515,7 +521,7 @@ const scheduleOvertimeNotifications = (overtimeElapsed, overtimeStartTime, perio
     // Check last overtime milestone and start continuous loop thereafter
     const lastOvertimeConfig = getLastOvertimeConfig(periodType)
     const lastOvertimeThreshold = lastOvertimeConfig.key * 60 * 1000 // Convert minutes to milliseconds
-    
+
     if (overtimeElapsed >= lastOvertimeThreshold) {
         // After reaching the last overtime milestone, start continuous looping sound
         startOvertimeLoop(periodType)
@@ -569,7 +575,7 @@ export const playTimerNotifications = (
         if (isOvertimeLoopingActive) {
             stopOvertimeLoop()
         }
-        
+
         // Set 1: Elapsed time announcements
         scheduleElapsedTimeNotifications(periodElapsed, periodStartTime)
 
@@ -581,7 +587,7 @@ export const playTimerNotifications = (
 // Export function for manual window invalidation (called by timer when timing changes)
 export const invalidateSoundWindows = reason => {
     invalidateAllWindows(reason)
-    
+
     // Stop overtime loop when timing changes significantly
     if (isOvertimeLoopingActive) {
         stopOvertimeLoop()

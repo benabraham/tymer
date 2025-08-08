@@ -8,13 +8,13 @@ This is a countdown timer web application built with Preact and Vite called "Tym
 
 ## Development Commands
 
-- `npm run dev` - Start development server (Vite) on port 3000
-- `npm run build` - Build for production to `dist/` folder
-- `npm run preview` - Preview production build
-- `npm test` - Run tests with Vitest
-- `npm run test:coverage` - Run tests with coverage report
-- `npm run format` - Format code with Prettier
-- `npm run format:check` - Check code formatting
+- `pnpm run dev` - Start development server (Vite) on port 3000
+- `pnpm run build` - Build for production to `dist/` folder
+- `pnpm run preview` - Preview production build
+- `pnpm test` - Run tests with Vitest
+- `pnpm run test:coverage` - Run tests with coverage report
+- `pnpm run format` - Format code with Prettier
+- `pnpm run format:check` - Check code formatting
 
 ## Architecture
 
