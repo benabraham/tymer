@@ -53,7 +53,7 @@ export const clearSoundEvents = () => {
 }
 
 export const recentSoundEvents = computed(() => {
-    return soundEvents.value.slice(-20).reverse()
+    return soundEvents.value.slice().reverse()
 })
 
 export const initializeSoundEvents = () => {

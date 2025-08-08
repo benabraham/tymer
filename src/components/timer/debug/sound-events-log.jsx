@@ -111,7 +111,7 @@ export const SoundEventsLog = () => {
                 fontSize: '10px', 
                 color: '#888' 
             }}>
-                Showing last {events.length} event{events.length !== 1 ? 's' : ''} (max 20 displayed, max 1000 stored)
+                Showing {events.length} event{events.length !== 1 ? 's' : ''} (max 1000 stored)
             </div>
         </div>
     )
