@@ -8,8 +8,22 @@ import { soundPreloadPlugin } from './build-tools/sound-preloader.js'
 // https://vitejs.dev/config/
 export default defineConfig({
   define: {
-    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
-    __BUILD_HASH__: JSON.stringify(Date.now().toString(36).toUpperCase()),
+    __BUILD_AVATAR__: JSON.stringify(
+        String.fromCodePoint(
+            (() => {
+                const ranges = [
+                    [0x1F32A, 0x1F50D],
+                    [0x1F56F, 0x1F5FA],
+                    [0x1F687, 0x1F6F3],
+                    [0x1F300, 0x1F31F],
+                    [0x1F330, 0x1F393],
+                    [0x1F400, 0x1F4FF],
+                ]
+                const [start, end] = ranges[Math.floor(Math.random() * ranges.length)]
+                return Math.floor(Math.random() * (end - start + 1)) + start
+            })()
+        )
+    ),
   },
   plugins: [
     preact(),

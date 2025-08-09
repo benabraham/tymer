@@ -1,28 +1,13 @@
 .build-info {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.3);
-    font-family: monospace;
+    top: 0.5rem;
+    right: 0.5rem;
+    color: #eee;
+    font-size: 1.5rem;
+    font-weight: bold;
     user-select: none;
     pointer-events: auto;
     cursor: default;
     z-index: 1000;
-    
-    .build-hash {
-        padding: 2px 6px;
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 3px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    &:hover {
-        color: rgba(255, 255, 255, 0.5);
-        
-        .build-hash {
-            background: rgba(0, 0, 0, 0.3);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-    }
+
 }

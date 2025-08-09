@@ -27,6 +27,7 @@ button:not(:disabled):hover {
 button:focus,
 button:focus-visible {
     outline: 4px auto -webkit-focus-ring-color;
+    z-index: 555;
 }
 
 button.highlighted {
@@ -42,4 +43,37 @@ button.highlighted {
     100% {
         background-color: #9f9f00;
     }
+}
+
+.button-group {
+    display: flex;
+    justify-content: center;
+
+    &>button {
+        min-width: auto;
+        flex-basis: max-content;
+        padding-inline: 1ch;
+
+        &:not(:first-child) {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+
+        &:not(:last-child) {
+            border-right-color: #555;
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        &.button--sm {
+            color: #ccc;
+            font-weight: normal;
+        }
+
+        &.button--xs {
+            color: #aaa;
+            font-size: 0.625rem;
+        }
+    }
+
 }

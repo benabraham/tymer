@@ -30,7 +30,7 @@ export const TimerControls = () => {
 
     return (
         <>
-            <section class="controls">
+            <section class="controls ">
                 <button
                     onClick={resetTimer}
                     disabled={
@@ -52,10 +52,9 @@ export const TimerControls = () => {
                     {timerState.value.runningIntervalId
                         ? '⏸️️'
                         : timerState.value.timestampPaused
-                          ? '▶️️'
-                          : '▶️️ Start'}
+                            ? '▶️️'
+                            : '▶️️ Start'}
                 </button>
-
                 <button
                     onClick={handleTimerCompletion}
                     disabled={
@@ -71,30 +70,34 @@ export const TimerControls = () => {
                 </button>
             </section>
             <section class="controls">
-                <button
-                    onClick={moveToPreviousPeriod}
-                    disabled={
-                        timerHasFinished.value
-                        || timerState.value.currentPeriodIndex === null
-                        || timerState.value.currentPeriodIndex === 0
-                    }
-                >
-                    ⏮️
-                </button>
+                <div class="button-group">
 
-                <button
-                    onClick={moveToNextPeriod}
-                    disabled={
-                        timerHasFinished.value
-                        || timerState.value.currentPeriodIndex === null
-                        || timerOnLastPeriod.value
-                    }
-                    class={
-                        !timerOnLastPeriod.value && shouldGoToNextPeriod.value ? 'highlighted' : ''
-                    }
-                >
-                    ⏭️
-                </button>
+                    <button
+                        onClick={moveToPreviousPeriod}
+                        disabled={
+                            timerHasFinished.value
+                            || timerState.value.currentPeriodIndex === null
+                            || timerState.value.currentPeriodIndex === 0
+                        }
+                    >
+                        ⏮️
+                    </button>
+
+                    <button
+                        onClick={moveToNextPeriod}
+                        disabled={
+                            timerHasFinished.value
+                            || timerState.value.currentPeriodIndex === null
+                            || timerOnLastPeriod.value
+                        }
+                        class={
+                            !timerOnLastPeriod.value && shouldGoToNextPeriod.value ? 'highlighted' : ''
+                        }
+                    >
+                        ⏭️
+                    </button>
+                </div>
+
             </section>
         </>
     )
