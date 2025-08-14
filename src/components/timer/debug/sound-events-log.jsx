@@ -100,17 +100,17 @@ export const SoundEventsLog = () => {
                                     <div>Duration Info:</div>
                                     {event.durationElapsed !== undefined && (
                                         <span style={{ marginRight: '8px' }}>
-                                            Elapsed: {formatTime(event.durationElapsed)}
+                                            Elapsed: {formatTime(event.durationElapsed, true, false)}
                                         </span>
                                     )}
                                     {event.duration !== undefined && (
                                         <span style={{ marginRight: '8px' }}>
-                                            Current: {formatTime(event.duration)}
+                                            Current: {formatTime(event.duration, false, false)}
                                         </span>
                                     )}
                                     {event.durationUserPlanned !== undefined && (
                                         <span>
-                                            Planned: {formatTime(event.durationUserPlanned)}
+                                            Planned: {formatTime(event.durationUserPlanned, false, false)}
                                         </span>
                                     )}
                                 </div>

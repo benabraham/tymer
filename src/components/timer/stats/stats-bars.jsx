@@ -21,7 +21,7 @@ export const StatsBars = ({ periodSums }) => {
                         `}
                     >
                         <div class="stats-text stats-elapsed-text">
-                            {formatTime(periodData.durationElapsed)}
+                            {formatTime(periodData.durationElapsed, true, false)}
                         </div>
                     </div>
                 )}

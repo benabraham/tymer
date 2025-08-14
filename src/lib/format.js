@@ -1,15 +1,36 @@
 // converts milliseconds to human-readable format
-export const formatTime = (ms, floor, debug) => {
+export const formatTime = (ms, elapsed, remaining, debug) => {
     // handle null/undefined input
     if (ms == null) return '–––'
 
-    const totalSeconds = floor ? Math.floor(ms / 1000) : Math.ceil(ms / 1000)
-    const hours = Math.floor(totalSeconds / 3600)
-    const minutes = Math.floor((totalSeconds % 3600) / 60)
-    const seconds = totalSeconds % 60
+    if (debug) {
+        // debug mode shows exact seconds
+        const totalSeconds = Math.floor(ms / 1000)
+        const hours = Math.floor(totalSeconds / 3600)
+        const minutes = Math.floor((totalSeconds % 3600) / 60)
+        const seconds = totalSeconds % 60
+        const pad = (num, places = 2, fillChar = '0') => num.toString().padStart(places, fillChar)
+        return `${pad(hours)}:${pad(minutes)}:${pad(seconds)} ${pad(ms, 6, ' ')} ms`
+    }
 
+    // For non-debug mode, round at the minute level for proper display
+    // elapsed time should round down, remaining time should round up
+    let totalMinutes
+    if (elapsed) {
+        // Floor for elapsed time
+        totalMinutes = Math.floor(ms / (60 * 1000))
+    } else if (remaining) {
+        // Ceil for remaining time
+        totalMinutes = Math.ceil(ms / (60 * 1000))
+    } else {
+        // Default behavior: round to nearest minute
+        totalMinutes = Math.round(ms / (60 * 1000))
+    }
+    
+    const hours = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60
+    
     const pad = (num, places = 2, fillChar = '0') => num.toString().padStart(places, fillChar)
-    if (debug) return `${pad(hours)}:${pad(minutes)}:${pad(seconds)} ${pad(ms, 6, ' ')} ms`
     return `${hours}:${pad(minutes)}`
 }
 

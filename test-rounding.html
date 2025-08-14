@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Timer Rounding Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #222;
+            color: #fff;
+        }
+        .test-case {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #555;
+        }
+        .pass { color: #0f0; }
+        .fail { color: #f00; }
+        table {
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        td, th {
+            padding: 8px;
+            border: 1px solid #555;
+            text-align: left;
+        }
+        th { background: #333; }
+    </style>
+</head>
+<body>
+    <h1>Timer Rounding Test</h1>
+    <div id="results"></div>
+    
+    <script type="module">
+        // Test the formatTime function with various scenarios
+        import { formatTime } from './src/lib/format.js'
+        
+        const testCases = [
+            {
+                name: "12 minute period - 2 minutes elapsed",
+                totalMs: 12 * 60 * 1000,  // 12 minutes
+                elapsedMs: 2 * 60 * 1000 + 15 * 1000,  // 2 minutes 15 seconds
+                remainingMs: 9 * 60 * 1000 + 45 * 1000,  // 9 minutes 45 seconds
+            },
+            {
+                name: "48 minute period - near completion",
+                totalMs: 48 * 60 * 1000,  // 48 minutes
+                elapsedMs: 47 * 60 * 1000 + 50 * 1000,  // 47 minutes 50 seconds
+                remainingMs: 10 * 1000,  // 10 seconds
+            },
+            {
+                name: "60 minute period - halfway",
+                totalMs: 60 * 60 * 1000,  // 60 minutes
+                elapsedMs: 29 * 60 * 1000 + 30 * 1000,  // 29 minutes 30 seconds
+                remainingMs: 30 * 60 * 1000 + 30 * 1000,  // 30 minutes 30 seconds
+            },
+            {
+                name: "Edge case: 1 second remaining",
+                totalMs: 10 * 60 * 1000,  // 10 minutes
+                elapsedMs: 9 * 60 * 1000 + 59 * 1000,  // 9 minutes 59 seconds
+                remainingMs: 1 * 1000,  // 1 second
+            }
+        ]
+        
+        const resultsDiv = document.getElementById('results')
+        
+        testCases.forEach(test => {
+            const div = document.createElement('div')
+            div.className = 'test-case'
+            
+            const totalFormatted = formatTime(test.totalMs, false, false)
+            const elapsedFormatted = formatTime(test.elapsedMs, true, false)  // elapsed=true
+            const remainingFormatted = formatTime(test.remainingMs, false, true)  // remaining=true
+            
+            // Parse the formatted times back to minutes
+            const parseTime = (timeStr) => {
+                const [hours, minutes] = timeStr.split(':').map(Number)
+                return hours * 60 + minutes
+            }
+            
+            const totalMinutes = parseTime(totalFormatted)
+            const elapsedMinutes = parseTime(elapsedFormatted)
+            const remainingMinutes = parseTime(remainingFormatted)
+            
+            const sumMinutes = elapsedMinutes + remainingMinutes
+            const isCorrect = sumMinutes === totalMinutes
+            
+            div.innerHTML = `
+                <h3>${test.name}</h3>
+                <table>
+                    <tr>
+                        <th>Value</th>
+                        <th>Raw (ms)</th>
+                        <th>Raw (minutes)</th>
+                        <th>Formatted</th>
+                        <th>Parsed Minutes</th>
+                    </tr>
+                    <tr>
+                        <td>Total Duration</td>
+                        <td>${test.totalMs}</td>
+                        <td>${(test.totalMs / 60000).toFixed(2)}</td>
+                        <td>${totalFormatted}</td>
+                        <td>${totalMinutes}</td>
+                    </tr>
+                    <tr>
+                        <td>Elapsed (floor)</td>
+                        <td>${test.elapsedMs}</td>
+                        <td>${(test.elapsedMs / 60000).toFixed(2)}</td>
+                        <td>${elapsedFormatted}</td>
+                        <td>${elapsedMinutes}</td>
+                    </tr>
+                    <tr>
+                        <td>Remaining (ceil)</td>
+                        <td>${test.remainingMs}</td>
+                        <td>${(test.remainingMs / 60000).toFixed(2)}</td>
+                        <td>${remainingFormatted}</td>
+                        <td>${remainingMinutes}</td>
+                    </tr>
+                </table>
+                <p class="${isCorrect ? 'pass' : 'fail'}">
+                    Sum: ${elapsedMinutes} + ${remainingMinutes} = ${sumMinutes} 
+                    ${isCorrect ? '✓ CORRECT' : `✗ WRONG (expected ${totalMinutes})`}
+                </p>
+            `
+            
+            resultsDiv.appendChild(div)
+        })
+    </script>
+</body>
+</html>

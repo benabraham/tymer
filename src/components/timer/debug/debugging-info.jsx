@@ -16,13 +16,13 @@ export const DebuggingInfo = () => {
         <details open>
             <summary>Debugging values</summary>
             <p>
-                <code>timerDuration</code> {formatTime(timerDuration.value, false, true)}
+                <code>timerDuration</code> {formatTime(timerDuration.value, false, false, true)}
                 <br />
                 <code>timerDurationElapsed </code>{' '}
-                {formatTime(timerDurationElapsed.value, true, true)}
+                {formatTime(timerDurationElapsed.value, true, false, true)}
                 <br />
                 <code>timerDurationRemaining </code>{' '}
-                {formatTime(timerDurationRemaining.value, false, true)}
+                {formatTime(timerDurationRemaining.value, false, true, true)}
                 <br />
                 <code>currentPeriodIndex </code> {timerState.value.currentPeriodIndex}
                 <br />
