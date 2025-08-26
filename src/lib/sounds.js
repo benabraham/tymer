@@ -114,13 +114,3 @@ export const playTimerFinishedSound = () => {
     return playFromSet('general', 'timerFinished')
 }
 
-// Button click handler with sound
-export const handleButtonClick = async (onClick) => {
-    // Play button sound
-    await playSound('button')
-    
-    // Execute the actual click handler
-    if (onClick && typeof onClick === 'function') {
-        return onClick()
-    }
-}

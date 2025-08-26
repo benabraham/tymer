@@ -10,14 +10,14 @@ import {
     addPeriod,
     removePeriod,
 } from '../../../lib/timer'
-import { handleButtonClick } from '../../../lib/sounds'
+import { SoundWrapper } from '../../common/sound-wrapper'
 
 export const PeriodControls = () => (
     <>
         <section class="controls">
             <div class="button-group">
-                <button
-                    onClick={() => handleButtonClick(moveElapsedTimeToPreviousPeriod)}
+                <SoundWrapper
+                    onClick={moveElapsedTimeToPreviousPeriod}
                     disabled={
                         timerState.value.currentPeriodIndex === null
                         || timerDurationElapsed.value === 0
@@ -25,69 +25,69 @@ export const PeriodControls = () => (
                     }
                 >
                     move time to previous
-                </button>
+                </SoundWrapper>
             </div>
 
             <div class="button-group">
-                <button
-                    onClick={() => handleButtonClick(() => adjustElapsed(-timerDurationElapsed.value))}
+                <SoundWrapper
+                    onClick={() => adjustElapsed(-timerDurationElapsed.value)}
                     disabled={
                         timerState.value.currentPeriodIndex === null
                         || timerDurationElapsed.value === 0
                     }
                 >
                     🔙
-                </button>
-                <button
-                    onClick={() => handleButtonClick(() => adjustElapsed(-6 * 60 * 1000))}
+                </SoundWrapper>
+                <SoundWrapper
+                    onClick={() => adjustElapsed(-6 * 60 * 1000)}
                     disabled={
                         timerState.value.currentPeriodIndex === null
                         || timerDurationElapsed.value === 0
                     }
                 >
                     &lt;--- 6 m
-                </button>
-                <button
-                    onClick={() => handleButtonClick(() => adjustElapsed(-1 * 60 * 1000))}
+                </SoundWrapper>
+                <SoundWrapper
+                    onClick={() => adjustElapsed(-1 * 60 * 1000)}
                     disabled={
                         timerState.value.currentPeriodIndex === null
                         || timerDurationElapsed.value === 0
                     }
                 >
                     &lt;-- 1 m
-                </button>
-                {/*<button
+                </SoundWrapper>
+                {/*<SoundWrapper
                 onClick={() => adjustElapsed(-12 * 1000)}
                 disabled={
                     timerState.value.currentPeriodIndex === null || timerDurationElapsed.value === 0
                 }
             >
                 &lt;- 12 s
-            </button>
-            <button
+            </SoundWrapper>
+            <SoundWrapper
                 onClick={() => adjustElapsed(12 * 1000)}
                 disabled={timerState.value.currentPeriodIndex === null}
             >
                 12 s -&gt;
-            </button>*/}
-                <button
-                    onClick={() => handleButtonClick(() => adjustElapsed(1 * 60 * 1000))}
+            </SoundWrapper>*/}
+                <SoundWrapper
+                    onClick={() => adjustElapsed(1 * 60 * 1000)}
                     disabled={timerState.value.currentPeriodIndex === null}
                 >
                     1 m --&gt;
-                </button>
-                <button
-                    onClick={() => handleButtonClick(() => adjustElapsed(6 * 60 * 1000))}
+                </SoundWrapper>
+                <SoundWrapper
+                    onClick={() => adjustElapsed(6 * 60 * 1000)}
                     disabled={timerState.value.currentPeriodIndex === null}
                 >
                     6 m ---&gt;
-                </button>
+                </SoundWrapper>
             </div>
         </section>
         <section class="controls mb-0">
             <div class="button-group">
-                <button
-                    onClick={() => handleButtonClick(() => adjustDuration(-6 * 60 * 1000))}
+                <SoundWrapper
+                    onClick={() => adjustDuration(-6 * 60 * 1000)}
                     disabled={
                         timerHasFinished.value
                         || timerState.value.currentPeriodIndex === null
@@ -96,9 +96,9 @@ export const PeriodControls = () => (
                     }
                 >
                     ➖ 6 min
-                </button>
-                <button
-                    onClick={() => handleButtonClick(() => adjustDuration(-1 * 60 * 1000))}
+                </SoundWrapper>
+                <SoundWrapper
+                    onClick={() => adjustDuration(-1 * 60 * 1000)}
                     disabled={
                         timerHasFinished.value
                         || timerState.value.currentPeriodIndex === null
@@ -107,42 +107,42 @@ export const PeriodControls = () => (
                     }
                 >
                     ➖ 1 min
-                </button>
-                <button
-                    onClick={() => handleButtonClick(() => adjustDuration(1 * 60 * 1000))}
+                </SoundWrapper>
+                <SoundWrapper
+                    onClick={() => adjustDuration(1 * 60 * 1000)}
                     disabled={
                         timerHasFinished.value || timerState.value.currentPeriodIndex === null
                     }
                 >
                     ➕ 1 min
-                </button>
-                <button
-                    onClick={() => handleButtonClick(() => adjustDuration(6 * 60 * 1000))}
+                </SoundWrapper>
+                <SoundWrapper
+                    onClick={() => adjustDuration(6 * 60 * 1000)}
                     disabled={
                         timerHasFinished.value || timerState.value.currentPeriodIndex === null
                     }
                 >
                     ➕ 6 min
-                </button>
+                </SoundWrapper>
             </div>
         </section>
         <section class="controls">
-            <button onClick={() => handleButtonClick(changeType)} disabled={timerState.value.currentPeriodIndex === null}>
+            <SoundWrapper onClick={changeType} disabled={timerState.value.currentPeriodIndex === null}>
                 change type
-            </button>
+            </SoundWrapper>
             <div class="button-group">
-                <button onClick={() => handleButtonClick(addPeriod)} disabled={timerState.value.currentPeriodIndex === null}>
+                <SoundWrapper onClick={addPeriod} disabled={timerState.value.currentPeriodIndex === null}>
                     add period
-                </button>
-                <button
-                    onClick={() => handleButtonClick(removePeriod)}
+                </SoundWrapper>
+                <SoundWrapper
+                    onClick={removePeriod}
                     disabled={
                         timerState.value.currentPeriodIndex === null
                         || timerState.value.periods.length <= 1
                     }
                 >
                     remove period
-                </button>
+                </SoundWrapper>
             </div>
         </section>
     </>

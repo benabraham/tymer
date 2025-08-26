@@ -10,7 +10,8 @@ import {
     autoEditIndex,
 } from '../../../lib/timer'
 import { TimelineCurrentTime } from './timeline-current-time'
-import { handleButtonClick } from '../../../lib/sounds'
+import { SoundWrapper } from '../../common/sound-wrapper'
+import { playSound } from '../../../lib/sounds'
 
 export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) => {
     const [isEditing, setIsEditing] = useState(false)
@@ -21,63 +22,55 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
     const availableTypes = ['work', 'break', 'fun']
 
     const handleClickOnPeriod = () => {
-        handleButtonClick(() => {
-            // Check if timer is running and pause it
-            const isTimerRunning = timerState.value.runningIntervalId !== null
-            setWasTimerRunning(isTimerRunning)
+        // Check if timer is running and pause it
+        const isTimerRunning = timerState.value.runningIntervalId !== null
+        setWasTimerRunning(isTimerRunning)
 
-            if (isTimerRunning) {
-                pauseTimer()
-            }
+        if (isTimerRunning) {
+            pauseTimer()
+        }
 
-            // Store original values for potential cancellation
-            setOriginalValues({
-                type: period.type,
-                note: period.note,
-                periodDuration: period.periodDuration,
-                periodUserIntendedDuration: period.periodUserIntendedDuration,
-                periodDurationRemaining: period.periodDurationRemaining,
-            })
-
-            setIsEditing(true)
+        // Store original values for potential cancellation
+        setOriginalValues({
+            type: period.type,
+            note: period.note,
+            periodDuration: period.periodDuration,
+            periodUserIntendedDuration: period.periodUserIntendedDuration,
+            periodDurationRemaining: period.periodDurationRemaining,
         })
+
+        setIsEditing(true)
     }
 
     const handleSave = useCallback(() => {
-        handleButtonClick(() => {
-            // Values are already in timer state, just exit edit mode
-            setIsEditing(false)
-            setOriginalValues(null)
+        // Values are already in timer state, just exit edit mode
+        setIsEditing(false)
+        setOriginalValues(null)
 
-            // Resume timer if it was running before edit
-            if (wasTimerRunning) {
-                resumeTimer()
-            }
-        })
+        // Resume timer if it was running before edit
+        if (wasTimerRunning) {
+            resumeTimer()
+        }
     }, [wasTimerRunning])
 
     const handleCancel = useCallback(() => {
-        handleButtonClick(() => {
-            // Restore original values if we have them
-            if (originalValues) {
-                updatePeriod(index, originalValues)
-            }
+        // Restore original values if we have them
+        if (originalValues) {
+            updatePeriod(index, originalValues)
+        }
 
-            setIsEditing(false)
-            setOriginalValues(null)
+        setIsEditing(false)
+        setOriginalValues(null)
 
-            // Resume timer if it was running before edit
-            if (wasTimerRunning) {
-                resumeTimer()
-            }
-        })
+        // Resume timer if it was running before edit
+        if (wasTimerRunning) {
+            resumeTimer()
+        }
     }, [originalValues, index, wasTimerRunning])
 
     // Update timer state immediately when values change
     const handleTypeChange = newType => {
-        handleButtonClick(() => {
-            updatePeriod(index, { type: newType })
-        })
+        updatePeriod(index, { type: newType })
     }
 
     const handleDurationChange = newDuration => {
@@ -114,29 +107,25 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
     }
 
     const handleDelete = () => {
-        handleButtonClick(() => {
-            // Don't allow deleting the active period if it's the only one
-            if (isActive && timerState.value.periods.length === 1) {
-                return
-            }
+        // Don't allow deleting the active period if it's the only one
+        if (isActive && timerState.value.periods.length === 1) {
+            return
+        }
 
-            removePeriodByIndex(index)
-            setIsEditing(false)
+        removePeriodByIndex(index)
+        setIsEditing(false)
 
-            // Resume timer if it was running before edit
-            if (wasTimerRunning) {
-                resumeTimer()
-            }
-        })
+        // Resume timer if it was running before edit
+        if (wasTimerRunning) {
+            resumeTimer()
+        }
     }
 
     const handleAddPeriod = event => {
         event.stopPropagation()
-        handleButtonClick(() => {
-            addPeriodAtIndex(index)
-            // The new period at index + 1 will automatically open for editing
-            // via the autoEditIndex signal set in addPeriodAtIndex
-        })
+        addPeriodAtIndex(index)
+        // The new period at index + 1 will automatically open for editing
+        // via the autoEditIndex signal set in addPeriodAtIndex
     }
 
     // Auto-open editing when this period is flagged for auto-edit
@@ -151,16 +140,19 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
     useEffect(() => {
         if (!isEditing) return
 
-        const handleClickOutside = event => {
+        const handleClickOutside = async event => {
             if (editRef.current && !editRef.current.contains(event.target)) {
+                await playSound('button')
                 handleSave()
             }
         }
 
-        const handleKeyDown = event => {
+        const handleKeyDown = async event => {
             if (event.key === 'Escape') {
+                await playSound('button')
                 handleCancel()
             } else if (event.key === 'Enter') {
+                await playSound('button')
                 handleSave()
             }
         }
@@ -189,14 +181,14 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                     <div class="timeline__edit-row">
                         <div class="timeline__edit-type-group">
                             {availableTypes.map(type => (
-                                <button
+                                <SoundWrapper
                                     key={type}
                                     type="button"
                                     className={`timeline__edit-type-button ${period.type === type ? 'timeline__edit-type-button--active' : ''}`}
                                     onClick={() => handleTypeChange(type)}
                                 >
                                     {type}
-                                </button>
+                                </SoundWrapper>
                             ))}
                         </div>
                         <input
@@ -216,14 +208,14 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                             placeholder="Note…"
                             class="timeline__edit-note"
                         />
-                        <button
+                        <SoundWrapper
                             onClick={handleDelete}
                             className="timeline__edit-delete"
                             title="Delete period"
                             disabled={isActive && timerState.value.periods.length === 1}
                         >
                             🗑️
-                        </button>
+                        </SoundWrapper>
                     </div>
                 </div>
             </div>
@@ -231,7 +223,8 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
     }
 
     return (
-        <div
+        <SoundWrapper
+            as="div"
             class={`
                     timeline__period
                     timeline__period--${period.type}
@@ -263,13 +256,13 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                 <div class="timeline__userintended"></div>
             )}
 
-            <button
+            <SoundWrapper
                 className="button timeline__add-period"
                 onClick={handleAddPeriod}
                 title="Add period after this one"
             >
                 ➕
-            </button>
-        </div>
+            </SoundWrapper>
+        </SoundWrapper>
     )
 }

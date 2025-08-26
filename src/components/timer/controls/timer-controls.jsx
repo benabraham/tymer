@@ -16,25 +16,24 @@ import {
     moveToNextPeriod,
     moveToPreviousPeriod,
 } from '../../../lib/timer'
-import { unlockAudio, handleButtonClick } from '../../../lib/sounds'
+import { unlockAudio } from '../../../lib/sounds'
+import { SoundWrapper } from '../../common/sound-wrapper'
 
 export const TimerControls = () => {
     const handleStartPause = async () => {
         // Unlock audio on first user interaction
         await unlockAudio()
 
-        await handleButtonClick(() => {
-            if (timerState.value.runningIntervalId) pauseTimer()
-            else if (timerState.value.timestampPaused) resumeTimer()
-            else startTimer()
-        })
+        if (timerState.value.runningIntervalId) pauseTimer()
+        else if (timerState.value.timestampPaused) resumeTimer()
+        else startTimer()
     }
 
     return (
         <>
             <section class="controls ">
-                <button
-                    onClick={() => handleButtonClick(resetTimer)}
+                <SoundWrapper
+                    onClick={resetTimer}
                     disabled={
                         (!periodsModifiedFromInitial.value
                             && !timerState.value.timestampStarted
@@ -46,8 +45,8 @@ export const TimerControls = () => {
                     class={timerHasFinished.value ? 'highlighted' : ''}
                 >
                     🔁 Reset
-                </button>
-                <button
+                </SoundWrapper>
+                <SoundWrapper
                     onClick={handleStartPause}
                     disabled={timerHasFinished.value || !timerDurationRemaining.value}
                 >
@@ -56,9 +55,9 @@ export const TimerControls = () => {
                         : timerState.value.timestampPaused
                           ? '▶️️'
                           : '▶️️ Start'}
-                </button>
-                <button
-                    onClick={() => handleButtonClick(handleTimerCompletion)}
+                </SoundWrapper>
+                <SoundWrapper
+                    onClick={handleTimerCompletion}
                     disabled={
                         timerHasFinished.value
                         || timerState.value.currentPeriodIndex === null
@@ -69,12 +68,12 @@ export const TimerControls = () => {
                     }
                 >
                     🏁 Finish
-                </button>
+                </SoundWrapper>
             </section>
             <section class="controls">
                 <div class="button-group">
-                    <button
-                        onClick={() => handleButtonClick(moveToPreviousPeriod)}
+                    <SoundWrapper
+                        onClick={moveToPreviousPeriod}
                         disabled={
                             timerHasFinished.value
                             || timerState.value.currentPeriodIndex === null
@@ -82,10 +81,10 @@ export const TimerControls = () => {
                         }
                     >
                         ⏮️
-                    </button>
+                    </SoundWrapper>
 
-                    <button
-                        onClick={() => handleButtonClick(moveToNextPeriod)}
+                    <SoundWrapper
+                        onClick={moveToNextPeriod}
                         disabled={
                             timerHasFinished.value
                             || timerState.value.currentPeriodIndex === null
@@ -98,7 +97,7 @@ export const TimerControls = () => {
                         }
                     >
                         ⏭️
-                    </button>
+                    </SoundWrapper>
                 </div>
             </section>
         </>
