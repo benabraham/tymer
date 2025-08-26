@@ -26,10 +26,10 @@ export const formatTime = (ms, elapsed, remaining, debug) => {
         // Default behavior: round to nearest minute
         totalMinutes = Math.round(ms / (60 * 1000))
     }
-    
+
     const hours = Math.floor(totalMinutes / 60)
     const minutes = totalMinutes % 60
-    
+
     const pad = (num, places = 2, fillChar = '0') => num.toString().padStart(places, fillChar)
     return `${hours}:${pad(minutes)}`
 }

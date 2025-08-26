@@ -31,7 +31,8 @@ export const PeriodControls = () => (
                 <button
                     onClick={() => adjustElapsed(-timerDurationElapsed.value)}
                     disabled={
-                        timerState.value.currentPeriodIndex === null || timerDurationElapsed.value === 0
+                        timerState.value.currentPeriodIndex === null
+                        || timerDurationElapsed.value === 0
                     }
                 >
                     🔙
@@ -39,7 +40,8 @@ export const PeriodControls = () => (
                 <button
                     onClick={() => adjustElapsed(-6 * 60 * 1000)}
                     disabled={
-                        timerState.value.currentPeriodIndex === null || timerDurationElapsed.value === 0
+                        timerState.value.currentPeriodIndex === null
+                        || timerDurationElapsed.value === 0
                     }
                 >
                     &lt;--- 6 m
@@ -47,7 +49,8 @@ export const PeriodControls = () => (
                 <button
                     onClick={() => adjustElapsed(-1 * 60 * 1000)}
                     disabled={
-                        timerState.value.currentPeriodIndex === null || timerDurationElapsed.value === 0
+                        timerState.value.currentPeriodIndex === null
+                        || timerDurationElapsed.value === 0
                     }
                 >
                     &lt;-- 1 m
@@ -106,13 +109,17 @@ export const PeriodControls = () => (
                 </button>
                 <button
                     onClick={() => adjustDuration(1 * 60 * 1000)}
-                    disabled={timerHasFinished.value || timerState.value.currentPeriodIndex === null}
+                    disabled={
+                        timerHasFinished.value || timerState.value.currentPeriodIndex === null
+                    }
                 >
                     ➕ 1 min
                 </button>
                 <button
                     onClick={() => adjustDuration(6 * 60 * 1000)}
-                    disabled={timerHasFinished.value || timerState.value.currentPeriodIndex === null}
+                    disabled={
+                        timerHasFinished.value || timerState.value.currentPeriodIndex === null
+                    }
                 >
                     ➕ 6 min
                 </button>

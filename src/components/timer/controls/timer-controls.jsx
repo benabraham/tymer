@@ -52,8 +52,8 @@ export const TimerControls = () => {
                     {timerState.value.runningIntervalId
                         ? '⏸️️'
                         : timerState.value.timestampPaused
-                            ? '▶️️'
-                            : '▶️️ Start'}
+                          ? '▶️️'
+                          : '▶️️ Start'}
                 </button>
                 <button
                     onClick={handleTimerCompletion}
@@ -71,7 +71,6 @@ export const TimerControls = () => {
             </section>
             <section class="controls">
                 <div class="button-group">
-
                     <button
                         onClick={moveToPreviousPeriod}
                         disabled={
@@ -91,13 +90,14 @@ export const TimerControls = () => {
                             || timerOnLastPeriod.value
                         }
                         class={
-                            !timerOnLastPeriod.value && shouldGoToNextPeriod.value ? 'highlighted' : ''
+                            !timerOnLastPeriod.value && shouldGoToNextPeriod.value
+                                ? 'highlighted'
+                                : ''
                         }
                     >
                         ⏭️
                     </button>
                 </div>
-
             </section>
         </>
     )

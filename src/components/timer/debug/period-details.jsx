@@ -21,7 +21,9 @@ export const PeriodDetails = () => (
                 `}
             >
                 <div class="tempPeriod__data">{period.type}</div>
-                <div class="tempPeriod__data">{formatTime(period.periodDuration, false, false, true)}</div>
+                <div class="tempPeriod__data">
+                    {formatTime(period.periodDuration, false, false, true)}
+                </div>
                 <div class="tempPeriod__data">
                     {period.periodUserIntendedDuration === period.periodDuration
                         ? 'same as duration'

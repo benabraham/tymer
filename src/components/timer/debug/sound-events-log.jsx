@@ -38,10 +38,7 @@ export const SoundEventsLog = () => {
                 <div>
                     Showing {events.length} event{events.length !== 1 ? 's' : ''} (max 1000 stored)
                 </div>
-                <button 
-                    class="button"
-                    onClick={clearSoundEvents}
-                >
+                <button class="button" onClick={clearSoundEvents}>
                     Clear Log
                 </button>
             </div>
@@ -95,12 +92,15 @@ export const SoundEventsLog = () => {
                                 </div>
                             )}
 
-                            {(event.durationElapsed !== undefined || event.duration !== undefined || event.durationUserPlanned !== undefined) && (
+                            {(event.durationElapsed !== undefined
+                                || event.duration !== undefined
+                                || event.durationUserPlanned !== undefined) && (
                                 <div style={{ color: '#666', fontSize: '11px', marginTop: '4px' }}>
                                     <div>Duration Info:</div>
                                     {event.durationElapsed !== undefined && (
                                         <span style={{ marginRight: '8px' }}>
-                                            Elapsed: {formatTime(event.durationElapsed, true, false)}
+                                            Elapsed:{' '}
+                                            {formatTime(event.durationElapsed, true, false)}
                                         </span>
                                     )}
                                     {event.duration !== undefined && (
@@ -110,7 +110,8 @@ export const SoundEventsLog = () => {
                                     )}
                                     {event.durationUserPlanned !== undefined && (
                                         <span>
-                                            Planned: {formatTime(event.durationUserPlanned, false, false)}
+                                            Planned:{' '}
+                                            {formatTime(event.durationUserPlanned, false, false)}
                                         </span>
                                     )}
                                 </div>
@@ -125,8 +126,6 @@ export const SoundEventsLog = () => {
                     ))}
                 </div>
             )}
-
-            
         </div>
     )
 }
