@@ -1,11 +1,6 @@
 import { signal, effect, computed, batch } from '@preact/signals'
 import { saveState, loadState } from './storage'
-import {
-    playSound,
-    playTimerNotifications,
-    playPeriodEndNotification,
-    invalidateSoundWindows,
-} from './sounds'
+import { playSound, playTimerFinishedSound } from './sounds'
 import { log } from './log.js'
 import { PERIOD_CONFIG, UI_UPDATE_INTERVAL, DURATION_TO_ADD_AUTOMATICALLY } from './config.js'
 
@@ -106,7 +101,6 @@ const initializeTimerState = () => {
     stopTick()
 
     // Clear all sound windows before resetting state
-    invalidateSoundWindows('timer initialized')
 
     // Reset only runtime properties, preserve existing periods
     updateTimerState({
@@ -175,9 +169,6 @@ export const resumeTimer = () => {
 
     updateCurrentPeriod()
 
-    // Invalidate sound windows since timestampStarted changed during resume
-    invalidateSoundWindows('timer resumed - timestamp adjusted')
-
     startTick()
 
     log('resumed timer', timerState.value, 13)
@@ -197,18 +188,12 @@ export const pauseTimer = () => {
 
     updateCurrentPeriod()
 
-    // Invalidate sound windows since timer is paused (will be recreated on resume)
-    invalidateSoundWindows('timer paused')
-
     log('timer paused', timerState.value, 8)
 }
 
 // resets timer to the initial state
 export const resetTimer = () => {
     stopTick()
-
-    // Clear all sound windows before resetting state
-    invalidateSoundWindows('timer reset')
 
     timerState.value = { ...initialState }
 
@@ -241,11 +226,6 @@ export const adjustDuration = (durationDelta, isAutomaticExtension = false) => {
 
     updateCurrentPeriod()
 
-    // Only invalidate sound windows for manual adjustments, not automatic extensions
-    if (!isAutomaticExtension) {
-        invalidateSoundWindows('duration adjustment')
-    }
-
     log('duration adjusted', timerState.value, 9)
 }
 
@@ -269,9 +249,6 @@ export const adjustElapsed = elapsedDelta => {
     })
 
     updateCurrentPeriod()
-
-    // Invalidate sound windows since timestamp changed
-    invalidateSoundWindows('time adjustment')
 
     log('time adjusted', timerState.value, 6)
 }
@@ -299,16 +276,6 @@ const handlePeriodElapsed = () => {
     // automatically extend duration (don't invalidate sound windows)
     adjustDuration(DURATION_TO_ADD_AUTOMATICALLY, true)
 
-    // Get the next period type for the appropriate sound
-    const nextPeriodIndex = timerState.value.currentPeriodIndex + 1
-    const nextPeriod = timerState.value.periods[nextPeriodIndex]
-    const nextPeriodType = nextPeriod?.type || 'work'
-
-    playPeriodEndNotification(
-        nextPeriodType,
-        currentPeriod.value.periodDurationElapsed,
-        currentPeriod.value.periodUserIntendedDuration,
-    )
     log('period automatically extended', timerState.value, 2)
 }
 
@@ -367,9 +334,6 @@ export const moveToNextPeriod = () => {
         },
     })
 
-    // Invalidate sound windows since we moved to next period
-    invalidateSoundWindows('moved to next period')
-
     log('finished current period', timerState.value, 10)
 }
 
@@ -403,9 +367,6 @@ export const moveToPreviousPeriod = () => {
     })
 
     updateCurrentPeriod()
-
-    // Invalidate sound windows since we moved to previous period
-    invalidateSoundWindows('moved to previous period')
 
     log('jumped to previous period and added some time to the duration', timerState.value, 13)
 }
@@ -486,9 +447,6 @@ export const addPeriod = () => {
             },
         })
 
-        // Invalidate sound windows since timestampStarted was reset
-        invalidateSoundWindows('period added - timestamp reset')
-
         // Reset the next period (originally current) to have 0 elapsed time and full duration
         updateTimerState({
             timerProperties: {
@@ -557,9 +515,6 @@ export const removePeriod = () => {
 // the whole timer completion
 export const handleTimerCompletion = () => {
     stopTick()
-
-    // Invalidate sound windows since timer is completing
-    invalidateSoundWindows('timer completion')
 
     // updates are not combined because they need to be run sequentially
 
@@ -740,19 +695,9 @@ const updateTimerState = updateParams => {
 const tick = () => {
     updateCurrentPeriod()
 
-    // Play timer notifications if there's a current period
-    if (currentPeriod.value) {
-        const nextPeriodIndex = timerState.value.currentPeriodIndex + 1
-        const nextPeriod = timerState.value.periods[nextPeriodIndex]
-        const nextPeriodType = nextPeriod?.type || 'work'
-
-        playTimerNotifications(
-            currentPeriod.value.periodDurationElapsed,
-            currentPeriod.value.periodDuration,
-            timerState.value.timestampStarted,
-            currentPeriod.value.periodUserIntendedDuration,
-            currentPeriod.value.type,
-        )
+    // Play timer finished sound if the timer has completed
+    if (timerHasFinished.value) {
+        playTimerFinishedSound()
     }
 
     log('tick', timerState.value, 14)
