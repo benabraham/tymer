@@ -16,23 +16,25 @@ import {
     moveToNextPeriod,
     moveToPreviousPeriod,
 } from '../../../lib/timer'
-import { unlockAudio } from '../../../lib/sounds'
+import { unlockAudio, handleButtonClick } from '../../../lib/sounds'
 
 export const TimerControls = () => {
     const handleStartPause = async () => {
         // Unlock audio on first user interaction
         await unlockAudio()
 
-        if (timerState.value.runningIntervalId) pauseTimer()
-        else if (timerState.value.timestampPaused) resumeTimer()
-        else startTimer()
+        await handleButtonClick(() => {
+            if (timerState.value.runningIntervalId) pauseTimer()
+            else if (timerState.value.timestampPaused) resumeTimer()
+            else startTimer()
+        })
     }
 
     return (
         <>
             <section class="controls ">
                 <button
-                    onClick={resetTimer}
+                    onClick={() => handleButtonClick(resetTimer)}
                     disabled={
                         (!periodsModifiedFromInitial.value
                             && !timerState.value.timestampStarted
@@ -56,7 +58,7 @@ export const TimerControls = () => {
                           : '▶️️ Start'}
                 </button>
                 <button
-                    onClick={handleTimerCompletion}
+                    onClick={() => handleButtonClick(handleTimerCompletion)}
                     disabled={
                         timerHasFinished.value
                         || timerState.value.currentPeriodIndex === null
@@ -72,7 +74,7 @@ export const TimerControls = () => {
             <section class="controls">
                 <div class="button-group">
                     <button
-                        onClick={moveToPreviousPeriod}
+                        onClick={() => handleButtonClick(moveToPreviousPeriod)}
                         disabled={
                             timerHasFinished.value
                             || timerState.value.currentPeriodIndex === null
@@ -83,7 +85,7 @@ export const TimerControls = () => {
                     </button>
 
                     <button
-                        onClick={moveToNextPeriod}
+                        onClick={() => handleButtonClick(moveToNextPeriod)}
                         disabled={
                             timerHasFinished.value
                             || timerState.value.currentPeriodIndex === null

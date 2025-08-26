@@ -10,6 +10,7 @@ import {
     autoEditIndex,
 } from '../../../lib/timer'
 import { TimelineCurrentTime } from './timeline-current-time'
+import { handleButtonClick } from '../../../lib/sounds'
 
 export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) => {
     const [isEditing, setIsEditing] = useState(false)
@@ -20,55 +21,63 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
     const availableTypes = ['work', 'break', 'fun']
 
     const handleClickOnPeriod = () => {
-        // Check if timer is running and pause it
-        const isTimerRunning = timerState.value.runningIntervalId !== null
-        setWasTimerRunning(isTimerRunning)
+        handleButtonClick(() => {
+            // Check if timer is running and pause it
+            const isTimerRunning = timerState.value.runningIntervalId !== null
+            setWasTimerRunning(isTimerRunning)
 
-        if (isTimerRunning) {
-            pauseTimer()
-        }
+            if (isTimerRunning) {
+                pauseTimer()
+            }
 
-        // Store original values for potential cancellation
-        setOriginalValues({
-            type: period.type,
-            note: period.note,
-            periodDuration: period.periodDuration,
-            periodUserIntendedDuration: period.periodUserIntendedDuration,
-            periodDurationRemaining: period.periodDurationRemaining,
+            // Store original values for potential cancellation
+            setOriginalValues({
+                type: period.type,
+                note: period.note,
+                periodDuration: period.periodDuration,
+                periodUserIntendedDuration: period.periodUserIntendedDuration,
+                periodDurationRemaining: period.periodDurationRemaining,
+            })
+
+            setIsEditing(true)
         })
-
-        setIsEditing(true)
     }
 
     const handleSave = useCallback(() => {
-        // Values are already in timer state, just exit edit mode
-        setIsEditing(false)
-        setOriginalValues(null)
+        handleButtonClick(() => {
+            // Values are already in timer state, just exit edit mode
+            setIsEditing(false)
+            setOriginalValues(null)
 
-        // Resume timer if it was running before edit
-        if (wasTimerRunning) {
-            resumeTimer()
-        }
+            // Resume timer if it was running before edit
+            if (wasTimerRunning) {
+                resumeTimer()
+            }
+        })
     }, [wasTimerRunning])
 
     const handleCancel = useCallback(() => {
-        // Restore original values if we have them
-        if (originalValues) {
-            updatePeriod(index, originalValues)
-        }
+        handleButtonClick(() => {
+            // Restore original values if we have them
+            if (originalValues) {
+                updatePeriod(index, originalValues)
+            }
 
-        setIsEditing(false)
-        setOriginalValues(null)
+            setIsEditing(false)
+            setOriginalValues(null)
 
-        // Resume timer if it was running before edit
-        if (wasTimerRunning) {
-            resumeTimer()
-        }
+            // Resume timer if it was running before edit
+            if (wasTimerRunning) {
+                resumeTimer()
+            }
+        })
     }, [originalValues, index, wasTimerRunning])
 
     // Update timer state immediately when values change
     const handleTypeChange = newType => {
-        updatePeriod(index, { type: newType })
+        handleButtonClick(() => {
+            updatePeriod(index, { type: newType })
+        })
     }
 
     const handleDurationChange = newDuration => {
@@ -105,25 +114,29 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
     }
 
     const handleDelete = () => {
-        // Don't allow deleting the active period if it's the only one
-        if (isActive && timerState.value.periods.length === 1) {
-            return
-        }
+        handleButtonClick(() => {
+            // Don't allow deleting the active period if it's the only one
+            if (isActive && timerState.value.periods.length === 1) {
+                return
+            }
 
-        removePeriodByIndex(index)
-        setIsEditing(false)
+            removePeriodByIndex(index)
+            setIsEditing(false)
 
-        // Resume timer if it was running before edit
-        if (wasTimerRunning) {
-            resumeTimer()
-        }
+            // Resume timer if it was running before edit
+            if (wasTimerRunning) {
+                resumeTimer()
+            }
+        })
     }
 
     const handleAddPeriod = event => {
         event.stopPropagation()
-        addPeriodAtIndex(index)
-        // The new period at index + 1 will automatically open for editing
-        // via the autoEditIndex signal set in addPeriodAtIndex
+        handleButtonClick(() => {
+            addPeriodAtIndex(index)
+            // The new period at index + 1 will automatically open for editing
+            // via the autoEditIndex signal set in addPeriodAtIndex
+        })
     }
 
     // Auto-open editing when this period is flagged for auto-edit
