@@ -721,9 +721,13 @@ const tick = () => {
         const periodType = currentPeriod.value.type
         const isPaused = timerState.value.timestampPaused !== null
         
-        // Debug logging (can be removed in production)
+        // Determine next period type for timesup sound selection
+        const currentIndex = timerState.value.currentPeriodIndex
+        const nextIndex = currentIndex + 1
+        const nextPeriod = timerState.value.periods[nextIndex]
+        const nextPeriodType = nextPeriod ? nextPeriod.type : 'finish'
         
-        const soundToPlay = soundScheduler.checkSounds(elapsedMs, intendedMs, periodType, isPaused)
+        const soundToPlay = soundScheduler.checkSounds(elapsedMs, intendedMs, periodType, isPaused, nextPeriodType)
         
         if (soundToPlay) {
             const soundKey = getSoundKeyFromPath(soundToPlay.soundPath)

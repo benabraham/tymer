@@ -21,7 +21,7 @@ export class SoundScheduler {
     }
     
     // Get all possible sound windows for a given period
-    getAllPossibleWindows(intendedDuration, periodType) {
+    getAllPossibleWindows(intendedDuration, periodType, nextPeriodType = null) {
         const windows = []
         
         // Add elapsed sound windows
@@ -51,11 +51,12 @@ export class SoundScheduler {
             }
         })
         
-        // Add timesup window
+        // Add timesup window - sound based on next period type
+        const timesupSoundType = nextPeriodType || 'finish'
         windows.push({
             type: 'timesup',
             targetMs: intendedDuration,
-            soundPath: `sounds/timesup/${periodType}.webm`,
+            soundPath: `sounds/timesup/${timesupSoundType}.webm`,
             key: 'timesup',
             priority: 4
         })
@@ -82,8 +83,8 @@ export class SoundScheduler {
     }
     
     // Get currently active windows based on elapsed time
-    getActiveWindows(elapsedMs, intendedDuration, periodType) {
-        const allWindows = this.getAllPossibleWindows(intendedDuration, periodType)
+    getActiveWindows(elapsedMs, intendedDuration, periodType, nextPeriodType = null) {
+        const allWindows = this.getAllPossibleWindows(intendedDuration, periodType, nextPeriodType)
         const threshold = this.getThreshold(intendedDuration)
         const activeWindows = []
         
@@ -102,14 +103,14 @@ export class SoundScheduler {
     }
     
     // Main function to check what sound should play
-    checkSounds(elapsedMs, intendedDuration, periodType, isPaused) {
+    checkSounds(elapsedMs, intendedDuration, periodType, isPaused, nextPeriodType = null) {
         if (isPaused) {
             this.clearState()
             return null
         }
         
         // Get all currently active windows
-        const currentlyActive = this.getActiveWindows(elapsedMs, intendedDuration, periodType)
+        const currentlyActive = this.getActiveWindows(elapsedMs, intendedDuration, periodType, nextPeriodType)
         const currentActiveKeys = new Set(currentlyActive.map(w => w.key))
         
         // Add any new windows to the overlapping group

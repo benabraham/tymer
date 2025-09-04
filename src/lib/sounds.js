@@ -94,7 +94,7 @@ const buildSoundConfig = () => {
     })
     
     // Build timesup sounds
-    const timesupTypes = ['work', 'break', 'fun']
+    const timesupTypes = ['work', 'break', 'fun', 'finish']
     for (const type of timesupTypes) {
         config[`timesup_${type}`] = new Howl({ 
             src: [`/tymer/sounds/timesup/${type}.webm`], 
@@ -135,7 +135,8 @@ export const soundConfig = {
     timesup: {
         work: '/tymer/sounds/timesup/work.webm',
         break: '/tymer/sounds/timesup/break.webm',
-        fun: '/tymer/sounds/timesup/fun.webm'
+        fun: '/tymer/sounds/timesup/fun.webm',
+        finish: '/tymer/sounds/timesup/finish.webm'
     },
     overtime: AVAILABLE_SOUNDS.overtime.reduce((acc, min) => {
         acc[`${min}min`] = `/tymer/sounds/overtime/${String(min).padStart(3, '0')}.webm`
@@ -194,7 +195,7 @@ export const getSoundKeyFromPath = (soundPath) => {
     const minutes = parseInt(filename.replace('.webm', ''))
     
     if (folder === 'timesup') {
-        const periodType = filename.replace('.webm', '') // 'work', 'break', 'fun'
+        const periodType = filename.replace('.webm', '') // 'work', 'break', 'fun', 'finish'
         return `timesup_${periodType}`
     } else if (folder === 'break' && subfolder === 'overtime') {
         return `overtime_break_${minutes}`

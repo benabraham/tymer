@@ -152,18 +152,26 @@ describe('SoundScheduler', () => {
             })
         })
         
-        it('uses correct timesup sound for period type', () => {
-            const workWindows = scheduler.getAllPossibleWindows(48*60000, 'work')
+        it('uses correct timesup sound based on next period type', () => {
+            // When next period is work
+            const workWindows = scheduler.getAllPossibleWindows(48*60000, 'break', 'work')
             const workTimesup = workWindows.find(w => w.type === 'timesup')
             expect(workTimesup.soundPath).toBe('sounds/timesup/work.webm')
             
-            const breakWindows = scheduler.getAllPossibleWindows(12*60000, 'break')
+            // When next period is break
+            const breakWindows = scheduler.getAllPossibleWindows(48*60000, 'work', 'break')
             const breakTimesup = breakWindows.find(w => w.type === 'timesup')
             expect(breakTimesup.soundPath).toBe('sounds/timesup/break.webm')
             
-            const funWindows = scheduler.getAllPossibleWindows(24*60000, 'fun')
+            // When next period is fun
+            const funWindows = scheduler.getAllPossibleWindows(12*60000, 'work', 'fun')
             const funTimesup = funWindows.find(w => w.type === 'timesup')
             expect(funTimesup.soundPath).toBe('sounds/timesup/fun.webm')
+            
+            // When there is no next period (timer finish)
+            const finishWindows = scheduler.getAllPossibleWindows(48*60000, 'work', null)
+            const finishTimesup = finishWindows.find(w => w.type === 'timesup')
+            expect(finishTimesup.soundPath).toBe('sounds/timesup/finish.webm')
         })
     })
     
