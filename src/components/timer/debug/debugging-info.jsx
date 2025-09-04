@@ -12,7 +12,7 @@ import { PeriodDetails } from './period-details'
 
 export const DebuggingInfo = () => {
     return (
-        <details open>
+        <details>
             <summary>Debugging values</summary>
             <p>
                 <code>timerDuration</code> {formatTime(timerDuration.value, false, false, true)}
