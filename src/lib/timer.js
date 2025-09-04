@@ -1,8 +1,10 @@
 import { signal, effect, computed, batch } from '@preact/signals'
 import { saveState, loadState } from './storage'
-import { playSound, playTimerFinishedSound } from './sounds'
+import { playSound, playTimerFinishedSound, playPeriodSound, getSoundKeyFromPath } from './sounds'
 import { log } from './log.js'
 import { PERIOD_CONFIG, UI_UPDATE_INTERVAL, DURATION_TO_ADD_AUTOMATICALLY } from './config.js'
+import { SoundScheduler } from './sound-scheduler'
+import { AVAILABLE_SOUNDS } from './sound-discovery'
 
 // function to create a period from a period config
 const createPeriod = ({ duration, type, note }) => ({
@@ -34,6 +36,9 @@ export const roundDownToBaseMinute = timeInMs => {
 
 // timer state signal, initialized from localStorage or defaults
 export const timerState = signal(loadState(initialState))
+
+// Initialize sound scheduler for period-based sounds
+const soundScheduler = new SoundScheduler(2000, AVAILABLE_SOUNDS)
 
 // computed signals
 export const timerHasFinished = computed(
@@ -225,6 +230,9 @@ export const adjustDuration = (durationDelta, isAutomaticExtension = false) => {
     })
 
     updateCurrentPeriod()
+    
+    // Notify sound scheduler of duration change
+    soundScheduler.onDurationChange()
 
     log('duration adjusted', timerState.value, 9)
 }
@@ -249,6 +257,11 @@ export const adjustElapsed = elapsedDelta => {
     })
 
     updateCurrentPeriod()
+    
+    // Notify sound scheduler of elapsed time change
+    const newElapsed = currentPeriod.value.periodDurationElapsed
+    const oldElapsed = newElapsed - elapsedDelta
+    soundScheduler.onElapsedAdjustment(newElapsed, oldElapsed)
 
     log('time adjusted', timerState.value, 6)
 }
@@ -333,6 +346,9 @@ export const moveToNextPeriod = () => {
             currentPeriodIndex: timerState.value.currentPeriodIndex + 1,
         },
     })
+    
+    // Notify sound scheduler of period change
+    soundScheduler.onPeriodChange()
 
     log('finished current period', timerState.value, 10)
 }
@@ -388,6 +404,9 @@ export const moveElapsedTimeToPreviousPeriod = () => {
     })
 
     adjustElapsed(-elapsed)
+    
+    // Notify sound scheduler of period change
+    soundScheduler.onPeriodChange()
 }
 
 // change work type
@@ -694,6 +713,23 @@ const updateTimerState = updateParams => {
 // update function called by interval timer
 const tick = () => {
     updateCurrentPeriod()
+
+    // Check for period-based sounds
+    if (currentPeriod.value) {
+        const elapsedMs = currentPeriod.value.periodDurationElapsed
+        const intendedMs = currentPeriod.value.periodUserIntendedDuration
+        const periodType = currentPeriod.value.type
+        const isPaused = timerState.value.timestampPaused !== null
+        
+        // Debug logging (can be removed in production)
+        
+        const soundToPlay = soundScheduler.checkSounds(elapsedMs, intendedMs, periodType, isPaused)
+        
+        if (soundToPlay) {
+            const soundKey = getSoundKeyFromPath(soundToPlay.soundPath)
+            playPeriodSound(soundKey)
+        }
+    }
 
     // Play timer finished sound if the timer has completed
     if (timerHasFinished.value) {

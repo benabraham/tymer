@@ -27,6 +27,7 @@ export default defineConfig({
   },
   plugins: [
     preact(),
+    soundPreloadPlugin(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: [

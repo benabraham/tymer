@@ -9,7 +9,6 @@ import {
     shouldGoToNextPeriod,
 } from '../../../lib/timer'
 import { PeriodDetails } from './period-details'
-import { SoundEventsLog } from './sound-events-log'
 
 export const DebuggingInfo = () => {
     return (
@@ -71,10 +70,6 @@ export const DebuggingInfo = () => {
                 <button class="button--sm">54</button>
                 <button class="button--xs">57</button>
             </div>
-
-            <hr style={{ margin: '16px 0', borderColor: '#ddd' }} />
-
-            <SoundEventsLog />
         </details>
     )
 }
