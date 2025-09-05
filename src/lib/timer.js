@@ -230,7 +230,7 @@ export const adjustDuration = (durationDelta, isAutomaticExtension = false) => {
     })
 
     updateCurrentPeriod()
-    
+
     // Notify sound scheduler of duration change
     soundScheduler.onDurationChange()
 
@@ -257,7 +257,7 @@ export const adjustElapsed = elapsedDelta => {
     })
 
     updateCurrentPeriod()
-    
+
     // Notify sound scheduler of elapsed time change
     const newElapsed = currentPeriod.value.periodDurationElapsed
     const oldElapsed = newElapsed - elapsedDelta
@@ -346,7 +346,7 @@ export const moveToNextPeriod = () => {
             currentPeriodIndex: timerState.value.currentPeriodIndex + 1,
         },
     })
-    
+
     // Notify sound scheduler of period change
     soundScheduler.onPeriodChange()
 
@@ -404,7 +404,7 @@ export const moveElapsedTimeToPreviousPeriod = () => {
     })
 
     adjustElapsed(-elapsed)
-    
+
     // Notify sound scheduler of period change
     soundScheduler.onPeriodChange()
 }
@@ -720,15 +720,15 @@ const tick = () => {
         const intendedMs = currentPeriod.value.periodUserIntendedDuration
         const periodType = currentPeriod.value.type
         const isPaused = timerState.value.timestampPaused !== null
-        
+
         // Determine next period type for timesup sound selection
         const currentIndex = timerState.value.currentPeriodIndex
         const nextIndex = currentIndex + 1
         const nextPeriod = timerState.value.periods[nextIndex]
         const nextPeriodType = nextPeriod ? nextPeriod.type : 'finish'
-        
+
         const soundToPlay = soundScheduler.checkSounds(elapsedMs, intendedMs, periodType, isPaused, nextPeriodType)
-        
+
         if (soundToPlay) {
             const soundKey = getSoundKeyFromPath(soundToPlay.soundPath)
             playPeriodSound(soundKey)
@@ -740,7 +740,7 @@ const tick = () => {
         playTimerFinishedSound()
     }
 
-    log('tick', timerState.value, 14)
+    // log('tick', timerState.value, 14)
 }
 
 // persist timer state to localStorage on every state change

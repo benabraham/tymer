@@ -9,11 +9,15 @@ import {
     shouldGoToNextPeriod,
 } from '../../../lib/timer'
 import { PeriodDetails } from './period-details'
+import { SoundNotificationTable } from './sound-notification-table'
 
 export const DebuggingInfo = () => {
     return (
         <details>
             <summary>Debugging values</summary>
+
+            <SoundNotificationTable />
+
             <p>
                 <code>timerDuration</code> {formatTime(timerDuration.value, false, false, true)}
                 <br />

@@ -29,4 +29,42 @@ details {
             color: #ffffff;
         }
     }
+
+    .sound-notifications {
+        display: grid;
+        grid-template-columns: repeat(6, min-content);
+        gap: 0.25rem 1rem;
+        font-size: 0.75rem;
+    }
+
+    .sound-notifications__header {
+        display: contents;
+        font-weight: bold;
+
+        span {
+            padding: 0.25rem;
+            border-bottom: 1px solid #ddd;
+        }
+    }
+
+    .sound-notifications__row {
+        display: contents;
+
+        &--active {
+            code, span {
+                background-color: #fff3cd;
+                outline: 1px solid #ffeaa7;
+            }
+        }
+
+        code, span {
+            padding: 0.25rem;
+            text-wrap: nowrap;
+            border-bottom: 1px solid #eee;
+        }
+
+        code {
+            min-width: auto;
+        }
+    }
 }

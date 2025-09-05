@@ -1,5 +1,6 @@
-import { Howl, Howler } from 'howler'
-import { AVAILABLE_SOUNDS } from './sound-discovery'
+import {Howl, Howler} from 'howler'
+import {AVAILABLE_SOUNDS} from './sound-discovery'
+import {log} from "./log.js";
 
 // Audio context unlock state
 let audioUnlocked = false
@@ -25,14 +26,14 @@ export const unlockAudio = async () => {
         }
 
         audioUnlocked = true
-        console.log('🔊 Audio context unlocked successfully')
+        log('🔊 Audio context', 'unlocked successfully', 3)
 
         // Keep audio context alive for PWA
         startAudioContextKeepAlive()
 
         return true
     } catch (error) {
-        console.warn('Failed to unlock audio context:', error)
+        log('🔊 Failed to unlock audio context', error, 2)
         return false
     }
 }
@@ -71,51 +72,51 @@ const buildSoundConfig = () => {
     if (typeof window === 'undefined') {
         return {}
     }
-    
-    
+
+
     const config = {
         // Keep existing general sounds
-        button: new Howl({ src: ['/tymer/sounds/button.webm'], loop: false }),
-        timerFinished: new Howl({ src: ['/tymer/sounds/timer-end.webm'], loop: false }),
+        button: new Howl({src: ['/tymer/sounds/button.webm'], loop: false}),
+        timerFinished: new Howl({src: ['/tymer/sounds/timer-end.webm'], loop: false}),
     }
-    
+
     // Build elapsed sounds
     AVAILABLE_SOUNDS.elapsed.forEach(min => {
         const key = `elapsed_${min}`
         const path = `/tymer/sounds/elapsed/${String(min).padStart(3, '0')}.webm`
-        config[key] = new Howl({ src: [path], loop: false })
+        config[key] = new Howl({src: [path], loop: false})
     })
-    
-    // Build remaining sounds  
+
+    // Build remaining sounds
     AVAILABLE_SOUNDS.remaining.forEach(min => {
         const key = `remaining_${min}`
         const path = `/tymer/sounds/remaining/${String(min).padStart(3, '0')}.webm`
-        config[key] = new Howl({ src: [path], loop: false })
+        config[key] = new Howl({src: [path], loop: false})
     })
-    
+
     // Build timesup sounds
     const timesupTypes = ['work', 'break', 'fun', 'finish']
     for (const type of timesupTypes) {
-        config[`timesup_${type}`] = new Howl({ 
-            src: [`/tymer/sounds/timesup/${type}.webm`], 
-            loop: false 
+        config[`timesup_${type}`] = new Howl({
+            src: [`/tymer/sounds/timesup/${type}.webm`],
+            loop: false
         })
     }
-    
+
     // Build overtime sounds
     AVAILABLE_SOUNDS.overtime.forEach(min => {
         const key = `overtime_${min}`
         const path = `/tymer/sounds/overtime/${String(min).padStart(3, '0')}.webm`
-        config[key] = new Howl({ src: [path], loop: false })
+        config[key] = new Howl({src: [path], loop: false})
     })
-    
+
     // Build break overtime sounds
     AVAILABLE_SOUNDS.overtimeBreak.forEach(min => {
         const key = `overtime_break_${min}`
         const path = `/tymer/sounds/overtime/break/${String(min).padStart(3, '0')}.webm`
-        config[key] = new Howl({ src: [path], loop: false })
+        config[key] = new Howl({src: [path], loop: false})
     })
-    
+
     return config
 }
 
@@ -180,7 +181,7 @@ export const playTimerFinishedSound = () => {
 
 // New function to play period-based sounds
 export const playPeriodSound = (soundKey) => {
-    console.log(`🔊 Playing period sound: ${soundKey}`)
+    log('🔊 Playing period sound', soundKey, 10)
     return playByKey(soundKey)
 }
 
@@ -191,9 +192,9 @@ export const getSoundKeyFromPath = (soundPath) => {
     const filename = pathParts[pathParts.length - 1] // '006.webm'
     const folder = pathParts[pathParts.length - 2] // 'elapsed'
     const subfolder = pathParts.length > 3 ? pathParts[pathParts.length - 3] : null // 'break' for overtime
-    
+
     const minutes = parseInt(filename.replace('.webm', ''))
-    
+
     if (folder === 'timesup') {
         const periodType = filename.replace('.webm', '') // 'work', 'break', 'fun', 'finish'
         return `timesup_${periodType}`
@@ -203,4 +204,3 @@ export const getSoundKeyFromPath = (soundPath) => {
         return `${folder}_${minutes}`
     }
 }
-

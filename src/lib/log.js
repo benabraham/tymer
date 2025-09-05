@@ -21,18 +21,38 @@ export const log = (text, variable, variant = 0, border = false) => {
     if (typeof variant !== 'number' || variant < 0 || variant > variantColors.length - 1)
         variant = 0
 
-    console.log(
-        `%c${text.padStart(25, ' ')}`,
-        `
-      color: ${variantColors[variant].color};
-      background-color: ${variantColors[variant].background};
-      padding: 4px;
-      font-weight: bold;
-      ${border ? `border: 2px solid ${variantColors[variant].color};` : ''}
-      `,
-        `      now: ${new Date(Date.now()).toLocaleTimeString('cs-CZ', { second: '2-digit', fractionalSecondDigits: 2 })}`,
-        `  started: ${variable.timestampStarted === null ? null : new Date(variable.timestampStarted).toLocaleTimeString('cs-CZ', { second: '2-digit', fractionalSecondDigits: 2 })}`,
-        `   paused: ${variable.timestampPaused === null ? null : new Date(variable.timestampPaused).toLocaleTimeString('cs-CZ', { second: '2-digit', fractionalSecondDigits: 2 })}`,
-    )
+    // Check if variable is a timer state object (has timestampStarted and timestampPaused properties)
+    const isTimerState = variable &&
+        typeof variable === 'object' &&
+        ('timestampStarted' in variable) &&
+        ('timestampPaused' in variable)
+
+    if (isTimerState) {
+        console.log(
+            `%c${text.padStart(25, ' ')}`,
+            `
+          color: ${variantColors[variant].color};
+          background-color: ${variantColors[variant].background};
+          padding: 4px;
+          font-weight: bold;
+          ${border ? `border: 2px solid ${variantColors[variant].color};` : ''}
+          `,
+            `      now: ${new Date(Date.now()).toLocaleTimeString('cs-CZ', { second: '2-digit', fractionalSecondDigits: 2 })}`,
+            `  started: ${variable.timestampStarted === null ? null : new Date(variable.timestampStarted).toLocaleTimeString('cs-CZ', { second: '2-digit', fractionalSecondDigits: 2 })}`,
+            `   paused: ${variable.timestampPaused === null ? null : new Date(variable.timestampPaused).toLocaleTimeString('cs-CZ', { second: '2-digit', fractionalSecondDigits: 2 })}`,
+        )
+    } else {
+        console.log(
+            `%c${text.padStart(25, ' ')}`,
+            `
+          color: ${variantColors[variant].color};
+          background-color: ${variantColors[variant].background};
+          padding: 4px;
+          font-weight: bold;
+          ${border ? `border: 2px solid ${variantColors[variant].color};` : ''}
+          `,
+            variable
+        )
+    }
     // console.table(variable.periods)
 }
