@@ -67,4 +67,36 @@ details {
             min-width: auto;
         }
     }
+
+    .sound-playback-log {
+        display: grid;
+        grid-template-columns: repeat(4, min-content);
+        gap: 0.25rem 1rem;
+        font-size: 0.75rem;
+        margin-top: 0.5rem;
+    }
+
+    .sound-playback-log__header {
+        display: contents;
+        font-weight: bold;
+
+        span {
+            padding: 0.25rem;
+            border-bottom: 1px solid #ddd;
+        }
+    }
+
+    .sound-playback-log__row {
+        display: contents;
+
+        code, span {
+            padding: 0.25rem;
+            text-wrap: nowrap;
+            border-bottom: 1px solid #eee;
+        }
+
+        code {
+            min-width: auto;
+        }
+    }
 }

@@ -6,6 +6,7 @@ import {
 } from '../../../lib/timer'
 import { SoundScheduler } from '../../../lib/sound-scheduler'
 import { AVAILABLE_SOUNDS } from '../../../lib/sound-discovery'
+import { soundPlaybackLog } from '../../../lib/sounds'
 
 const soundScheduler = new SoundScheduler(2000, AVAILABLE_SOUNDS)
 
@@ -128,6 +129,16 @@ export const SoundNotificationTable = () => {
         }
     }
 
+    const formatTimestamp = (timestamp) => {
+        const date = new Date(timestamp)
+        return date.toLocaleTimeString('en-US', {
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        })
+    }
+
     return (
         <div style={{ marginBottom: '16px' }}>
             <h4 style={{ margin: '0 0 8px 0', fontSize: '0.9rem' }}>Sound Notifications for Current Period ({periodType})</h4>
@@ -185,6 +196,44 @@ export const SoundNotificationTable = () => {
                     )
                 })}
             </div>
+
+            {soundPlaybackLog.length > 0 && (
+                <>
+                    <h4 style={{ margin: '16px 0 8px 0', fontSize: '0.9rem' }}>Recent Sound Playback Log</h4>
+                    <div className="sound-playback-log">
+                        <div className="sound-playback-log__header">
+                            <span>Time</span>
+                            <span>Sound</span>
+                            <span>Status</span>
+                            <span>Error</span>
+                        </div>
+                        {soundPlaybackLog.slice(0, 10).map((entry, index) => (
+                            <div key={index} className="sound-playback-log__row">
+                                <code style={{ fontSize: '0.65rem' }}>
+                                    {formatTimestamp(entry.timestamp)}
+                                </code>
+                                <span style={{ fontSize: '0.7rem' }}>
+                                    {entry.soundKey}
+                                </span>
+                                <span style={{
+                                    fontSize: '0.65rem',
+                                    color: entry.success ? '#27ae60' : '#e74c3c',
+                                    fontWeight: 'bold'
+                                }}>
+                                    {entry.success ? '✓ Success' : '✗ Failed'}
+                                </span>
+                                <span style={{
+                                    fontSize: '0.6rem',
+                                    color: '#999',
+                                    fontStyle: 'italic'
+                                }}>
+                                    {entry.error || ''}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            )}
         </div>
     )
 }

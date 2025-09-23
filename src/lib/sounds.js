@@ -6,6 +6,24 @@ import {log} from "./log.js";
 let audioUnlocked = false
 let audioContextKeepAlive = null
 
+// Sound playback tracking for debug table
+export const soundPlaybackLog = []
+const MAX_LOG_ENTRIES = 50
+
+const addSoundLog = (soundKey, success, error = null) => {
+    const logEntry = {
+        timestamp: Date.now(),
+        soundKey,
+        success,
+        error: error?.message || null
+    }
+
+    soundPlaybackLog.unshift(logEntry)
+    if (soundPlaybackLog.length > MAX_LOG_ENTRIES) {
+        soundPlaybackLog.pop()
+    }
+}
+
 // Function to unlock audio context on user interaction
 export const unlockAudio = async () => {
     if (audioUnlocked) return true
@@ -48,12 +66,19 @@ const startAudioContextKeepAlive = () => {
         html5: false,
     })
 
-    // Play silent sound every 30 seconds to keep context alive
+    // Play silent sound every 10 seconds to keep context alive (PWA needs more frequent)
     audioContextKeepAlive = setInterval(() => {
         if (document.visibilityState === 'visible') {
-            keepAliveSilentSound.play()
+            try {
+                keepAliveSilentSound.play()
+                log('🔊 Audio context', 'keep-alive ping', 15)
+            } catch (error) {
+                log('🔊 Audio context keep-alive failed', error, 5)
+                // Try to re-unlock on failure
+                unlockAudio()
+            }
         }
-    }, 30000)
+    }, 10000)
 
     // Handle visibility changes for PWA
     const handleVisibilityChange = () => {
@@ -156,17 +181,45 @@ export const soundConfig = {
 // Play any sound by its key
 const playByKey = async (soundKey) => {
     const sound = sounds[soundKey]
-    if (sound) {
+    if (!sound) {
+        log('🔊 Sound not found', soundKey, 2)
+        addSoundLog(soundKey, false, new Error('Sound not found'))
+        return false
+    }
+
+    try {
         // Try to unlock audio if not already unlocked
         if (!audioUnlocked) {
-            await unlockAudio()
+            const unlocked = await unlockAudio()
+            if (!unlocked) {
+                log('🔊 Audio unlock failed for', soundKey, 2)
+                addSoundLog(soundKey, false, new Error('Audio unlock failed'))
+                return false
+            }
         }
 
         Howler.stop()
         sound.play()
+        log('🔊 Sound played successfully', soundKey, 10)
+        addSoundLog(soundKey, true)
         return true
+    } catch (error) {
+        log('🔊 Sound play failed', `${soundKey}: ${error.message}`, 2)
+        addSoundLog(soundKey, false, error)
+
+        // Try to re-unlock and retry once
+        try {
+            await unlockAudio()
+            sound.play()
+            log('🔊 Sound played after re-unlock', soundKey, 10)
+            addSoundLog(soundKey, true, null, 'retry')
+            return true
+        } catch (retryError) {
+            log('🔊 Sound retry failed', `${soundKey}: ${retryError.message}`, 1)
+            addSoundLog(soundKey, false, retryError)
+            return false
+        }
     }
-    return false
 }
 
 // Legacy function for backwards compatibility with general sounds
