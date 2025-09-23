@@ -6,7 +6,7 @@ export const SoundWrapper = ({
     onBlur,
     children, 
     as = 'button',
-    playOnClick = true,
+    playOnClick = false,
     playOnChange = false,
     playOnBlur = false,
     ...props 

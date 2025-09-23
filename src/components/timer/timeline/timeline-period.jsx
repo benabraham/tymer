@@ -21,7 +21,9 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
 
     const availableTypes = ['work', 'break', 'fun']
 
-    const handleClickOnPeriod = () => {
+    const handleClickOnPeriod = async () => {
+        await playSound('button')
+
         // Check if timer is running and pause it
         const isTimerRunning = timerState.value.runningIntervalId !== null
         setWasTimerRunning(isTimerRunning)
