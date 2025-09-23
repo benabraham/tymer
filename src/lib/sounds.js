@@ -9,12 +9,13 @@ let audioUnlocked = false
 export const soundPlaybackLog = []
 const MAX_LOG_ENTRIES = 50
 
-const addSoundLog = (soundKey, success, error = null) => {
+const addSoundLog = (soundKey, success, error = null, retryAttempt = false) => {
     const logEntry = {
         timestamp: Date.now(),
         soundKey,
         success,
-        error: error?.message || null
+        error: error?.message || null,
+        retry: retryAttempt
     }
 
     soundPlaybackLog.unshift(logEntry)
@@ -174,11 +175,11 @@ const playByKey = async (soundKey) => {
             await unlockAudio()
             sound.play()
             log('🔊 Sound played after re-unlock', soundKey, 10)
-            addSoundLog(soundKey, true, null, 'retry')
+            addSoundLog(soundKey, true, null, true)
             return true
         } catch (retryError) {
             log('🔊 Sound retry failed', `${soundKey}: ${retryError.message}`, 1)
-            addSoundLog(soundKey, false, retryError)
+            addSoundLog(soundKey, false, retryError, true)
             return false
         }
     }

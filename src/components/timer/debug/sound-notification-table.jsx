@@ -220,7 +220,10 @@ export const SoundNotificationTable = () => {
                                     color: entry.success ? '#27ae60' : '#e74c3c',
                                     fontWeight: 'bold'
                                 }}>
-                                    {entry.success ? '✓ Success' : '✗ Failed'}
+                                    {entry.success
+                                        ? (entry.retry ? '✓ Success (retry)' : '✓ Success')
+                                        : (entry.retry ? '✗ Failed (retry)' : '✗ Failed')
+                                    }
                                 </span>
                                 <span style={{
                                     fontSize: '0.6rem',
