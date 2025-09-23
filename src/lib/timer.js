@@ -38,7 +38,22 @@ export const roundDownToBaseMinute = timeInMs => {
 export const timerState = signal(loadState(initialState))
 
 // Initialize sound scheduler for period-based sounds
-const soundScheduler = new SoundScheduler(2000, AVAILABLE_SOUNDS)
+const soundScheduler = new SoundScheduler(5000, AVAILABLE_SOUNDS)
+
+// Timer worker for accurate timing even when tab is backgrounded
+let timerWorker = null
+
+// Initialize worker
+const initWorker = () => {
+    if (!timerWorker) {
+        timerWorker = new Worker('/tymer/timer-worker.js')
+        timerWorker.onmessage = (event) => {
+            // Worker sends timestamp, trigger our tick function
+            tick()
+        }
+    }
+    return timerWorker
+}
 
 // computed signals
 export const timerHasFinished = computed(
@@ -121,19 +136,32 @@ const initializeTimerState = () => {
     log('timer initialized (periods preserved)', timerState.value, 7)
 }
 
-// starts repeating the tick function to update UI periodically
+// starts repeating the tick function using worker to update UI periodically
 const startTick = () => {
+    const worker = initWorker()
+    worker.postMessage('start')
     updateTimerState({
-        timerProperties: { runningIntervalId: setInterval(tick, UI_UPDATE_INTERVAL) },
+        timerProperties: { runningIntervalId: 'worker-active' },
     })
 }
 
 // stops repeating the tick function
 const stopTick = () => {
-    clearInterval(timerState.value.runningIntervalId)
+    if (timerWorker) {
+        timerWorker.postMessage('stop')
+    }
     updateTimerState({
         timerProperties: { runningIntervalId: null },
     })
+}
+
+// cleanup worker when no longer needed
+export const cleanupWorker = () => {
+    if (timerWorker) {
+        timerWorker.postMessage('stop')
+        timerWorker.terminate()
+        timerWorker = null
+    }
 }
 
 // starts the timer

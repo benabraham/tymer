@@ -8,7 +8,7 @@ import { SoundScheduler } from '../../../lib/sound-scheduler'
 import { AVAILABLE_SOUNDS } from '../../../lib/sound-discovery'
 import { soundPlaybackLog } from '../../../lib/sounds'
 
-const soundScheduler = new SoundScheduler(2000, AVAILABLE_SOUNDS)
+const soundScheduler = new SoundScheduler(5000, AVAILABLE_SOUNDS)
 
 export const SoundNotificationTable = () => {
     if (!currentPeriod.value) {
