@@ -47,7 +47,7 @@ let timerWorker = null
 const initWorker = () => {
     if (!timerWorker) {
         timerWorker = new Worker('/tymer/timer-worker.js')
-        timerWorker.onmessage = (event) => {
+        timerWorker.onmessage = event => {
             // Worker sends timestamp, trigger our tick function
             tick()
         }
@@ -755,7 +755,13 @@ const tick = () => {
         const nextPeriod = timerState.value.periods[nextIndex]
         const nextPeriodType = nextPeriod ? nextPeriod.type : 'finish'
 
-        const soundToPlay = soundScheduler.checkSounds(elapsedMs, intendedMs, periodType, isPaused, nextPeriodType)
+        const soundToPlay = soundScheduler.checkSounds(
+            elapsedMs,
+            intendedMs,
+            periodType,
+            isPaused,
+            nextPeriodType,
+        )
 
         if (soundToPlay) {
             const soundKey = getSoundKeyFromPath(soundToPlay.soundPath)
@@ -775,3 +781,11 @@ const tick = () => {
 effect(() => {
     saveState(timerState.value)
 })
+
+// Export timer state globally for sounds module to access
+if (typeof window !== 'undefined') {
+    window.__timerModule = {
+        timerState,
+        currentPeriod,
+    }
+}

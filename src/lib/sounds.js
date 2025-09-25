@@ -1,6 +1,6 @@
-import {Howl, Howler} from 'howler'
-import {AVAILABLE_SOUNDS} from './sound-discovery'
-import {log} from "./log.js";
+import { Howl, Howler } from 'howler'
+import { AVAILABLE_SOUNDS } from './sound-discovery'
+import { log } from './log.js'
 
 // Audio context unlock state
 let audioUnlocked = false
@@ -9,13 +9,20 @@ let audioUnlocked = false
 export const soundPlaybackLog = []
 const MAX_LOG_ENTRIES = 50
 
-const addSoundLog = (soundKey, success, error = null, retryAttempt = false) => {
+const addSoundLog = (
+    soundKey,
+    success,
+    error = null,
+    retryAttempt = false,
+    periodContext = null,
+) => {
     const logEntry = {
         timestamp: Date.now(),
         soundKey,
         success,
         error: error?.message || null,
-        retry: retryAttempt
+        retry: retryAttempt,
+        periodContext,
     }
 
     soundPlaybackLog.unshift(logEntry)
@@ -53,7 +60,6 @@ export const unlockAudio = async () => {
     }
 }
 
-
 // Build sound configuration dynamically based on available sounds
 const buildSoundConfig = () => {
     // Skip if we're in a Node.js build environment (no window object)
@@ -61,25 +67,24 @@ const buildSoundConfig = () => {
         return {}
     }
 
-
     const config = {
         // Keep existing general sounds
-        button: new Howl({src: ['/tymer/sounds/button.webm'], loop: false}),
-        timerFinished: new Howl({src: ['/tymer/sounds/timer-end.webm'], loop: false}),
+        button: new Howl({ src: ['/tymer/sounds/button.webm'], loop: false }),
+        timerFinished: new Howl({ src: ['/tymer/sounds/timer-end.webm'], loop: false }),
     }
 
     // Build elapsed sounds
     AVAILABLE_SOUNDS.elapsed.forEach(min => {
         const key = `elapsed_${min}`
         const path = `/tymer/sounds/elapsed/${String(min).padStart(3, '0')}.webm`
-        config[key] = new Howl({src: [path], loop: false})
+        config[key] = new Howl({ src: [path], loop: false })
     })
 
     // Build remaining sounds
     AVAILABLE_SOUNDS.remaining.forEach(min => {
         const key = `remaining_${min}`
         const path = `/tymer/sounds/remaining/${String(min).padStart(3, '0')}.webm`
-        config[key] = new Howl({src: [path], loop: false})
+        config[key] = new Howl({ src: [path], loop: false })
     })
 
     // Build timesup sounds
@@ -87,7 +92,7 @@ const buildSoundConfig = () => {
     for (const type of timesupTypes) {
         config[`timesup_${type}`] = new Howl({
             src: [`/tymer/sounds/timesup/${type}.webm`],
-            loop: false
+            loop: false,
         })
     }
 
@@ -95,14 +100,14 @@ const buildSoundConfig = () => {
     AVAILABLE_SOUNDS.overtime.forEach(min => {
         const key = `overtime_${min}`
         const path = `/tymer/sounds/overtime/${String(min).padStart(3, '0')}.webm`
-        config[key] = new Howl({src: [path], loop: false})
+        config[key] = new Howl({ src: [path], loop: false })
     })
 
     // Build break overtime sounds
     AVAILABLE_SOUNDS.overtimeBreak.forEach(min => {
         const key = `overtime_break_${min}`
         const path = `/tymer/sounds/overtime/break/${String(min).padStart(3, '0')}.webm`
-        config[key] = new Howl({src: [path], loop: false})
+        config[key] = new Howl({ src: [path], loop: false })
     })
 
     return config
@@ -125,7 +130,7 @@ export const soundConfig = {
         work: '/tymer/sounds/timesup/work.webm',
         break: '/tymer/sounds/timesup/break.webm',
         fun: '/tymer/sounds/timesup/fun.webm',
-        finish: '/tymer/sounds/timesup/finish.webm'
+        finish: '/tymer/sounds/timesup/finish.webm',
     },
     overtime: AVAILABLE_SOUNDS.overtime.reduce((acc, min) => {
         acc[`${min}min`] = `/tymer/sounds/overtime/${String(min).padStart(3, '0')}.webm`
@@ -137,16 +142,57 @@ export const soundConfig = {
     }, {}),
     general: {
         button: '/tymer/sounds/button.webm',
-        timerFinished: '/tymer/sounds/timer-end.webm'
+        timerFinished: '/tymer/sounds/timer-end.webm',
+    },
+}
+
+// Get period context for logging
+const getPeriodContext = () => {
+    try {
+        // Use require to get current timer module state synchronously
+        // This avoids circular dependency issues
+        const getTimerState = () => {
+            if (typeof window !== 'undefined' && window.__timerModule) {
+                return window.__timerModule
+            }
+            return null
+        }
+
+        const timerModule = getTimerState()
+        if (!timerModule) return null
+
+        const currentPeriod = timerModule.currentPeriod?.value
+        const timerState = timerModule.timerState?.value
+
+        if (currentPeriod) {
+            const elapsedMs = currentPeriod.periodDurationElapsed
+            const intendedDuration = currentPeriod.periodUserIntendedDuration
+            const remainingMs = intendedDuration - elapsedMs
+            const isOvertime = elapsedMs > intendedDuration
+
+            return {
+                periodType: currentPeriod.type,
+                periodDuration: intendedDuration,
+                elapsed: elapsedMs,
+                remaining: remainingMs > 0 ? remainingMs : 0,
+                overtime: isOvertime ? elapsedMs - intendedDuration : 0,
+                periodIndex: timerState?.currentPeriodIndex || 0,
+            }
+        }
+    } catch (e) {
+        // Ignore errors during initialization
     }
+    return null
 }
 
 // Play any sound by its key
-const playByKey = async (soundKey) => {
+const playByKey = async soundKey => {
     const sound = sounds[soundKey]
+    const periodContext = getPeriodContext()
+
     if (!sound) {
         log('🔊 Sound not found', soundKey, 2)
-        addSoundLog(soundKey, false, new Error('Sound not found'))
+        addSoundLog(soundKey, false, new Error('Sound not found'), false, periodContext)
         return false
     }
 
@@ -156,7 +202,7 @@ const playByKey = async (soundKey) => {
             const unlocked = await unlockAudio()
             if (!unlocked) {
                 log('🔊 Audio unlock failed for', soundKey, 2)
-                addSoundLog(soundKey, false, new Error('Audio unlock failed'))
+                addSoundLog(soundKey, false, new Error('Audio unlock failed'), false, periodContext)
                 return false
             }
         }
@@ -164,22 +210,22 @@ const playByKey = async (soundKey) => {
         Howler.stop()
         sound.play()
         log('🔊 Sound played successfully', soundKey, 10)
-        addSoundLog(soundKey, true)
+        addSoundLog(soundKey, true, null, false, periodContext)
         return true
     } catch (error) {
         log('🔊 Sound play failed', `${soundKey}: ${error.message}`, 2)
-        addSoundLog(soundKey, false, error)
+        addSoundLog(soundKey, false, error, false, periodContext)
 
         // Try to re-unlock and retry once
         try {
             await unlockAudio()
             sound.play()
             log('🔊 Sound played after re-unlock', soundKey, 10)
-            addSoundLog(soundKey, true, null, true)
+            addSoundLog(soundKey, true, null, true, periodContext)
             return true
         } catch (retryError) {
             log('🔊 Sound retry failed', `${soundKey}: ${retryError.message}`, 1)
-            addSoundLog(soundKey, false, retryError, true)
+            addSoundLog(soundKey, false, retryError, true, periodContext)
             return false
         }
     }
@@ -196,13 +242,13 @@ export const playTimerFinishedSound = () => {
 }
 
 // New function to play period-based sounds
-export const playPeriodSound = (soundKey) => {
+export const playPeriodSound = soundKey => {
     log('🔊 Playing period sound', soundKey, 10)
     return playByKey(soundKey)
 }
 
 // Helper to get sound key from sound path (for SoundScheduler integration)
-export const getSoundKeyFromPath = (soundPath) => {
+export const getSoundKeyFromPath = soundPath => {
     // Convert path like 'sounds/elapsed/006.webm' to key like 'elapsed_6'
     const pathParts = soundPath.split('/')
     const filename = pathParts[pathParts.length - 1] // '006.webm'

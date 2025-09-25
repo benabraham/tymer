@@ -4,13 +4,13 @@
 export const AVAILABLE_SOUNDS = {
     // Elapsed time announcements (in minutes)
     elapsed: [6, 12, 24, 36, 48, 60, 72, 84, 96, 108],
-    
+
     // Remaining time warnings (in minutes before end)
     remaining: [6, 12, 24],
-    
+
     // Overtime announcements (in minutes past intended duration)
     overtime: [6, 12, 18, 24, 30, 36, 42, 48, 60],
-    
+
     // Break-specific overtime announcements
     overtimeBreak: [6, 12, 18, 24, 30, 36, 42, 48],
 }

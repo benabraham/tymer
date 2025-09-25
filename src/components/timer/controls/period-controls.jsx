@@ -127,11 +127,17 @@ export const PeriodControls = () => (
             </div>
         </section>
         <section class="controls">
-            <SoundWrapper onClick={changeType} disabled={timerState.value.currentPeriodIndex === null}>
+            <SoundWrapper
+                onClick={changeType}
+                disabled={timerState.value.currentPeriodIndex === null}
+            >
                 change type
             </SoundWrapper>
             <div class="button-group">
-                <SoundWrapper onClick={addPeriod} disabled={timerState.value.currentPeriodIndex === null}>
+                <SoundWrapper
+                    onClick={addPeriod}
+                    disabled={timerState.value.currentPeriodIndex === null}
+                >
                     add period
                 </SoundWrapper>
                 <SoundWrapper

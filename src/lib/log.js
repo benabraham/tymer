@@ -22,10 +22,11 @@ export const log = (text, variable, variant = 0, border = false) => {
         variant = 0
 
     // Check if variable is a timer state object (has timestampStarted and timestampPaused properties)
-    const isTimerState = variable &&
-        typeof variable === 'object' &&
-        ('timestampStarted' in variable) &&
-        ('timestampPaused' in variable)
+    const isTimerState =
+        variable
+        && typeof variable === 'object'
+        && 'timestampStarted' in variable
+        && 'timestampPaused' in variable
 
     if (isTimerState) {
         console.log(
@@ -51,7 +52,7 @@ export const log = (text, variable, variant = 0, border = false) => {
           font-weight: bold;
           ${border ? `border: 2px solid ${variantColors[variant].color};` : ''}
           `,
-            variable
+            variable,
         )
     }
     // console.table(variable.periods)

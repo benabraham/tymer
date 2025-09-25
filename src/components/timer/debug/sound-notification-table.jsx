@@ -1,9 +1,5 @@
 import { formatTime } from '../../../lib/format'
-import {
-    currentPeriod,
-    timerState,
-    timerDurationElapsed
-} from '../../../lib/timer'
+import { currentPeriod, timerState, timerDurationElapsed } from '../../../lib/timer'
 import { SoundScheduler } from '../../../lib/sound-scheduler'
 import { AVAILABLE_SOUNDS } from '../../../lib/sound-discovery'
 import { soundPlaybackLog } from '../../../lib/sounds'
@@ -26,12 +22,16 @@ export const SoundNotificationTable = () => {
     const nextPeriod = timerState.value.periods[nextIndex]
     const nextPeriodType = nextPeriod ? nextPeriod.type : 'finish'
 
-    const formatTimeFromMs = (ms) => {
+    const formatTimeFromMs = ms => {
         return formatTime(ms, false, false, true)
     }
 
     // Get all possible windows for this period
-    const allWindows = soundScheduler.getAllPossibleWindows(intendedDuration, periodType, nextPeriodType)
+    const allWindows = soundScheduler.getAllPossibleWindows(
+        intendedDuration,
+        periodType,
+        nextPeriodType,
+    )
 
     // Group windows by their target time ranges (overlapping windows)
     const groupedWindows = []
@@ -43,7 +43,8 @@ export const SoundNotificationTable = () => {
 
         for (const group of groupedWindows) {
             const groupTarget = group[0].targetMs
-            if (Math.abs(window.targetMs - groupTarget) <= 2000) { // Same window size as scheduler
+            if (Math.abs(window.targetMs - groupTarget) <= 2000) {
+                // Same window size as scheduler
                 group.push(window)
                 addedToGroup = true
                 break
@@ -86,12 +87,12 @@ export const SoundNotificationTable = () => {
                 filteredOut,
                 allWindows: group,
                 originalCount: group.length,
-                validCount: validWindows.length
+                validCount: validWindows.length,
             }
         })
         .filter(Boolean)
 
-    const getSoundType = (window) => {
+    const getSoundType = window => {
         if (window.type === 'timesup') return 'timesup'
         if (window.type === 'elapsed') return `elapsed ${window.minutes}min`
         if (window.type === 'remaining') return `remaining ${window.minutes}min`
@@ -99,7 +100,7 @@ export const SoundNotificationTable = () => {
         return window.type
     }
 
-    const getSoundName = (window) => {
+    const getSoundName = window => {
         if (window.type === 'timesup') {
             const soundType = nextPeriodType === 'finish' ? 'finish' : nextPeriodType
             return `timesup_${soundType}`
@@ -120,28 +121,34 @@ export const SoundNotificationTable = () => {
         }
     }
 
-    const getStatusDisplay = (status) => {
+    const getStatusDisplay = status => {
         switch (status) {
-            case 'future': return { text: '⏳ Future', color: '#666', style: 'normal' }
-            case 'current': return { text: '🔊 Active', color: '#e67e22', style: 'bold' }
-            case 'played': return { text: '✓ Played', color: '#27ae60', style: 'normal' }
-            default: return { text: status, color: '#666', style: 'normal' }
+            case 'future':
+                return { text: '⏳ Future', color: '#666', style: 'normal' }
+            case 'current':
+                return { text: '🔊 Active', color: '#e67e22', style: 'bold' }
+            case 'played':
+                return { text: '✓ Played', color: '#27ae60', style: 'normal' }
+            default:
+                return { text: status, color: '#666', style: 'normal' }
         }
     }
 
-    const formatTimestamp = (timestamp) => {
+    const formatTimestamp = timestamp => {
         const date = new Date(timestamp)
         return date.toLocaleTimeString('en-US', {
             hour12: false,
             hour: '2-digit',
             minute: '2-digit',
-            second: '2-digit'
+            second: '2-digit',
         })
     }
 
     return (
         <div style={{ marginBottom: '16px' }}>
-            <h4 style={{ margin: '0 0 8px 0', fontSize: '0.9rem' }}>Sound Notifications for Current Period ({periodType})</h4>
+            <h4 style={{ margin: '0 0 8px 0', fontSize: '0.9rem' }}>
+                Sound Notifications for Current Period ({periodType})
+            </h4>
             <div className="sound-notifications">
                 <div className="sound-notifications__header">
                     <span>Status</span>
@@ -163,34 +170,52 @@ export const SoundNotificationTable = () => {
                             key={index}
                             className={`sound-notifications__row ${isCurrentlyActive ? 'sound-notifications__row--active' : ''}`}
                         >
-                            <span style={{
-                                fontSize: '0.65rem',
-                                color: statusDisplay.color,
-                                fontWeight: statusDisplay.style
-                            }}>
+                            <span
+                                style={{
+                                    fontSize: '0.65rem',
+                                    color: statusDisplay.color,
+                                    fontWeight: statusDisplay.style,
+                                }}
+                            >
                                 {statusDisplay.text}
                             </span>
                             <code>{formatTimeFromMs(group.targetMs)}</code>
-                            <code>{timeFromEnd >= 0 ? `-${formatTimeFromMs(timeFromEnd)}` : `+${formatTimeFromMs(-timeFromEnd)}`}</code>
-                            <code style={{
-                                color: timeToNotification > 0 ? '#2196F3' : timeToNotification < -2000 ? '#999' : '#e67e22',
-                                fontWeight: timeToNotification <= 2000 && timeToNotification >= -2000 ? 'bold' : 'normal'
-                            }}>
+                            <code>
+                                {timeFromEnd >= 0
+                                    ? `-${formatTimeFromMs(timeFromEnd)}`
+                                    : `+${formatTimeFromMs(-timeFromEnd)}`}
+                            </code>
+                            <code
+                                style={{
+                                    color:
+                                        timeToNotification > 0
+                                            ? '#2196F3'
+                                            : timeToNotification < -2000
+                                              ? '#999'
+                                              : '#e67e22',
+                                    fontWeight:
+                                        timeToNotification <= 2000 && timeToNotification >= -2000
+                                            ? 'bold'
+                                            : 'normal',
+                                }}
+                            >
                                 {timeToNotification >= 0
                                     ? `in ${formatTimeFromMs(timeToNotification)}`
-                                    : `${formatTimeFromMs(-timeToNotification)} ago`
-                                }
+                                    : `${formatTimeFromMs(-timeToNotification)} ago`}
                             </code>
-                            <span style={{ fontSize: '0.7rem', fontWeight: 'bold', color: '#2d8f47' }}>
+                            <span
+                                style={{ fontSize: '0.7rem', fontWeight: 'bold', color: '#2d8f47' }}
+                            >
                                 {getSoundName(group.winner)}
                             </span>
-                            <span style={{ fontSize: '0.65rem', color: '#666', fontStyle: 'italic' }}>
+                            <span
+                                style={{ fontSize: '0.65rem', color: '#666', fontStyle: 'italic' }}
+                            >
                                 {group.competitors.length > 0
                                     ? group.competitors.map(c => getSoundType(c)).join(', ')
                                     : group.filteredOut.length > 0
-                                        ? group.filteredOut.map(c => getSoundType(c)).join(', ')
-                                        : ''
-                                }
+                                      ? group.filteredOut.map(c => getSoundType(c)).join(', ')
+                                      : ''}
                             </span>
                         </div>
                     )
@@ -199,12 +224,15 @@ export const SoundNotificationTable = () => {
 
             {soundPlaybackLog.length > 0 && (
                 <>
-                    <h4 style={{ margin: '16px 0 8px 0', fontSize: '0.9rem' }}>Recent Sound Playback Log</h4>
+                    <h4 style={{ margin: '16px 0 8px 0', fontSize: '0.9rem' }}>
+                        Recent Sound Playback Log
+                    </h4>
                     <div className="sound-playback-log">
                         <div className="sound-playback-log__header">
                             <span>Time</span>
                             <span>Sound</span>
                             <span>Status</span>
+                            <span>Period Context</span>
                             <span>Error</span>
                         </div>
                         {soundPlaybackLog.slice(0, 10).map((entry, index) => (
@@ -212,24 +240,65 @@ export const SoundNotificationTable = () => {
                                 <code style={{ fontSize: '0.65rem' }}>
                                     {formatTimestamp(entry.timestamp)}
                                 </code>
-                                <span style={{ fontSize: '0.7rem' }}>
-                                    {entry.soundKey}
-                                </span>
-                                <span style={{
-                                    fontSize: '0.65rem',
-                                    color: entry.success ? '#27ae60' : '#e74c3c',
-                                    fontWeight: 'bold'
-                                }}>
+                                <span style={{ fontSize: '0.7rem' }}>{entry.soundKey}</span>
+                                <span
+                                    style={{
+                                        fontSize: '0.65rem',
+                                        color: entry.success ? '#27ae60' : '#e74c3c',
+                                        fontWeight: 'bold',
+                                    }}
+                                >
                                     {entry.success
-                                        ? (entry.retry ? '✓ Success (retry)' : '✓ Success')
-                                        : (entry.retry ? '✗ Failed (retry)' : '✗ Failed')
-                                    }
+                                        ? entry.retry
+                                            ? '✓ Success (retry)'
+                                            : '✓ Success'
+                                        : entry.retry
+                                          ? '✗ Failed (retry)'
+                                          : '✗ Failed'}
                                 </span>
-                                <span style={{
-                                    fontSize: '0.6rem',
-                                    color: '#999',
-                                    fontStyle: 'italic'
-                                }}>
+                                <span style={{ fontSize: '0.6rem', color: '#666' }}>
+                                    {entry.periodContext ? (
+                                        <div style={{ lineHeight: '1.2' }}>
+                                            <div style={{ color: '#2196F3', fontWeight: 'bold' }}>
+                                                {entry.periodContext.periodType} #
+                                                {entry.periodContext.periodIndex + 1}
+                                            </div>
+                                            <div>
+                                                Duration:{' '}
+                                                {formatTimeFromMs(
+                                                    entry.periodContext.periodDuration,
+                                                )}
+                                            </div>
+                                            <div>
+                                                Elapsed:{' '}
+                                                {formatTimeFromMs(entry.periodContext.elapsed)}
+                                            </div>
+                                            <div>
+                                                Remaining:{' '}
+                                                {formatTimeFromMs(entry.periodContext.remaining)}
+                                            </div>
+                                            {entry.periodContext.overtime > 0 && (
+                                                <div
+                                                    style={{ color: '#e67e22', fontWeight: 'bold' }}
+                                                >
+                                                    Overtime:{' '}
+                                                    {formatTimeFromMs(entry.periodContext.overtime)}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <span style={{ color: '#999', fontStyle: 'italic' }}>
+                                            No period data
+                                        </span>
+                                    )}
+                                </span>
+                                <span
+                                    style={{
+                                        fontSize: '0.6rem',
+                                        color: '#999',
+                                        fontStyle: 'italic',
+                                    }}
+                                >
                                     {entry.error || ''}
                                 </span>
                             </div>
