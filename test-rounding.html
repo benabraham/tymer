@@ -31,11 +31,11 @@
 <body>
     <h1>Timer Rounding Test</h1>
     <div id="results"></div>
-    
+
     <script type="module">
         // Test the formatTime function with various scenarios
         import { formatTime } from './src/lib/format.js'
-        
+
         const testCases = [
             {
                 name: "12 minute period - 2 minutes elapsed",
@@ -62,30 +62,30 @@
                 remainingMs: 1 * 1000,  // 1 second
             }
         ]
-        
+
         const resultsDiv = document.getElementById('results')
-        
+
         testCases.forEach(test => {
             const div = document.createElement('div')
-            div.className = 'test-case'
-            
+            div.class = 'test-case'
+
             const totalFormatted = formatTime(test.totalMs, false, false)
             const elapsedFormatted = formatTime(test.elapsedMs, true, false)  // elapsed=true
             const remainingFormatted = formatTime(test.remainingMs, false, true)  // remaining=true
-            
+
             // Parse the formatted times back to minutes
             const parseTime = (timeStr) => {
                 const [hours, minutes] = timeStr.split(':').map(Number)
                 return hours * 60 + minutes
             }
-            
+
             const totalMinutes = parseTime(totalFormatted)
             const elapsedMinutes = parseTime(elapsedFormatted)
             const remainingMinutes = parseTime(remainingFormatted)
-            
+
             const sumMinutes = elapsedMinutes + remainingMinutes
             const isCorrect = sumMinutes === totalMinutes
-            
+
             div.innerHTML = `
                 <h3>${test.name}</h3>
                 <table>
@@ -119,11 +119,11 @@
                     </tr>
                 </table>
                 <p class="${isCorrect ? 'pass' : 'fail'}">
-                    Sum: ${elapsedMinutes} + ${remainingMinutes} = ${sumMinutes} 
+                    Sum: ${elapsedMinutes} + ${remainingMinutes} = ${sumMinutes}
                     ${isCorrect ? '✓ CORRECT' : `✗ WRONG (expected ${totalMinutes})`}
                 </p>
             `
-            
+
             resultsDiv.appendChild(div)
         })
     </script>

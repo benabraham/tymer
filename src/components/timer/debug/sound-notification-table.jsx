@@ -149,8 +149,8 @@ export const SoundNotificationTable = () => {
             <h4 style={{ margin: '0 0 8px 0', fontSize: '0.9rem' }}>
                 Sound Notifications for Current Period ({periodType})
             </h4>
-            <div className="sound-notifications">
-                <div className="sound-notifications__header">
+            <div class="sound-notifications">
+                <div class="sound-notifications__header">
                     <span>Status</span>
                     <span>Time from Start</span>
                     <span>Time from End</span>
@@ -168,7 +168,7 @@ export const SoundNotificationTable = () => {
                     return (
                         <div
                             key={index}
-                            className={`sound-notifications__row ${isCurrentlyActive ? 'sound-notifications__row--active' : ''}`}
+                            class={`sound-notifications__row ${isCurrentlyActive ? 'sound-notifications__row--active' : ''}`}
                         >
                             <span
                                 style={{
@@ -227,8 +227,8 @@ export const SoundNotificationTable = () => {
                     <h4 style={{ margin: '16px 0 8px 0', fontSize: '0.9rem' }}>
                         Recent Sound Playback Log
                     </h4>
-                    <div className="sound-playback-log">
-                        <div className="sound-playback-log__header">
+                    <div class="sound-playback-log">
+                        <div class="sound-playback-log__header">
                             <span>Time</span>
                             <span>Sound</span>
                             <span>Status</span>
@@ -236,7 +236,7 @@ export const SoundNotificationTable = () => {
                             <span>Error</span>
                         </div>
                         {soundPlaybackLog.slice(0, 10).map((entry, index) => (
-                            <div key={index} className="sound-playback-log__row">
+                            <div key={index} class="sound-playback-log__row">
                                 <code style={{ fontSize: '0.65rem' }}>
                                     {formatTimestamp(entry.timestamp)}
                                 </code>

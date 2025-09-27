@@ -132,7 +132,7 @@
 }
 
 .timeline__elapsed--period {
-  bottom: 100%;
+  bottom: 90%;
   font-size: 0.75rem;
 }
 
@@ -199,35 +199,55 @@
   gap: 0.5rem;
 }
 
-.timeline__edit-type-group {
-  display: flex;
-  border-radius: .5rem;
-  overflow: hidden;
-}
 
-.timeline__edit-type-button.timeline__edit-type-button {
-  padding: 0.375rem 0.25rem;
+
+// Universal styling for button groups (inactive state)
+button.button-group-item:not(:disabled) {
   background: #999;
-  font-size: 0.75rem;
-  cursor: pointer;
+  color: #333;
   transition: all 0.15s ease;
+  padding: 0.375rem 1ch;
+  cursor: pointer;
   font-family: inherit;
-  border-radius: 0;
 
-  &:hover,
-  &:focus{
+  .button-group--tight & {
+    padding-inline: 0.5ch;
+  }
+
+  &:hover {
+    background-color: #aaa;
+    border-color: transparent;
+    color: #333;
+    z-index: 30;
+  }
+
+  &:focus {
     z-index: 30;
   }
 }
 
-.timeline__edit-type-button--active.timeline__edit-type-button--active {
+// Semi-active state for grouped buttons (halfway highlighting)
+button.button-group-item.button-group-item--semiactive:not(:disabled) {
+  background-color: #666;
   color: #fff;
-  background-color: #464646;
 
   &:hover {
-    background: #444;
+    background-color: #555;
+    color: #fff;
   }
 }
+
+// Universal active state for grouped buttons - HIGHER SPECIFICITY
+button.button-group-item.button-group-item--active:not(:disabled) {
+  background-color: #464646;
+  color: #fff;
+
+  &:hover {
+    background-color: #444;
+    color: #fff;
+  }
+}
+
 
 .timeline__edit-duration {
   background: rgba(255, 255, 255, 0.9);

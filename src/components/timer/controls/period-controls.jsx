@@ -14,7 +14,7 @@ import { SoundWrapper } from '../../common/sound-wrapper'
 
 export const PeriodControls = () => (
     <>
-        <section class="controls">
+        <section className="controls">
             <div class="button-group">
                 <SoundWrapper
                     onClick={moveElapsedTimeToPreviousPeriod}
@@ -84,7 +84,8 @@ export const PeriodControls = () => (
                 </SoundWrapper>
             </div>
         </section>
-        <section class="controls mb-0">
+
+        <section className="controls mb-0">
             <div class="button-group">
                 <SoundWrapper
                     onClick={() => adjustDuration(-6 * 60 * 1000)}
@@ -126,7 +127,7 @@ export const PeriodControls = () => (
                 </SoundWrapper>
             </div>
         </section>
-        <section class="controls">
+        <section className="controls">
             <SoundWrapper
                 onClick={changeType}
                 disabled={timerState.value.currentPeriodIndex === null}
@@ -150,6 +151,7 @@ export const PeriodControls = () => (
                     remove period
                 </SoundWrapper>
             </div>
+
         </section>
     </>
 )

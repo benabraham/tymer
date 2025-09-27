@@ -43,37 +43,6 @@ export const DebuggingInfo = () => {
             </p>
 
             <PeriodDetails />
-
-            <hr style={{ margin: '16px 0', borderColor: '#ddd' }} />
-
-            <div class="button-group">
-                <button>1 h</button>
-                <button>2 h</button>
-                <button>3 h</button>
-                <button>4 h</button>
-            </div>
-            <br />
-            <div class="button-group">
-                <button class="button--xs">3</button>
-                <button class="button--sm">6</button>
-                <button class="button--xs">9</button>
-                <button>12</button>
-                <button class="button--xs">15</button>
-                <button class="button--sm">18</button>
-                <button class="button--xs">21</button>
-                <button>24</button>
-                <button class="button--xs">27</button>
-                <button class="button--sm">30</button>
-                <button class="button--xs">33</button>
-                <button>36</button>
-                <button class="button--xs">39</button>
-                <button class="button--sm">42</button>
-                <button class="button--xs">45</button>
-                <button>48</button>
-                <button class="button--xs">51</button>
-                <button class="button--sm">54</button>
-                <button class="button--xs">57</button>
-            </div>
         </details>
     )
 }
