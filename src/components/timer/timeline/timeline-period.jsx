@@ -299,15 +299,14 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
             style={`--period-minutes: ${msToMinutes(period.periodDuration)};--userintended-minutes: ${msToMinutes(period.periodUserIntendedDuration)};`}
             onClick={handleClickOnPeriod}
         >
-            <div class="timeline__text">
-                <div class="timeline__type">
-                    {period.type}
-                    {period.note && <div class="timeline__note">{period.note}</div>}
-                </div>
-                <div class="timeline__period-duration">{formatTime(period.periodDuration)}</div>
+            <div className="timeline__text">
+                <div className="timeline__period-duration">{formatTime(period.periodDuration)}</div>
+                {period.note && <div className="timeline__note">{period.note}</div>}
 
-                {index === 0 && startTime && <div class="timeline__start-time">{startTime}</div>}
-                <div class="timeline__end-time">{endTime}</div>
+                {index === 0 && startTime && <div className="timeline__start-time">{startTime}</div>}
+                <div className="timeline__end-time">
+                    {endTime}
+                </div>
             </div>
 
             <div
@@ -315,6 +314,7 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
                 style={`--elapsed-minutes: ${msToMinutes(period.periodDurationElapsed)};`}
             >
                 {isActive && <TimelineCurrentTime period={period}/>}
+
             </div>
             {isActive && <div class="timeline__subinterval"></div>}
             {isActive && period.periodDurationElapsed > period.periodUserIntendedDuration && (
