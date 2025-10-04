@@ -22,18 +22,18 @@ export const PeriodDetails = () => (
             >
                 <div class="tempPeriod__data">{period.type}</div>
                 <div class="tempPeriod__data">
-                    {formatTime(period.periodDuration, false, false, true)}
+                    {formatTime(period.periodDuration, { debug: true })}
                 </div>
                 <div class="tempPeriod__data">
                     {period.periodUserIntendedDuration === period.periodDuration
                         ? 'same as duration'
-                        : formatTime(period.periodUserIntendedDuration, false, false, true)}
+                        : formatTime(period.periodUserIntendedDuration, { debug: true })}
                 </div>
                 <div class="tempPeriod__data">
-                    {formatTime(period.periodDurationRemaining, false, true, true)}
+                    {formatTime(period.periodDurationRemaining, { mode: 'remaining', debug: true })}
                 </div>
                 <div class="tempPeriod__data">
-                    {formatTime(period.periodDurationElapsed, true, false, true)}
+                    {formatTime(period.periodDurationElapsed, { mode: 'elapsed', debug: true })}
                 </div>
                 <div class="tempPeriod__data">{period.periodHasFinished ? 'yes' : 'no'}</div>
             </div>

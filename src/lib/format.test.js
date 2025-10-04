@@ -8,9 +8,9 @@ describe('formatTime rounding', () => {
             const elapsedMs = 2 * 60 * 1000 + 15 * 1000 // 2 minutes 15 seconds
             const remainingMs = totalMs - elapsedMs // 9 minutes 45 seconds
 
-            const totalFormatted = formatTime(totalMs, false, false)
-            const elapsedFormatted = formatTime(elapsedMs, true, false) // elapsed=true, floors to 2 min
-            const remainingFormatted = formatTime(remainingMs, false, true) // remaining=true, ceils to 10 min
+            const totalFormatted = formatTime(totalMs)
+            const elapsedFormatted = formatTime(elapsedMs, { mode: 'elapsed' }) // elapsed mode, floors to 2 min
+            const remainingFormatted = formatTime(remainingMs, { mode: 'remaining' }) // remaining mode, ceils to 10 min
 
             // Parse formatted times back to minutes
             const parseTime = timeStr => {
@@ -33,9 +33,9 @@ describe('formatTime rounding', () => {
             const elapsedMs = 47 * 60 * 1000 + 50 * 1000 // 47 minutes 50 seconds
             const remainingMs = totalMs - elapsedMs // 10 seconds
 
-            const totalFormatted = formatTime(totalMs, false, false)
-            const elapsedFormatted = formatTime(elapsedMs, true, false) // elapsed=true, floors to 47 min
-            const remainingFormatted = formatTime(remainingMs, false, true) // remaining=true, ceils to 1 min
+            const totalFormatted = formatTime(totalMs)
+            const elapsedFormatted = formatTime(elapsedMs, { mode: 'elapsed' }) // elapsed mode, floors to 47 min
+            const remainingFormatted = formatTime(remainingMs, { mode: 'remaining' }) // remaining mode, ceils to 1 min
 
             const parseTime = timeStr => {
                 const [hours, minutes] = timeStr.split(':').map(Number)
@@ -57,9 +57,9 @@ describe('formatTime rounding', () => {
             const elapsedMs = 29 * 60 * 1000 + 30 * 1000 // 29 minutes 30 seconds
             const remainingMs = totalMs - elapsedMs // 30 minutes 30 seconds
 
-            const totalFormatted = formatTime(totalMs, false, false)
-            const elapsedFormatted = formatTime(elapsedMs, true, false) // elapsed=true, floors to 29 min
-            const remainingFormatted = formatTime(remainingMs, false, true) // remaining=true, ceils to 31 min
+            const totalFormatted = formatTime(totalMs)
+            const elapsedFormatted = formatTime(elapsedMs, { mode: 'elapsed' }) // elapsed mode, floors to 29 min
+            const remainingFormatted = formatTime(remainingMs, { mode: 'remaining' }) // remaining mode, ceils to 31 min
 
             const parseTime = timeStr => {
                 const [hours, minutes] = timeStr.split(':').map(Number)
@@ -81,9 +81,9 @@ describe('formatTime rounding', () => {
             const elapsedMs = 9 * 60 * 1000 + 59 * 1000 // 9 minutes 59 seconds
             const remainingMs = totalMs - elapsedMs // 1 second
 
-            const totalFormatted = formatTime(totalMs, false, false)
-            const elapsedFormatted = formatTime(elapsedMs, true, false) // elapsed=true, floors to 9 min
-            const remainingFormatted = formatTime(remainingMs, false, true) // remaining=true, ceils to 1 min
+            const totalFormatted = formatTime(totalMs)
+            const elapsedFormatted = formatTime(elapsedMs, { mode: 'elapsed' }) // elapsed mode, floors to 9 min
+            const remainingFormatted = formatTime(remainingMs, { mode: 'remaining' }) // remaining mode, ceils to 1 min
 
             const parseTime = timeStr => {
                 const [hours, minutes] = timeStr.split(':').map(Number)
@@ -105,9 +105,9 @@ describe('formatTime rounding', () => {
             const elapsedMs = 25 * 60 * 1000 // 25 minutes exactly
             const remainingMs = 0 // 0 seconds
 
-            const totalFormatted = formatTime(totalMs, false, false)
-            const elapsedFormatted = formatTime(elapsedMs, true, false) // elapsed=true
-            const remainingFormatted = formatTime(remainingMs, false, true) // remaining=true
+            const totalFormatted = formatTime(totalMs)
+            const elapsedFormatted = formatTime(elapsedMs, { mode: 'elapsed' }) // elapsed mode
+            const remainingFormatted = formatTime(remainingMs, { mode: 'remaining' }) // remaining mode
 
             const parseTime = timeStr => {
                 const [hours, minutes] = timeStr.split(':').map(Number)
@@ -132,26 +132,26 @@ describe('formatTime rounding', () => {
             expect(formatted).toBe('0:06') // ceils to 6 minutes
         })
 
-        it('floors when elapsed=true', () => {
+        it('floors when mode is elapsed', () => {
             const ms = 5 * 60 * 1000 + 30 * 1000 // 5 minutes 30 seconds
-            const formatted = formatTime(ms, true, false)
+            const formatted = formatTime(ms, { mode: 'elapsed' })
             expect(formatted).toBe('0:05') // floors to 5 minutes
         })
 
-        it('ceils when remaining=true', () => {
+        it('ceils when mode is remaining', () => {
             const ms = 5 * 60 * 1000 + 30 * 1000 // 5 minutes 30 seconds
-            const formatted = formatTime(ms, false, true)
+            const formatted = formatTime(ms, { mode: 'remaining' })
             expect(formatted).toBe('0:06') // ceils to 6 minutes
         })
 
         it('handles null/undefined input', () => {
-            expect(formatTime(null)).toBe('–––')
-            expect(formatTime(undefined)).toBe('–––')
+            expect(formatTime(null)).toBe('––:––')
+            expect(formatTime(undefined)).toBe('––:––')
         })
 
         it('formats hours correctly', () => {
             const ms = 125 * 60 * 1000 // 125 minutes
-            const formatted = formatTime(ms, false, false)
+            const formatted = formatTime(ms)
             expect(formatted).toBe('2:05') // 2 hours 5 minutes
         })
     })
@@ -159,7 +159,7 @@ describe('formatTime rounding', () => {
     describe('debug mode', () => {
         it('shows seconds in debug mode', () => {
             const ms = 125 * 60 * 1000 + 45 * 1000 // 125 minutes 45 seconds
-            const formatted = formatTime(ms, false, false, true)
+            const formatted = formatTime(ms, { debug: true })
             expect(formatted).toContain(':05:45') // includes seconds
             expect(formatted).toContain('7545000') // includes milliseconds
         })

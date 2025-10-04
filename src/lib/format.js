@@ -1,7 +1,7 @@
 // converts milliseconds to human-readable format
-export const formatTime = (ms, elapsed, remaining, debug) => {
+export const formatTime = (ms, { mode, debug } = {}) => {
     // handle null/undefined input
-    if (ms == null) return '–––'
+    if (ms == null) return '––:––'
 
     if (debug) {
         // debug mode shows exact seconds
@@ -16,10 +16,10 @@ export const formatTime = (ms, elapsed, remaining, debug) => {
     // For non-debug mode, round at the minute level for proper display
     // elapsed time should round down, remaining time should round up
     let totalMinutes
-    if (elapsed) {
+    if (mode === 'elapsed') {
         // Floor for elapsed time
         totalMinutes = Math.floor(ms / (60 * 1000))
-    } else if (remaining) {
+    } else if (mode === 'remaining') {
         // Ceil for remaining time
         totalMinutes = Math.ceil(ms / (60 * 1000))
     } else {

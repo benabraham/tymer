@@ -23,7 +23,7 @@ export const SoundNotificationTable = () => {
     const nextPeriodType = nextPeriod ? nextPeriod.type : 'finish'
 
     const formatTimeFromMs = ms => {
-        return formatTime(ms, false, false, true)
+        return formatTime(ms, { debug: true })
     }
 
     // Get all possible windows for this period

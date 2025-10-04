@@ -19,13 +19,13 @@ export const DebuggingInfo = () => {
             <SoundNotificationTable />
 
             <p>
-                <code>timerDuration</code> {formatTime(timerDuration.value, false, false, true)}
+                <code>timerDuration</code> {formatTime(timerDuration.value, { debug: true })}
                 <br />
                 <code>timerDurationElapsed </code>{' '}
-                {formatTime(timerDurationElapsed.value, true, false, true)}
+                {formatTime(timerDurationElapsed.value, { mode: 'elapsed', debug: true })}
                 <br />
                 <code>timerDurationRemaining </code>{' '}
-                {formatTime(timerDurationRemaining.value, false, true, true)}
+                {formatTime(timerDurationRemaining.value, { mode: 'remaining', debug: true })}
                 <br />
                 <code>currentPeriodIndex </code> {timerState.value.currentPeriodIndex}
                 <br />

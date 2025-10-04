@@ -8,15 +8,14 @@ export const TimelineCurrentTime = ({ period }) => (
             style={`--elapsed-minutes: ${msToMinutes(period.periodDurationElapsed)};`}
         >
             <span class="timeline__elapsed timeline__elapsed--period">
-                {formatTime(currentPeriod.value.periodDurationElapsed, true, false)}
+                {formatTime(currentPeriod.value.periodDurationElapsed, { mode: 'elapsed' })}
                 <span class="timeline__symbol"> ◀▶ </span>
-                {formatTime(currentPeriod.value.periodDurationRemaining, false, true)}
+                {formatTime(currentPeriod.value.periodDurationRemaining, { mode: 'remaining' })}
             </span>
             <span class="timeline__elapsed timeline__elapsed--timer">
                 {formatTime(
                     timerState.value.periods.reduce((sum, p) => sum + p.periodDurationElapsed, 0),
-                    true,
-                    false,
+                    { mode: 'elapsed' },
                 )}
             </span>
         </div>
