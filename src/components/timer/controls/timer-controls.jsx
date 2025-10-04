@@ -1,13 +1,13 @@
 import {
     timerState,
-    timerDurationElapsed,
-    timerHasFinished,
-    timerDurationRemaining,
-    initialState,
-    timerDuration,
     timerOnLastPeriod,
     shouldGoToNextPeriod,
-    periodsModifiedFromInitial,
+    timerHasFinished,
+    canStartPause,
+    canReset,
+    canMoveToNextPeriod,
+    canMoveToPreviousPeriod,
+    canFinishTimer,
     handleTimerCompletion,
     pauseTimer,
     resumeTimer,
@@ -34,21 +34,14 @@ export const TimerControls = () => {
             <section class="controls">
                 <SoundWrapper
                     onClick={resetTimer}
-                    disabled={
-                        (!periodsModifiedFromInitial.value
-                            && !timerState.value.timestampStarted
-                            && timerDurationRemaining.value !== 0)
-                        || (timerState.value.currentPeriodIndex === null
-                            && !timerHasFinished.value
-                            && !periodsModifiedFromInitial.value)
-                    }
+                    disabled={!canReset.value}
                     class={timerHasFinished.value ? 'highlighted' : ''}
                 >
                     🔁 Reset
                 </SoundWrapper>
                 <SoundWrapper
                     onClick={handleStartPause}
-                    disabled={timerHasFinished.value || !timerDurationRemaining.value}
+                    disabled={!canStartPause.value}
                 >
                     {timerState.value.runningIntervalId
                         ? '⏸️️'
@@ -59,22 +52,14 @@ export const TimerControls = () => {
                 <div className="button-group">
                     <SoundWrapper
                         onClick={moveToPreviousPeriod}
-                        disabled={
-                            timerHasFinished.value
-                            || timerState.value.currentPeriodIndex === null
-                            || timerState.value.currentPeriodIndex === 0
-                        }
+                        disabled={!canMoveToPreviousPeriod.value}
                     >
                         ⏮️
                     </SoundWrapper>
 
                     <SoundWrapper
                         onClick={moveToNextPeriod}
-                        disabled={
-                            timerHasFinished.value
-                            || timerState.value.currentPeriodIndex === null
-                            || timerOnLastPeriod.value
-                        }
+                        disabled={!canMoveToNextPeriod.value}
                         class={
                             !timerOnLastPeriod.value && shouldGoToNextPeriod.value
                                 ? 'highlighted'
@@ -86,11 +71,7 @@ export const TimerControls = () => {
                 </div>
                 <SoundWrapper
                     onClick={handleTimerCompletion}
-                    disabled={
-                        timerHasFinished.value
-                        || timerState.value.currentPeriodIndex === null
-                        || timerDurationElapsed < 1 * 60 * 1000
-                    }
+                    disabled={!canFinishTimer.value}
                     class={
                         timerOnLastPeriod.value && shouldGoToNextPeriod.value ? 'highlighted' : ''
                     }

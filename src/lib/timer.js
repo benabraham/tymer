@@ -98,6 +98,106 @@ export const periodsModifiedFromInitial = computed(() => {
     })
 })
 
+// ============================================================================
+// Validation Signals and Functions - Single Source of Truth for UI/Keyboard
+// ============================================================================
+
+// Computed signals for simple boolean checks (no parameters)
+export const canStartPause = computed(() =>
+    !timerHasFinished.value && timerDurationRemaining.value > 0
+)
+
+export const canReset = computed(() =>
+    !((!periodsModifiedFromInitial.value
+        && !timerState.value.timestampStarted
+        && timerDurationRemaining.value !== 0)
+    || (timerState.value.currentPeriodIndex === null
+        && !timerHasFinished.value
+        && !periodsModifiedFromInitial.value))
+)
+
+export const canMoveToNextPeriod = computed(() =>
+    !timerHasFinished.value &&
+    timerState.value.currentPeriodIndex !== null &&
+    !timerOnLastPeriod.value
+)
+
+export const canMoveToPreviousPeriod = computed(() =>
+    !timerHasFinished.value &&
+    timerState.value.currentPeriodIndex !== null &&
+    timerState.value.currentPeriodIndex > 0
+)
+
+export const canFinishTimer = computed(() =>
+    !timerHasFinished.value &&
+    timerState.value.currentPeriodIndex !== null &&
+    timerDurationElapsed.value >= 1 * 60 * 1000
+)
+
+export const canAdjustElapsedForward = computed(() =>
+    timerState.value.currentPeriodIndex !== null
+)
+
+export const canAdjustElapsedBackward = computed(() =>
+    timerState.value.currentPeriodIndex !== null &&
+    timerDurationElapsed.value > 0
+)
+
+export const canAdjustDurationForward = computed(() =>
+    !timerHasFinished.value &&
+    timerState.value.currentPeriodIndex !== null
+)
+
+export const canChangeType = computed(() =>
+    timerState.value.currentPeriodIndex !== null
+)
+
+export const canAddPeriod = computed(() =>
+    timerState.value.currentPeriodIndex !== null
+)
+
+export const canRemovePeriod = computed(() =>
+    timerState.value.currentPeriodIndex !== null &&
+    timerState.value.periods.length > 1
+)
+
+export const canMoveElapsedToPrevious = computed(() =>
+    timerState.value.currentPeriodIndex !== null &&
+    timerDurationElapsed.value > 0 &&
+    timerState.value.currentPeriodIndex > 0
+)
+
+// Validation functions for parameterized checks
+export const canAdjustElapsed = (amount) => {
+    if (timerState.value.currentPeriodIndex === null) return false
+    if (amount < 0 && timerDurationElapsed.value === 0) return false
+    return true
+}
+
+export const canAdjustDuration = (amount) => {
+    if (timerHasFinished.value || timerState.value.currentPeriodIndex === null) {
+        return false
+    }
+    if (amount < 0) {
+        if (!timerState.value.periods.some(p => p.periodDurationRemaining > 0)) {
+            return false
+        }
+        return currentPeriod.value.periodDurationRemaining >= Math.abs(amount)
+    }
+    return true
+}
+
+// Helper for rounding to multiples of 3
+export const getNextMultipleOf3Delta = (currentMs, direction) => {
+    const currentMinutes = Math.floor(currentMs / (60 * 1000))
+    const target = direction === 'up'
+        ? Math.ceil((currentMinutes + 1) / 3) * 3
+        : Math.floor((currentMinutes - 1) / 3) * 3
+    return (target - currentMinutes) * 60 * 1000
+}
+
+// ============================================================================
+
 // prepares timer for use, continuing an running timer or prepare a new one
 export const initializeTimer = () => {
     console.clear()

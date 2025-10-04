@@ -1,14 +1,20 @@
 import {
     adjustDuration,
-    timerHasFinished,
-    timerState,
     adjustElapsed,
     timerDurationElapsed,
     moveElapsedTimeToPreviousPeriod,
     changeType,
-    currentPeriod,
     addPeriod,
     removePeriod,
+    canAdjustElapsed,
+    canAdjustDuration,
+    canAdjustElapsedForward,
+    canAdjustElapsedBackward,
+    canAdjustDurationForward,
+    canChangeType,
+    canAddPeriod,
+    canRemovePeriod,
+    canMoveElapsedToPrevious,
 } from '../../../lib/timer'
 import { SoundWrapper } from '../../common/sound-wrapper'
 
@@ -18,11 +24,7 @@ export const PeriodControls = () => (
             <div class="button-group">
                 <SoundWrapper
                     onClick={moveElapsedTimeToPreviousPeriod}
-                    disabled={
-                        timerState.value.currentPeriodIndex === null
-                        || timerDurationElapsed.value === 0
-                        || timerState.value.currentPeriodIndex === 0
-                    }
+                    disabled={!canMoveElapsedToPrevious.value}
                 >
                     move time to previous
                 </SoundWrapper>
@@ -31,28 +33,19 @@ export const PeriodControls = () => (
             <div class="button-group">
                 <SoundWrapper
                     onClick={() => adjustElapsed(-timerDurationElapsed.value)}
-                    disabled={
-                        timerState.value.currentPeriodIndex === null
-                        || timerDurationElapsed.value === 0
-                    }
+                    disabled={!canAdjustElapsedBackward.value}
                 >
                     🔙
                 </SoundWrapper>
                 <SoundWrapper
                     onClick={() => adjustElapsed(-6 * 60 * 1000)}
-                    disabled={
-                        timerState.value.currentPeriodIndex === null
-                        || timerDurationElapsed.value === 0
-                    }
+                    disabled={!canAdjustElapsed(-6 * 60 * 1000)}
                 >
                     &lt;--- 6 m
                 </SoundWrapper>
                 <SoundWrapper
                     onClick={() => adjustElapsed(-1 * 60 * 1000)}
-                    disabled={
-                        timerState.value.currentPeriodIndex === null
-                        || timerDurationElapsed.value === 0
-                    }
+                    disabled={!canAdjustElapsed(-1 * 60 * 1000)}
                 >
                     &lt;-- 1 m
                 </SoundWrapper>
@@ -72,13 +65,13 @@ export const PeriodControls = () => (
             </SoundWrapper>*/}
                 <SoundWrapper
                     onClick={() => adjustElapsed(1 * 60 * 1000)}
-                    disabled={timerState.value.currentPeriodIndex === null}
+                    disabled={!canAdjustElapsedForward.value}
                 >
                     1 m --&gt;
                 </SoundWrapper>
                 <SoundWrapper
                     onClick={() => adjustElapsed(6 * 60 * 1000)}
-                    disabled={timerState.value.currentPeriodIndex === null}
+                    disabled={!canAdjustElapsedForward.value}
                 >
                     6 m ---&gt;
                 </SoundWrapper>
@@ -89,39 +82,25 @@ export const PeriodControls = () => (
             <div class="button-group">
                 <SoundWrapper
                     onClick={() => adjustDuration(-6 * 60 * 1000)}
-                    disabled={
-                        timerHasFinished.value
-                        || timerState.value.currentPeriodIndex === null
-                        || !timerState.value.periods.some(p => p.periodDurationRemaining > 0)
-                        || currentPeriod.value.periodDurationRemaining < 2 * 60 * 1000
-                    }
+                    disabled={!canAdjustDuration(-6 * 60 * 1000)}
                 >
                     ➖ 6 min
                 </SoundWrapper>
                 <SoundWrapper
                     onClick={() => adjustDuration(-1 * 60 * 1000)}
-                    disabled={
-                        timerHasFinished.value
-                        || timerState.value.currentPeriodIndex === null
-                        || !timerState.value.periods.some(p => p.periodDurationRemaining > 0)
-                        || currentPeriod.value.periodDurationRemaining < 1 * 60 * 1000
-                    }
+                    disabled={!canAdjustDuration(-1 * 60 * 1000)}
                 >
                     ➖ 1 min
                 </SoundWrapper>
                 <SoundWrapper
                     onClick={() => adjustDuration(1 * 60 * 1000)}
-                    disabled={
-                        timerHasFinished.value || timerState.value.currentPeriodIndex === null
-                    }
+                    disabled={!canAdjustDurationForward.value}
                 >
                     ➕ 1 min
                 </SoundWrapper>
                 <SoundWrapper
                     onClick={() => adjustDuration(6 * 60 * 1000)}
-                    disabled={
-                        timerHasFinished.value || timerState.value.currentPeriodIndex === null
-                    }
+                    disabled={!canAdjustDurationForward.value}
                 >
                     ➕ 6 min
                 </SoundWrapper>
@@ -130,23 +109,20 @@ export const PeriodControls = () => (
         <section className="controls">
             <SoundWrapper
                 onClick={changeType}
-                disabled={timerState.value.currentPeriodIndex === null}
+                disabled={!canChangeType.value}
             >
                 change type
             </SoundWrapper>
             <div class="button-group">
                 <SoundWrapper
                     onClick={addPeriod}
-                    disabled={timerState.value.currentPeriodIndex === null}
+                    disabled={!canAddPeriod.value}
                 >
                     add period
                 </SoundWrapper>
                 <SoundWrapper
                     onClick={removePeriod}
-                    disabled={
-                        timerState.value.currentPeriodIndex === null
-                        || timerState.value.periods.length <= 1
-                    }
+                    disabled={!canRemovePeriod.value}
                 >
                     remove period
                 </SoundWrapper>

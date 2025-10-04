@@ -73,6 +73,15 @@ const buildSoundConfig = () => {
         timerFinished: new Howl({ src: ['/tymer/sounds/timer-end.webm'], loop: false }),
     }
 
+    // Build notification sounds (01.ogg to 63.ogg)
+    for (let i = 1; i <= 63; i++) {
+        const num = String(i).padStart(2, '0')
+        config[`notification_${i}`] = new Howl({
+            src: [`/tymer/sounds/notifications/${num}.ogg`],
+            loop: false,
+        })
+    }
+
     // Build elapsed sounds
     AVAILABLE_SOUNDS.elapsed.forEach(min => {
         const key = `elapsed_${min}`
@@ -231,6 +240,41 @@ const playByKey = async soundKey => {
     }
 }
 
+// Play a random notification sound (1-63)
+const playRandomNotification = async () => {
+    const randomNum = Math.floor(Math.random() * 63) + 1 // 1-63
+    const notificationKey = `notification_${randomNum}`
+
+    log('🔊 Playing random notification', notificationKey, 10)
+
+    const sound = sounds[notificationKey]
+    if (!sound) {
+        log('🔊 Notification sound not found', notificationKey, 2)
+        return false
+    }
+
+    try {
+        if (!audioUnlocked) await unlockAudio()
+
+        // Play notification and wait for it to complete
+        return new Promise((resolve) => {
+            const soundId = sound.play()
+            log('🔊 Notification started', `${notificationKey} (ID: ${soundId})`, 10)
+            sound.once('end', () => {
+                log('🔊 Notification ended', notificationKey, 10)
+                resolve(true)
+            }, soundId)
+            sound.once('playerror', (id, error) => {
+                log('🔊 Notification error', `${notificationKey}: ${error}`, 2)
+                resolve(false)
+            }, soundId)
+        })
+    } catch (error) {
+        log('🔊 Notification play failed', `${notificationKey}: ${error.message}`, 2)
+        return false
+    }
+}
+
 // Legacy function for backwards compatibility with general sounds
 export const playSound = soundName => {
     return playByKey(soundName)
@@ -242,7 +286,8 @@ export const playTimerFinishedSound = () => {
 }
 
 // New function to play period-based sounds
-export const playPeriodSound = soundKey => {
+export const playPeriodSound = async soundKey => {
+    await playRandomNotification()
     log('🔊 Playing period sound', soundKey, 10)
     return playByKey(soundKey)
 }
