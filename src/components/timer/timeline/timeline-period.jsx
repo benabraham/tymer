@@ -300,7 +300,7 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
             onClick={handleClickOnPeriod}
         >
             <div className="timeline__text">
-                <div className="timeline__period-duration">{formatTime(period.periodDuration)}</div>
+                <div className="timeline__period-duration">{formatTime(period.periodDuration, { compact: true })}</div>
                 {period.note && <div className="timeline__note">{period.note}</div>}
 
                 {index === 0 && startTime && <div className="timeline__start-time" dangerouslySetInnerHTML={{ __html: startTime }} />}

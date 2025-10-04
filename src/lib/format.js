@@ -1,5 +1,5 @@
 // converts milliseconds to human-readable format
-export const formatTime = (ms, { mode, debug } = {}) => {
+export const formatTime = (ms, { mode, debug, compact } = {}) => {
     // handle null/undefined input
     if (ms == null) return '––:––'
 
@@ -31,6 +31,12 @@ export const formatTime = (ms, { mode, debug } = {}) => {
     const minutes = totalMinutes % 60
 
     const pad = (num, places = 2, fillChar = '0') => num.toString().padStart(places, fillChar)
+
+    // Compact mode: show just minutes if under 1 hour
+    if (compact && hours === 0) {
+        return `${minutes}`
+    }
+
     return `${hours}:${pad(minutes)}`
 }
 

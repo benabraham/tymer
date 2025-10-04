@@ -164,4 +164,24 @@ describe('formatTime rounding', () => {
             expect(formatted).toContain('7545000') // includes milliseconds
         })
     })
+
+    describe('compact mode', () => {
+        it('shows just minutes when under 1 hour', () => {
+            const ms = 48 * 60 * 1000 // 48 minutes
+            const formatted = formatTime(ms, { compact: true })
+            expect(formatted).toBe('48')
+        })
+
+        it('shows hours:minutes when 1 hour or more', () => {
+            const ms = 125 * 60 * 1000 // 125 minutes
+            const formatted = formatTime(ms, { compact: true })
+            expect(formatted).toBe('2:05')
+        })
+
+        it('does not pad minutes with leading zero when under 1 hour', () => {
+            const ms = 5 * 60 * 1000 // 5 minutes
+            const formatted = formatTime(ms, { compact: true })
+            expect(formatted).toBe('5')
+        })
+    })
 })
