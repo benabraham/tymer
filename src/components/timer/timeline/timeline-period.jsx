@@ -303,10 +303,8 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
                 <div className="timeline__period-duration">{formatTime(period.periodDuration)}</div>
                 {period.note && <div className="timeline__note">{period.note}</div>}
 
-                {index === 0 && startTime && <div className="timeline__start-time">{startTime}</div>}
-                <div className="timeline__end-time">
-                    {endTime}
-                </div>
+                {index === 0 && startTime && <div className="timeline__start-time" dangerouslySetInnerHTML={{ __html: startTime }} />}
+                <div className="timeline__end-time" dangerouslySetInnerHTML={{ __html: endTime }} />
             </div>
 
             <div

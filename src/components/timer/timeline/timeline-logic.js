@@ -25,23 +25,23 @@ export const calculateEndTimes = ({ periods, currentPeriodIndex }) => {
     return periods.map((period, idx) => {
         if (currentPeriodIndex == null) {
             prevEnd = (prevEnd ?? now) + period.periodDuration
-            return format(new Date(prevEnd), 'H:mm')
+            return format(new Date(prevEnd), "HH'<br>'mm")
         }
         if (idx < currentPeriodIndex) {
             sumPeriodDurations += period.periodDuration
             const startTime = now - totalElapsed + (sumPeriodDurations - period.periodDuration)
             const end = startTime + period.periodDuration
             prevEnd = end
-            return format(new Date(end), 'H:mm')
+            return format(new Date(end), "HH'<br>'mm")
         }
         if (idx === currentPeriodIndex) {
             const periodRemaining = period.periodDuration - (period.periodDurationElapsed || 0)
             const end = now + periodRemaining
             prevEnd = end
-            return format(new Date(end), 'H:mm')
+            return format(new Date(end), "HH'<br>'mm")
         }
         prevEnd = (prevEnd ?? now) + period.periodDuration
-        return format(new Date(prevEnd), 'H:mm')
+        return format(new Date(prevEnd), "HH'<br>'mm")
     })
 }
 
@@ -55,7 +55,7 @@ export const calculateStartTime = ({ periods }) => {
     if (!Array.isArray(periods) || !periods.length) return ''
     const now = Date.now()
     const totalElapsed = periods.reduce((acc, p) => acc + (p.periodDurationElapsed || 0), 0)
-    return format(new Date(now - totalElapsed), 'H:mm')
+    return format(new Date(now - totalElapsed), "HH'<br>'mm")
 }
 
 /**

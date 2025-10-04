@@ -89,7 +89,9 @@
   translate: 0 30%;
   opacity: 50%;
   top: 100%;
-
+  line-height: 0.95;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .timeline__start-time {
