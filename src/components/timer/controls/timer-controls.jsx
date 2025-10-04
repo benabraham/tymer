@@ -16,8 +16,8 @@ import {
     moveToNextPeriod,
     moveToPreviousPeriod,
 } from '../../../lib/timer'
-import { unlockAudio } from '../../../lib/sounds'
-import { SoundWrapper } from '../../common/sound-wrapper'
+import {unlockAudio} from '../../../lib/sounds'
+import {SoundWrapper} from '../../common/sound-wrapper'
 
 export const TimerControls = () => {
     const handleStartPause = async () => {
@@ -31,7 +31,7 @@ export const TimerControls = () => {
 
     return (
         <>
-            <section class="controls ">
+            <section class="controls">
                 <SoundWrapper
                     onClick={resetTimer}
                     disabled={
@@ -53,25 +53,10 @@ export const TimerControls = () => {
                     {timerState.value.runningIntervalId
                         ? '⏸️️'
                         : timerState.value.timestampPaused
-                          ? '▶️️'
-                          : '▶️️ Start'}
+                            ? '▶️️'
+                            : '▶️️ Start'}
                 </SoundWrapper>
-                <SoundWrapper
-                    onClick={handleTimerCompletion}
-                    disabled={
-                        timerHasFinished.value
-                        || timerState.value.currentPeriodIndex === null
-                        || timerDurationElapsed < 1 * 60 * 1000
-                    }
-                    class={
-                        timerOnLastPeriod.value && shouldGoToNextPeriod.value ? 'highlighted' : ''
-                    }
-                >
-                    🏁 Finish
-                </SoundWrapper>
-            </section>
-            <section class="controls">
-                <div class="button-group">
+                <div className="button-group">
                     <SoundWrapper
                         onClick={moveToPreviousPeriod}
                         disabled={
@@ -99,6 +84,19 @@ export const TimerControls = () => {
                         ⏭️
                     </SoundWrapper>
                 </div>
+                <SoundWrapper
+                    onClick={handleTimerCompletion}
+                    disabled={
+                        timerHasFinished.value
+                        || timerState.value.currentPeriodIndex === null
+                        || timerDurationElapsed < 1 * 60 * 1000
+                    }
+                    class={
+                        timerOnLastPeriod.value && shouldGoToNextPeriod.value ? 'highlighted' : ''
+                    }
+                >
+                    🏁 Finish
+                </SoundWrapper>
             </section>
         </>
     )
