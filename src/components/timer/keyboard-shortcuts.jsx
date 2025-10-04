@@ -142,6 +142,17 @@ export function KeyboardShortcuts() {
                 }
             }
 
+            // End - jump to end of current period
+            else if (event.key === 'End') {
+                event.preventDefault()
+                const currentDuration = currentPeriod.value?.periodDuration || 0
+                const delta = currentDuration - timerDurationElapsed.value
+                if (canAdjustElapsed(delta)) {
+                    adjustElapsed(delta)
+                    handled = true
+                }
+            }
+
             // +/= for duration
             // Plain +/-: round to nearest multiple of 3
             else if ((event.key === '+' || event.key === '=') && !event.ctrlKey && !event.altKey && !event.shiftKey) {
