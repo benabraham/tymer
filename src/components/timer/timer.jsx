@@ -8,6 +8,7 @@ import { PeriodControls } from './controls/period-controls'
 import { Stats } from './stats/stats'
 import { DebuggingInfo } from './debug/debugging-info'
 import { BuildInfo } from '../build-info/build-info'
+import { KeyboardShortcuts } from './keyboard-shortcuts'
 
 export function Timer() {
     useEffect(() => {
@@ -85,6 +86,7 @@ export function Timer() {
 
     return (
         <>
+            <KeyboardShortcuts />
             <BuildInfo />
             <TimerControls />
             <Timeline />
