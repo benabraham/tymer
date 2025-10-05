@@ -55,8 +55,8 @@ export function KeyboardShortcuts() {
                 }
             }
 
-            // PageUp - next period
-            else if (event.key === 'PageUp') {
+            // PageDown - next period
+            else if (event.key === 'PageDown') {
                 event.preventDefault()
                 if (canMoveToNextPeriod.value) {
                     moveToNextPeriod()
@@ -64,8 +64,8 @@ export function KeyboardShortcuts() {
                 }
             }
 
-            // PageDown - previous period
-            else if (event.key === 'PageDown') {
+            // PageUp - previous period
+            else if (event.key === 'PageUp') {
                 event.preventDefault()
                 if (canMoveToPreviousPeriod.value) {
                     moveToPreviousPeriod()
