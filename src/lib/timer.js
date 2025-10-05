@@ -193,7 +193,7 @@ export const getNextMultipleOf3Delta = (currentMs, direction) => {
     const target = direction === 'up'
         ? Math.ceil((currentMinutes + 1) / 3) * 3
         : Math.floor((currentMinutes - 1) / 3) * 3
-    return (target - currentMinutes) * 60 * 1000
+    return target * 60 * 1000 - currentMs
 }
 
 // ============================================================================
