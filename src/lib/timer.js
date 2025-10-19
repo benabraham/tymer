@@ -552,6 +552,22 @@ export const changeType = () => {
     log('changed current type', timerState.value, 8)
 }
 
+// set current period to a specific type
+export const setCurrentPeriodType = type => {
+    const types = timerState.value.types
+    if (!types.includes(type)) {
+        log(`Invalid type: ${type}. Valid types are: ${types.join(', ')}`, 2)
+        return
+    }
+
+    updateTimerState({
+        currentPeriodProperties: {
+            type,
+        },
+    })
+    log(`set current period type to ${type}`, timerState.value, 8)
+}
+
 // add a new period after the current one
 export const addPeriod = () => {
     if (timerState.value.currentPeriodIndex === null) return

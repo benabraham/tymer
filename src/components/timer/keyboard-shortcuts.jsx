@@ -11,6 +11,7 @@ import {
     timerDurationElapsed,
     currentPeriod,
     changeType,
+    setCurrentPeriodType,
     addPeriod,
     moveElapsedTimeToPreviousPeriod,
     autoEditIndex,
@@ -220,6 +221,33 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canChangeType.value) {
                     changeType()
+                    handled = true
+                }
+            }
+
+            // W - set type to work
+            else if ((event.key === 'w' || event.key === 'W') && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+                event.preventDefault()
+                if (canChangeType.value) {
+                    setCurrentPeriodType('work')
+                    handled = true
+                }
+            }
+
+            // B - set type to break
+            else if ((event.key === 'b' || event.key === 'B') && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+                event.preventDefault()
+                if (canChangeType.value) {
+                    setCurrentPeriodType('break')
+                    handled = true
+                }
+            }
+
+            // F - set type to fun
+            else if ((event.key === 'f' || event.key === 'F') && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+                event.preventDefault()
+                if (canChangeType.value) {
+                    setCurrentPeriodType('fun')
                     handled = true
                 }
             }
