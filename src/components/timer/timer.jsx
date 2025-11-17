@@ -49,23 +49,24 @@ export function Timer() {
 
             if (bothUnderOneHour) {
                 // Show only minutes when both are under 60 minutes
-                formattedPeriodDurationElapsed = Math.ceil(
+                // Use Math.floor for elapsed time (show completed minutes only)
+                formattedPeriodDurationElapsed = Math.floor(
                     period.periodDurationElapsed / (60 * 1000),
                 ).toString()
-                periodUserIntendedDuration = Math.ceil(
+                // Use Math.round for duration (total intended duration)
+                periodUserIntendedDuration = Math.round(
                     period.periodUserIntendedDuration / (60 * 1000),
                 ).toString()
             } else {
                 // Use full hours:minutes format
+                // Use mode: 'elapsed' to floor elapsed time
                 formattedPeriodDurationElapsed = formatTime(
                     period.periodDurationElapsed,
-                    true,
-                    false,
+                    { mode: 'elapsed' },
                 )
+                // Duration doesn't need special rounding mode (defaults to round)
                 periodUserIntendedDuration = formatTime(
                     period.periodUserIntendedDuration,
-                    true,
-                    false,
                 )
             }
 
