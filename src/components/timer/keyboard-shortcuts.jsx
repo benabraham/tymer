@@ -13,6 +13,7 @@ import {
     changeType,
     setCurrentPeriodType,
     addPeriod,
+    removePeriod,
     moveElapsedTimeToPreviousPeriod,
     autoEditIndex,
     canStartPause,
@@ -22,6 +23,7 @@ import {
     canAdjustDuration,
     canChangeType,
     canAddPeriod,
+    canRemovePeriod,
     canMoveElapsedToPrevious,
     getNextMultipleOf3Delta,
 } from '../../lib/timer'
@@ -275,6 +277,24 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (timerState.value.currentPeriodIndex !== null) {
                     autoEditIndex.value = timerState.value.currentPeriodIndex
+                    handled = true
+                }
+            }
+
+            // Insert - add period after current
+            else if (event.key === 'Insert' && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+                event.preventDefault()
+                if (canAddPeriod.value) {
+                    addPeriod()
+                    handled = true
+                }
+            }
+
+            // Delete - remove current period
+            else if (event.key === 'Delete' && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+                event.preventDefault()
+                if (canRemovePeriod.value) {
+                    removePeriod()
                     handled = true
                 }
             }
