@@ -18,6 +18,16 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
     const [wasTimerRunning, setWasTimerRunning] = useState(false)
     const [originalValues, setOriginalValues] = useState(null)
     const editRef = useRef()
+    const noteInputRef = useRef()
+
+    // Focus/blur note input when editing state changes
+    useEffect(() => {
+        if (isEditing && noteInputRef.current) {
+            noteInputRef.current.focus()
+        } else if (!isEditing && noteInputRef.current) {
+            noteInputRef.current.blur()
+        }
+    }, [isEditing])
 
     const availableTypes = ['work', 'break', 'fun']
 
@@ -267,6 +277,7 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
                             ))}
                         </div>
                         <input
+                            ref={noteInputRef}
                             type="text"
                             value={period.note || ''}
                             onChange={e => handleNoteChange(e.target.value)}
