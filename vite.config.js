@@ -44,6 +44,56 @@ export default defineConfig({
         'sounds/remaining/*.webm',
         'sounds/timesup/*.webm',
       ],
+      workbox: {
+        // Clean up old caches from previous versions
+        cleanupOutdatedCaches: true,
+        // Skip waiting to activate new SW immediately
+        skipWaiting: true,
+        // Take control of all clients immediately
+        clientsClaim: true,
+        // Runtime caching for assets not in precache
+        runtimeCaching: [
+          {
+            // Cache audio files with StaleWhileRevalidate
+            urlPattern: /\.(?:webm|wav|mp3|ogg)$/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'audio-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+            },
+          },
+          {
+            // Cache images with CacheFirst (they rarely change)
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|ico|webp)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'image-cache',
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+            },
+          },
+          {
+            // Cache fonts with CacheFirst
+            urlPattern: /^https:\/\/fonts\.bunny\.net\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'font-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+        ],
+      },
       manifest: {
         name: 'Linear Pomodoro Timer',
         short_name: 'Pomodoro',
