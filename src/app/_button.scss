@@ -2,46 +2,54 @@
 
 button {
     border-radius: 0.5rem;
-    border: 2px solid transparent;
+    border: none;
     font-size: 1rem;
     font-weight: 600;
     font-family: inherit;
-    transition: border-color 0.25s;
+    transition: background-color 0.15s, color 0.15s, opacity 0.2s, filter 0.2s;
     padding: 0.25rem 0.625rem;
     min-width: 9ch;
     user-select: none;
+    background-color: var(--color-bg-button);
+    color: var(--color-text-button);
+    outline: none;
 }
 
 button:not(:disabled) {
     cursor: pointer;
-    background-color: #3d3d3d;
-    color: #ffffff;
+}
+
+button:disabled {
+    opacity: 0.2;
+    cursor: not-allowed;
+
+    svg {
+        filter: grayscale(100%);
+    }
 }
 
 button:not(:disabled):hover {
-    background-color: #464646;
-    border-color: #646cff;
-    color: #ffffff;
+    background-color: var(--color-bg-button-focus);
+    color: var(--color-text-button-focus);
 }
 
-button:focus,
-button:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
-    z-index: 555;
+button:not(:disabled):focus-visible {
+    outline: 2px solid var(--color-bg-button-focus);
+    outline-offset: -2px;
 }
 
 button.highlighted {
-    background-color: #ff0000;
+    background-color: var(--color-bg-highlighted);
     animation: blink 750ms infinite alternate;
 }
 
 @keyframes blink {
     0% {
-        background-color: #800000;
+        background-color: var(--color-bg-blink-start);
     }
 
     100% {
-        background-color: #9f9f00;
+        background-color: var(--color-bg-blink-end);
     }
 }
 
@@ -62,19 +70,18 @@ button.highlighted {
         }
 
         &:not(:last-child) {
-            border-right-color: #555;
             border-top-right-radius: 0;
             border-bottom-right-radius: 0;
         }
 
         &.button--sm {
-            color: #ccc;
+            color: var(--color-text-button-sm);
             font-weight: normal;
 
         }
 
         &.button--xs {
-            color: #aaa;
+            color: var(--color-text-button-xs);
             font-size: 0.625rem;
         }
     }

@@ -13,9 +13,8 @@ import { SoundNotificationTable } from './sound-notification-table'
 
 export const DebuggingInfo = () => {
     return (
-        <details>
-            <summary>Debugging values</summary>
-
+        <div class="debugging-info">
+            <h2>Debugging info</h2>
             <SoundNotificationTable />
 
             <p>
@@ -43,6 +42,6 @@ export const DebuggingInfo = () => {
             </p>
 
             <PeriodDetails />
-        </details>
+        </div>
     )
 }

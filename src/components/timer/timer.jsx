@@ -2,6 +2,7 @@ import { useEffect } from 'preact/hooks'
 import { initializeTimer, timerState, currentPeriod } from '../../lib/timer'
 import { formatTime } from '../../lib/format'
 import { unlockAudio } from '../../lib/sounds'
+import { debugVisible } from '../../lib/debug'
 import { Timeline } from './timeline/timeline'
 import { TimerControls } from './controls/timer-controls'
 import { PeriodControls } from './controls/period-controls'
@@ -92,7 +93,7 @@ export function Timer() {
             <Timeline />
             <PeriodControls />
             <Stats />
-            <DebuggingInfo />
+            {debugVisible.value && <DebuggingInfo />}
         </>
     )
 }

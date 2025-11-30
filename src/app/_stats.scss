@@ -48,13 +48,13 @@
 }
 
 .stats-bar {
-    background-color: #000000;
+    background-color: var(--color-stats-default);
     position: relative;
 }
 
 .stats-bar--break {
     text-align: left;
-    background-color: var(--break-bg);
+    background-color: var(--color-period-break);
     grid-column-end: var(--middle-line-left);
 
     &.stats-bar--original {
@@ -68,7 +68,7 @@
 
 .stats-bar--fun {
     text-align: center;
-    background-color: var(--fun-bg);
+    background-color: var(--color-period-fun);
     grid-column-start: var(--middle-line-left);
     grid-column-end: var(--middle-line-right);
 
@@ -85,7 +85,7 @@
 
 .stats-bar--work {
     text-align: right;
-    background-color: var(--work-bg);
+    background-color: var(--color-period-work);
     grid-column-start: var(--middle-line-right);
 
     &.stats-bar--original {
@@ -99,37 +99,37 @@
 
 .stats-bar--original {
     grid-row: 1 / 4;
-    border: 1px solid white;
+    border: 1px solid var(--color-border-white);
 }
 
 .stats-bar--current {
     grid-row: 2 / 3;
     z-index: 1;
-    border: 1px solid white;
+    border: 1px solid var(--color-border-white);
 }
 
 .stats-elapsed {
     position: absolute;
     top: 0;
     height: 100%;
-    background-color: rgba(255, 255, 255, 0.5);
+    backdrop-filter: brightness(0.3) saturate(1.3);
 
     .stats-bar--break & {
         right: 0;
-        border-left: 2px solid white;
+        border-left: 2px solid var(--color-border-white);
         width: var(--break-percentage);
     }
 
     .stats-bar--fun & {
         left: calc((100% - var(--fun-percentage)) / 2);
-        border-right: 2px solid white;
-        border-left: 2px solid white;
+        border-right: 2px solid var(--color-border-white);
+        border-left: 2px solid var(--color-border-white);
         width: var(--fun-percentage);
     }
 
     .stats-bar--work & {
         left: 0;
-        border-right: 2px solid white;
+        border-right: 2px solid var(--color-border-white);
         width: var(--work-percentage);
     }
 }
@@ -139,11 +139,13 @@
 }
 .stats-text {
     padding: 0.125rem;
+    color: var(--color-text-on-bg);
 }
 
 .stats-elapsed-text {
     position: relative;
     top: -100%;
+    color: var(--color-text-on-bg);
 
     .stats-bar--break & {
         position: absolute;

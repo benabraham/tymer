@@ -257,17 +257,25 @@ const playRandomNotification = async () => {
         if (!audioUnlocked) await unlockAudio()
 
         // Play notification and wait for it to complete
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
             const soundId = sound.play()
             log('🔊 Notification started', `${notificationKey} (ID: ${soundId})`, 10)
-            sound.once('end', () => {
-                log('🔊 Notification ended', notificationKey, 10)
-                resolve(true)
-            }, soundId)
-            sound.once('playerror', (id, error) => {
-                log('🔊 Notification error', `${notificationKey}: ${error}`, 2)
-                resolve(false)
-            }, soundId)
+            sound.once(
+                'end',
+                () => {
+                    log('🔊 Notification ended', notificationKey, 10)
+                    resolve(true)
+                },
+                soundId,
+            )
+            sound.once(
+                'playerror',
+                (id, error) => {
+                    log('🔊 Notification error', `${notificationKey}: ${error}`, 2)
+                    resolve(false)
+                },
+                soundId,
+            )
         })
     } catch (error) {
         log('🔊 Notification play failed', `${notificationKey}: ${error.message}`, 2)

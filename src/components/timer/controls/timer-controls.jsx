@@ -1,3 +1,12 @@
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+    faArrowRotateLeft,
+    faPlay,
+    faPause,
+    faBackwardStep,
+    faForwardStep,
+    faFlagCheckered,
+} from '@fortawesome/free-solid-svg-icons'
 import {
     timerState,
     timerOnLastPeriod,
@@ -16,8 +25,8 @@ import {
     moveToNextPeriod,
     moveToPreviousPeriod,
 } from '../../../lib/timer'
-import {unlockAudio} from '../../../lib/sounds'
-import {SoundWrapper} from '../../common/sound-wrapper'
+import { unlockAudio } from '../../../lib/sounds'
+import { SoundWrapper } from '../../common/sound-wrapper'
 
 export const TimerControls = () => {
     const handleStartPause = async () => {
@@ -37,24 +46,25 @@ export const TimerControls = () => {
                     disabled={!canReset.value}
                     class={timerHasFinished.value ? 'highlighted' : ''}
                 >
-                    🔁 Reset
+                    <FontAwesomeIcon icon={faArrowRotateLeft} className="icon--danger" /> Reset
                 </SoundWrapper>
-                <SoundWrapper
-                    onClick={handleStartPause}
-                    disabled={!canStartPause.value}
-                >
-                    {timerState.value.runningIntervalId
-                        ? '⏸️️'
-                        : timerState.value.timestampPaused
-                            ? '▶️️'
-                            : '▶️️ Start'}
+                <SoundWrapper onClick={handleStartPause} disabled={!canStartPause.value}>
+                    {timerState.value.runningIntervalId ? (
+                        <FontAwesomeIcon icon={faPause} className="icon--warning" />
+                    ) : timerState.value.timestampPaused ? (
+                        <FontAwesomeIcon icon={faPlay} className="icon--success" />
+                    ) : (
+                        <>
+                            <FontAwesomeIcon icon={faPlay} className="icon--success" /> Start
+                        </>
+                    )}
                 </SoundWrapper>
                 <div className="button-group">
                     <SoundWrapper
                         onClick={moveToPreviousPeriod}
                         disabled={!canMoveToPreviousPeriod.value}
                     >
-                        ⏮️
+                        <FontAwesomeIcon icon={faBackwardStep} className="icon--navigate" />
                     </SoundWrapper>
 
                     <SoundWrapper
@@ -66,7 +76,7 @@ export const TimerControls = () => {
                                 : ''
                         }
                     >
-                        ⏭️
+                        <FontAwesomeIcon icon={faForwardStep} className="icon--navigate" />
                     </SoundWrapper>
                 </div>
                 <SoundWrapper
@@ -76,7 +86,7 @@ export const TimerControls = () => {
                         timerOnLastPeriod.value && shouldGoToNextPeriod.value ? 'highlighted' : ''
                     }
                 >
-                    🏁 Finish
+                    <FontAwesomeIcon icon={faFlagCheckered} className="icon--danger" /> Finish
                 </SoundWrapper>
             </section>
         </>

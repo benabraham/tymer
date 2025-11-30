@@ -124,14 +124,20 @@ export const SoundNotificationTable = () => {
     const getStatusDisplay = status => {
         switch (status) {
             case 'future':
-                return { text: '⏳ Future', color: '#666', style: 'normal' }
+                return { text: '⏳ Future', className: 'status--future' }
             case 'current':
-                return { text: '🔊 Active', color: '#e67e22', style: 'bold' }
+                return { text: '🔊 Active', className: 'status--active' }
             case 'played':
-                return { text: '✓ Played', color: '#27ae60', style: 'normal' }
+                return { text: '✓ Played', className: 'status--played' }
             default:
-                return { text: status, color: '#666', style: 'normal' }
+                return { text: status, className: 'status--future' }
         }
+    }
+
+    const getTimeToNotificationClass = timeToNotification => {
+        if (timeToNotification > 0) return 'status--info'
+        if (timeToNotification < -2000) return 'status--inactive'
+        return 'status--active'
     }
 
     const formatTimestamp = timestamp => {
@@ -164,19 +170,16 @@ export const SoundNotificationTable = () => {
                     const statusDisplay = getStatusDisplay(status)
                     const isCurrentlyActive = status === 'current'
                     const timeToNotification = group.targetMs - elapsedMs
+                    const timeToNotificationClass = getTimeToNotificationClass(timeToNotification)
+                    const isTimeToNotificationBold =
+                        timeToNotification <= 2000 && timeToNotification >= -2000
 
                     return (
                         <div
                             key={index}
                             class={`sound-notifications__row ${isCurrentlyActive ? 'sound-notifications__row--active' : ''}`}
                         >
-                            <span
-                                style={{
-                                    fontSize: '0.65rem',
-                                    color: statusDisplay.color,
-                                    fontWeight: statusDisplay.style,
-                                }}
-                            >
+                            <span class={statusDisplay.className} style={{ fontSize: '0.65rem' }}>
                                 {statusDisplay.text}
                             </span>
                             <code>{formatTimeFromMs(group.targetMs)}</code>
@@ -186,31 +189,19 @@ export const SoundNotificationTable = () => {
                                     : `+${formatTimeFromMs(-timeFromEnd)}`}
                             </code>
                             <code
+                                class={timeToNotificationClass}
                                 style={{
-                                    color:
-                                        timeToNotification > 0
-                                            ? '#2196F3'
-                                            : timeToNotification < -2000
-                                              ? '#999'
-                                              : '#e67e22',
-                                    fontWeight:
-                                        timeToNotification <= 2000 && timeToNotification >= -2000
-                                            ? 'bold'
-                                            : 'normal',
+                                    fontWeight: isTimeToNotificationBold ? 'bold' : 'normal',
                                 }}
                             >
                                 {timeToNotification >= 0
                                     ? `in ${formatTimeFromMs(timeToNotification)}`
                                     : `${formatTimeFromMs(-timeToNotification)} ago`}
                             </code>
-                            <span
-                                style={{ fontSize: '0.7rem', fontWeight: 'bold', color: '#2d8f47' }}
-                            >
+                            <span class="status--winner" style={{ fontSize: '0.7rem' }}>
                                 {getSoundName(group.winner)}
                             </span>
-                            <span
-                                style={{ fontSize: '0.65rem', color: '#666', fontStyle: 'italic' }}
-                            >
+                            <span class="status--competitors" style={{ fontSize: '0.65rem' }}>
                                 {group.competitors.length > 0
                                     ? group.competitors.map(c => getSoundType(c)).join(', ')
                                     : group.filteredOut.length > 0
@@ -242,11 +233,8 @@ export const SoundNotificationTable = () => {
                                 </code>
                                 <span style={{ fontSize: '0.7rem' }}>{entry.soundKey}</span>
                                 <span
-                                    style={{
-                                        fontSize: '0.65rem',
-                                        color: entry.success ? '#27ae60' : '#e74c3c',
-                                        fontWeight: 'bold',
-                                    }}
+                                    class={entry.success ? 'status--success' : 'status--error'}
+                                    style={{ fontSize: '0.65rem' }}
                                 >
                                     {entry.success
                                         ? entry.retry
@@ -256,10 +244,13 @@ export const SoundNotificationTable = () => {
                                           ? '✗ Failed (retry)'
                                           : '✗ Failed'}
                                 </span>
-                                <span style={{ fontSize: '0.6rem', color: '#666' }}>
+                                <span style={{ fontSize: '0.6rem' }}>
                                     {entry.periodContext ? (
                                         <div style={{ lineHeight: '1.2' }}>
-                                            <div style={{ color: '#2196F3', fontWeight: 'bold' }}>
+                                            <div
+                                                class="status--info"
+                                                style={{ fontWeight: 'bold' }}
+                                            >
                                                 {entry.periodContext.periodType} #
                                                 {entry.periodContext.periodIndex + 1}
                                             </div>
@@ -278,24 +269,25 @@ export const SoundNotificationTable = () => {
                                                 {formatTimeFromMs(entry.periodContext.remaining)}
                                             </div>
                                             {entry.periodContext.overtime > 0 && (
-                                                <div
-                                                    style={{ color: '#e67e22', fontWeight: 'bold' }}
-                                                >
+                                                <div class="status--active">
                                                     Overtime:{' '}
                                                     {formatTimeFromMs(entry.periodContext.overtime)}
                                                 </div>
                                             )}
                                         </div>
                                     ) : (
-                                        <span style={{ color: '#999', fontStyle: 'italic' }}>
+                                        <span
+                                            class="status--inactive"
+                                            style={{ fontStyle: 'italic' }}
+                                        >
                                             No period data
                                         </span>
                                     )}
                                 </span>
                                 <span
+                                    class="status--inactive"
                                     style={{
                                         fontSize: '0.6rem',
-                                        color: '#999',
                                         fontStyle: 'italic',
                                     }}
                                 >

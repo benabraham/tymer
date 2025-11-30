@@ -32,15 +32,18 @@ import { unlockAudio } from '../../lib/sounds'
 export function KeyboardShortcuts() {
     useEffect(() => {
         const handleKeyDown = async event => {
-            // Ignore if user is editing
+            // Ignore if user is editing or focused on interactive element
             const activeElement = document.activeElement
             const isEditing =
-                activeElement?.tagName === 'INPUT' ||
-                activeElement?.tagName === 'TEXTAREA' ||
-                activeElement?.tagName === 'SELECT' ||
-                activeElement?.isContentEditable
+                activeElement?.tagName === 'INPUT'
+                || activeElement?.tagName === 'TEXTAREA'
+                || activeElement?.tagName === 'SELECT'
+                || activeElement?.isContentEditable
 
             if (isEditing) return
+
+            // If a button is focused and Enter is pressed, let the button handle it
+            if (activeElement?.tagName === 'BUTTON' && event.key === 'Enter') return
 
             // Unlock audio on keyboard interaction
             await unlockAudio()
@@ -78,14 +81,24 @@ export function KeyboardShortcuts() {
 
             // Arrow keys for elapsed time
             // Plain arrows: round to nearest multiple of 3
-            else if (event.key === 'ArrowRight' && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+            else if (
+                event.key === 'ArrowRight'
+                && !event.ctrlKey
+                && !event.altKey
+                && !event.shiftKey
+            ) {
                 event.preventDefault()
                 const delta = getNextMultipleOf3Delta(timerDurationElapsed.value, 'up')
                 if (canAdjustElapsed(delta)) {
                     adjustElapsed(delta)
                     handled = true
                 }
-            } else if (event.key === 'ArrowLeft' && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+            } else if (
+                event.key === 'ArrowLeft'
+                && !event.ctrlKey
+                && !event.altKey
+                && !event.shiftKey
+            ) {
                 event.preventDefault()
                 const delta = getNextMultipleOf3Delta(timerDurationElapsed.value, 'down')
                 if (canAdjustElapsed(delta)) {
@@ -94,13 +107,23 @@ export function KeyboardShortcuts() {
                 }
             }
             // Ctrl + arrows: ±6m
-            else if (event.key === 'ArrowRight' && event.ctrlKey && !event.altKey && !event.shiftKey) {
+            else if (
+                event.key === 'ArrowRight'
+                && event.ctrlKey
+                && !event.altKey
+                && !event.shiftKey
+            ) {
                 event.preventDefault()
                 if (canAdjustElapsed(6 * 60 * 1000)) {
                     adjustElapsed(6 * 60 * 1000)
                     handled = true
                 }
-            } else if (event.key === 'ArrowLeft' && event.ctrlKey && !event.altKey && !event.shiftKey) {
+            } else if (
+                event.key === 'ArrowLeft'
+                && event.ctrlKey
+                && !event.altKey
+                && !event.shiftKey
+            ) {
                 event.preventDefault()
                 if (canAdjustElapsed(-6 * 60 * 1000)) {
                     adjustElapsed(-6 * 60 * 1000)
@@ -108,13 +131,23 @@ export function KeyboardShortcuts() {
                 }
             }
             // Shift + arrows: ±24m
-            else if (event.key === 'ArrowRight' && event.shiftKey && !event.altKey && !event.ctrlKey) {
+            else if (
+                event.key === 'ArrowRight'
+                && event.shiftKey
+                && !event.altKey
+                && !event.ctrlKey
+            ) {
                 event.preventDefault()
                 if (canAdjustElapsed(24 * 60 * 1000)) {
                     adjustElapsed(24 * 60 * 1000)
                     handled = true
                 }
-            } else if (event.key === 'ArrowLeft' && event.shiftKey && !event.altKey && !event.ctrlKey) {
+            } else if (
+                event.key === 'ArrowLeft'
+                && event.shiftKey
+                && !event.altKey
+                && !event.ctrlKey
+            ) {
                 event.preventDefault()
                 if (canAdjustElapsed(-24 * 60 * 1000)) {
                     adjustElapsed(-24 * 60 * 1000)
@@ -122,13 +155,23 @@ export function KeyboardShortcuts() {
                 }
             }
             // Alt + arrows: ±1m
-            else if (event.key === 'ArrowRight' && event.altKey && !event.shiftKey && !event.ctrlKey) {
+            else if (
+                event.key === 'ArrowRight'
+                && event.altKey
+                && !event.shiftKey
+                && !event.ctrlKey
+            ) {
                 event.preventDefault()
                 if (canAdjustElapsed(1 * 60 * 1000)) {
                     adjustElapsed(1 * 60 * 1000)
                     handled = true
                 }
-            } else if (event.key === 'ArrowLeft' && event.altKey && !event.shiftKey && !event.ctrlKey) {
+            } else if (
+                event.key === 'ArrowLeft'
+                && event.altKey
+                && !event.shiftKey
+                && !event.ctrlKey
+            ) {
                 event.preventDefault()
                 if (canAdjustElapsed(-1 * 60 * 1000)) {
                     adjustElapsed(-1 * 60 * 1000)
@@ -158,7 +201,12 @@ export function KeyboardShortcuts() {
 
             // +/= for duration
             // Plain +/-: round to nearest multiple of 3
-            else if ((event.key === '+' || event.key === '=') && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+            else if (
+                (event.key === '+' || event.key === '=')
+                && !event.ctrlKey
+                && !event.altKey
+                && !event.shiftKey
+            ) {
                 event.preventDefault()
                 const currentDuration = currentPeriod.value?.periodDuration || 0
                 const delta = getNextMultipleOf3Delta(currentDuration, 'up')
@@ -176,7 +224,12 @@ export function KeyboardShortcuts() {
                 }
             }
             // Ctrl + +/-: ±6m
-            else if ((event.key === '+' || event.key === '=') && event.ctrlKey && !event.altKey && !event.shiftKey) {
+            else if (
+                (event.key === '+' || event.key === '=')
+                && event.ctrlKey
+                && !event.altKey
+                && !event.shiftKey
+            ) {
                 event.preventDefault()
                 if (canAdjustDuration(6 * 60 * 1000)) {
                     adjustDuration(6 * 60 * 1000)
@@ -190,7 +243,12 @@ export function KeyboardShortcuts() {
                 }
             }
             // Shift + +/-: ±24m
-            else if ((event.key === '+' || event.key === '=') && event.shiftKey && !event.altKey && !event.ctrlKey) {
+            else if (
+                (event.key === '+' || event.key === '=')
+                && event.shiftKey
+                && !event.altKey
+                && !event.ctrlKey
+            ) {
                 event.preventDefault()
                 if (canAdjustDuration(24 * 60 * 1000)) {
                     adjustDuration(24 * 60 * 1000)
@@ -204,7 +262,12 @@ export function KeyboardShortcuts() {
                 }
             }
             // Alt + +/-: ±1m
-            else if ((event.key === '+' || event.key === '=') && event.altKey && !event.shiftKey && !event.ctrlKey) {
+            else if (
+                (event.key === '+' || event.key === '=')
+                && event.altKey
+                && !event.shiftKey
+                && !event.ctrlKey
+            ) {
                 event.preventDefault()
                 if (canAdjustDuration(1 * 60 * 1000)) {
                     adjustDuration(1 * 60 * 1000)
@@ -219,7 +282,12 @@ export function KeyboardShortcuts() {
             }
 
             // T - toggle type
-            else if ((event.key === 't' || event.key === 'T') && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+            else if (
+                (event.key === 't' || event.key === 'T')
+                && !event.ctrlKey
+                && !event.altKey
+                && !event.shiftKey
+            ) {
                 event.preventDefault()
                 if (canChangeType.value) {
                     changeType()
@@ -228,7 +296,12 @@ export function KeyboardShortcuts() {
             }
 
             // W - set type to work
-            else if ((event.key === 'w' || event.key === 'W') && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+            else if (
+                (event.key === 'w' || event.key === 'W')
+                && !event.ctrlKey
+                && !event.altKey
+                && !event.shiftKey
+            ) {
                 event.preventDefault()
                 if (canChangeType.value) {
                     setCurrentPeriodType('work')
@@ -237,7 +310,12 @@ export function KeyboardShortcuts() {
             }
 
             // B - set type to break
-            else if ((event.key === 'b' || event.key === 'B') && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+            else if (
+                (event.key === 'b' || event.key === 'B')
+                && !event.ctrlKey
+                && !event.altKey
+                && !event.shiftKey
+            ) {
                 event.preventDefault()
                 if (canChangeType.value) {
                     setCurrentPeriodType('break')
@@ -246,7 +324,12 @@ export function KeyboardShortcuts() {
             }
 
             // F - set type to fun
-            else if ((event.key === 'f' || event.key === 'F') && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+            else if (
+                (event.key === 'f' || event.key === 'F')
+                && !event.ctrlKey
+                && !event.altKey
+                && !event.shiftKey
+            ) {
                 event.preventDefault()
                 if (canChangeType.value) {
                     setCurrentPeriodType('fun')
@@ -255,7 +338,12 @@ export function KeyboardShortcuts() {
             }
 
             // A - add period
-            else if ((event.key === 'a' || event.key === 'A') && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+            else if (
+                (event.key === 'a' || event.key === 'A')
+                && !event.ctrlKey
+                && !event.altKey
+                && !event.shiftKey
+            ) {
                 event.preventDefault()
                 if (canAddPeriod.value) {
                     addPeriod()
@@ -264,7 +352,12 @@ export function KeyboardShortcuts() {
             }
 
             // Backspace - move time to previous period
-            else if (event.key === 'Backspace' && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+            else if (
+                event.key === 'Backspace'
+                && !event.ctrlKey
+                && !event.altKey
+                && !event.shiftKey
+            ) {
                 event.preventDefault()
                 if (canMoveElapsedToPrevious.value) {
                     moveElapsedTimeToPreviousPeriod()

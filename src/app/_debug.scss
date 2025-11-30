@@ -1,5 +1,5 @@
 /* for debugging */
-details {
+.debugging-info {
     code {
         min-width: 24ch;
         display: inline-block;
@@ -21,12 +21,12 @@ details {
         text-wrap: nowrap;
 
         .tempPeriod--current & {
-            outline: 2px solid #ffffff;
+            outline: 2px solid var(--color-border-white);
         }
 
         .tempPeriod--finished & {
-            background-color: rgb(0, 70, 0);
-            color: #ffffff;
+            background-color: var(--color-debug-finished-bg);
+            color: var(--color-text-button);
         }
     }
 
@@ -43,7 +43,7 @@ details {
 
         span {
             padding: 0.25rem;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid var(--color-border-light);
         }
     }
 
@@ -52,15 +52,15 @@ details {
 
         &--active {
             code, span {
-                background-color: #fff3cd;
-                outline: 1px solid #ffeaa7;
+                background-color: var(--color-debug-active-bg);
+                outline: 1px solid var(--color-debug-active-outline);
             }
         }
 
         code, span {
             padding: 0.25rem;
             text-wrap: nowrap;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--color-border-lighter);
         }
 
         code {
@@ -82,7 +82,7 @@ details {
 
         span {
             padding: 0.25rem;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid var(--color-border-light);
         }
     }
 
@@ -92,7 +92,7 @@ details {
         code, span {
             padding: 0.25rem;
             text-wrap: nowrap;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--color-border-lighter);
         }
 
         code {

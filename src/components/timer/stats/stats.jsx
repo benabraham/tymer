@@ -53,11 +53,7 @@ export const Stats = () => {
                 --work-elapsed: ${msToMinutes(periodSums.work.current.durationElapsed)};
             `}
         >
-            <h2>
-                Stats
-                <br />
-                <small>{formatTime(timerDuration.value)} total</small>
-            </h2>
+            <h2>{formatTime(timerDuration.value)} total</h2>
             <StatsBars periodSums={periodSums} />
         </div>
     )

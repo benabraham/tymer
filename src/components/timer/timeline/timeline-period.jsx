@@ -1,5 +1,7 @@
-import {useState, useRef, useEffect, useCallback} from 'preact/hooks'
-import {msToMinutes, formatTime} from '../../../lib/format'
+import { useState, useRef, useEffect, useCallback } from 'preact/hooks'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCircleMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
+import { msToMinutes, formatTime } from '../../../lib/format'
 import {
     updatePeriod,
     pauseTimer,
@@ -9,11 +11,11 @@ import {
     addPeriodAtIndex,
     autoEditIndex,
 } from '../../../lib/timer'
-import {TimelineCurrentTime} from './timeline-current-time'
-import {SoundWrapper} from '../../common/sound-wrapper'
-import {playSound} from '../../../lib/sounds'
+import { TimelineCurrentTime } from './timeline-current-time'
+import { SoundWrapper } from '../../common/sound-wrapper'
+import { playSound } from '../../../lib/sounds'
 
-export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) => {
+export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) => {
     const [isEditing, setIsEditing] = useState(false)
     const [wasTimerRunning, setWasTimerRunning] = useState(false)
     const [originalValues, setOriginalValues] = useState(null)
@@ -82,7 +84,7 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
 
     // Update timer state immediately when values change
     const handleTypeChange = newType => {
-        updatePeriod(index, {type: newType})
+        updatePeriod(index, { type: newType })
     }
 
     const handleDurationChange = newDuration => {
@@ -115,7 +117,7 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
     }
 
     const handleNoteChange = newNote => {
-        updatePeriod(index, {note: newNote})
+        updatePeriod(index, { note: newNote })
     }
 
     const handleDelete = () => {
@@ -191,21 +193,30 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
             >
                 <div class="timeline__text timeline__edit-form">
                     <div className="timeline__edit-row">
-                        <section className="controls mb-0">
+                        <section className="controls controls--tighter">
                             <div className="button-group button-group--tight button-group--connected">
                                 {(() => {
-                                    const totalMinutes = Math.round(period.periodDuration / (60 * 1000))
+                                    const totalMinutes = Math.round(
+                                        period.periodDuration / (60 * 1000),
+                                    )
                                     const currentHours = Math.floor(totalMinutes / 60)
                                     const currentMinutes = totalMinutes % 60
-                                    const elapsedMinutes = Math.round(period.periodDurationElapsed / (60 * 1000))
+                                    const elapsedMinutes = Math.round(
+                                        period.periodDurationElapsed / (60 * 1000),
+                                    )
 
                                     return [0, 1, 2, 3, 4].map(hours => (
                                         <button
                                             key={hours}
                                             tabIndex={1}
                                             className={`button-group-item ${currentHours === hours ? 'button-group-item--active' : ''}`}
-                                            onClick={() => handleDurationChange((hours * 60) + currentMinutes)}
-                                            disabled={isActive && ((hours * 60) + currentMinutes) < elapsedMinutes}
+                                            onClick={() =>
+                                                handleDurationChange(hours * 60 + currentMinutes)
+                                            }
+                                            disabled={
+                                                isActive
+                                                && hours * 60 + currentMinutes < elapsedMinutes
+                                            }
                                         >
                                             {hours}
                                         </button>
@@ -217,35 +228,64 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
                             type="number"
                             tabIndex={4}
                             value={Math.round(period.periodDuration / (60 * 1000))}
-                            onChange={e => handleDurationChange(parseInt(e.target.value) || Math.max(1, Math.round(period.periodDurationElapsed / (60 * 1000))))}
+                            onChange={e =>
+                                handleDurationChange(
+                                    parseInt(e.target.value)
+                                        || Math.max(
+                                            1,
+                                            Math.round(period.periodDurationElapsed / (60 * 1000)),
+                                        ),
+                                )
+                            }
                             className="timeline__edit-duration"
-                            min={isActive ? Math.round(period.periodDurationElapsed / (60 * 1000)) : 1}
+                            min={
+                                isActive
+                                    ? Math.round(period.periodDurationElapsed / (60 * 1000))
+                                    : 1
+                            }
                             max="900"
                         />
-                        <section className="controls mb-0">
+                        <section className="controls controls--tighter">
                             <div className="button-group button-group--tight button-group--connected">
                                 {(() => {
-                                    const totalMinutes = Math.round(period.periodDuration / (60 * 1000))
+                                    const totalMinutes = Math.round(
+                                        period.periodDuration / (60 * 1000),
+                                    )
                                     const currentHours = Math.floor(totalMinutes / 60)
                                     const currentMinutes = totalMinutes % 60
-                                    const elapsedMinutes = Math.round(period.periodDurationElapsed / (60 * 1000))
+                                    const elapsedMinutes = Math.round(
+                                        period.periodDurationElapsed / (60 * 1000),
+                                    )
 
-                                    return [0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48, 51, 54, 57].map(minutes => {
-                                        const minuteButtonValues = [0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48, 51, 54, 57]
-                                        const currentIndex = minuteButtonValues.findIndex(val => val === currentMinutes)
+                                    return [
+                                        0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45,
+                                        48, 51, 54, 57,
+                                    ].map(minutes => {
+                                        const minuteButtonValues = [
+                                            0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42,
+                                            45, 48, 51, 54, 57,
+                                        ]
+                                        const currentIndex = minuteButtonValues.findIndex(
+                                            val => val === currentMinutes,
+                                        )
 
                                         const isActive = currentMinutes === minutes
                                         let isSemiActive = false
 
                                         if (!isActive && currentIndex === -1) {
                                             // Find the closest lower and higher values
-                                            const lowerIndex = minuteButtonValues.findLastIndex(val => val < currentMinutes)
-                                            const higherIndex = minuteButtonValues.findIndex(val => val > currentMinutes)
-
-                                            isSemiActive = (
-                                                (lowerIndex !== -1 && minutes === minuteButtonValues[lowerIndex]) ||
-                                                (higherIndex !== -1 && minutes === minuteButtonValues[higherIndex])
+                                            const lowerIndex = minuteButtonValues.findLastIndex(
+                                                val => val < currentMinutes,
                                             )
+                                            const higherIndex = minuteButtonValues.findIndex(
+                                                val => val > currentMinutes,
+                                            )
+
+                                            isSemiActive =
+                                                (lowerIndex !== -1
+                                                    && minutes === minuteButtonValues[lowerIndex])
+                                                || (higherIndex !== -1
+                                                    && minutes === minuteButtonValues[higherIndex])
                                         }
 
                                         return (
@@ -253,8 +293,15 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
                                                 key={minutes}
                                                 tabIndex={2}
                                                 className={`button-group-item ${minutes % 12 === 0 ? 'fw-900' : minutes % 6 === 0 ? 'button--sm' : 'button--xs'} ${isActive ? 'button-group-item--active' : isSemiActive ? 'button-group-item--semiactive' : ''}`}
-                                                onClick={() => handleDurationChange((currentHours * 60) + minutes)}
-                                                disabled={isActive && ((currentHours * 60) + minutes) < elapsedMinutes}
+                                                onClick={() =>
+                                                    handleDurationChange(
+                                                        currentHours * 60 + minutes,
+                                                    )
+                                                }
+                                                disabled={
+                                                    isActive
+                                                    && currentHours * 60 + minutes < elapsedMinutes
+                                                }
                                             >
                                                 {minutes}
                                             </button>
@@ -263,10 +310,8 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
                                 })()}
                             </div>
                         </section>
-
                     </div>
                     <div class="timeline__edit-row">
-
                         <div class="button-group button-group--connected">
                             {availableTypes.map(type => (
                                 <SoundWrapper
@@ -289,15 +334,16 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
                             placeholder="Note…"
                             class="timeline__edit-note"
                         />
-                        <SoundWrapper
-                            onClick={handleDelete}
-                            tabIndex={6}
-                            class="timeline__edit-delete"
-                            title="Delete period"
-                            disabled={isActive && timerState.value.periods.length === 1}
-                        >
-                            🗑️
-                        </SoundWrapper>
+                        <div class="button-group">
+                            <SoundWrapper
+                                onClick={handleDelete}
+                                tabIndex={6}
+                                title="Delete period"
+                                disabled={isActive && timerState.value.periods.length === 1}
+                            >
+                                <FontAwesomeIcon icon={faCircleMinus} className="icon--danger" />
+                            </SoundWrapper>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -317,10 +363,17 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
             onClick={handleClickOnPeriod}
         >
             <div className="timeline__text">
-                <div className="timeline__period-duration">{formatTime(period.periodDuration, { compact: true })}</div>
+                <div className="timeline__period-duration">
+                    {formatTime(period.periodDuration, { compact: true })}
+                </div>
                 {period.note && <div className="timeline__note">{period.note}</div>}
 
-                {index === 0 && startTime && <div className="timeline__start-time" dangerouslySetInnerHTML={{ __html: startTime }} />}
+                {index === 0 && startTime && (
+                    <div
+                        className="timeline__start-time"
+                        dangerouslySetInnerHTML={{ __html: startTime }}
+                    />
+                )}
                 <div className="timeline__end-time" dangerouslySetInnerHTML={{ __html: endTime }} />
             </div>
 
@@ -328,8 +381,7 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
                 class="timeline__elapsed-time"
                 style={`--elapsed-minutes: ${msToMinutes(period.periodDurationElapsed)};`}
             >
-                {isActive && <TimelineCurrentTime period={period}/>}
-
+                {isActive && <TimelineCurrentTime period={period} />}
             </div>
             {isActive && <div class="timeline__subinterval"></div>}
             {isActive && period.periodDurationElapsed > period.periodUserIntendedDuration && (
@@ -340,8 +392,9 @@ export const TimelinePeriod = ({period, isActive, endTime, startTime, index}) =>
                 class="button timeline__add-period"
                 onClick={handleAddPeriod}
                 title="Add period after this one"
+                tabIndex={-1}
             >
-                ➕
+                <FontAwesomeIcon icon={faPlus} className="icon--success" />
             </SoundWrapper>
         </SoundWrapper>
     )

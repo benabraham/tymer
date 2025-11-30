@@ -1,0 +1,261 @@
+// Color Theme System - Single Source of Truth
+// All colors must be defined here and nowhere else
+
+// Default theme (current colors preserved)
+:root,
+[data-theme='default'] {
+  // Background colors
+  --color-bg-body: #242424;
+  --color-bg-button: #3d3d3d;
+  --color-bg-button-hover: #464646;
+  --color-bg-highlighted: #ff0000;
+  --color-bg-blink-start: #800000;
+  --color-bg-blink-end: #9f9f00;
+  --color-bg-edit-form: rgba(0, 0, 0, 0.1);
+
+  // Button group colors
+  --color-bg-button-inactive: #999;
+  --color-bg-button-inactive-hover: #aaa;
+  --color-bg-button-semiactive: #666;
+  --color-bg-button-semiactive-hover: #555;
+  --color-bg-button-active: #464646;
+  --color-bg-button-active-hover: #444;
+
+  // Button focus/hover highlight
+  --color-bg-button-focus: #5c9eff;       // Bright blue for focus/hover
+  --color-text-button-focus: #000000;     // Dark text for contrast
+
+  // Text colors
+  --color-text-primary: rgba(255, 255, 255, 0.87);
+  --color-text-button: #ffffff;
+  --color-text-button-inactive: #333;
+  --color-text-muted: #ccc;
+  --color-text-subtle: #aaa;
+
+  // Small button text colors (higher contrast)
+  --color-text-button-sm: #e0e0e0;    // For button--sm
+  --color-text-button-xs: #d0d0d0;    // For button--xs
+
+  // Period colors
+  --color-period-work: #4caf50;
+  --color-period-break: #00bfff;
+  --color-period-fun: #bc9600;
+  --color-text-on-bg: #ffffff;
+
+  // Border colors
+  --color-border: #555;
+  --color-border-light: #ddd;
+  --color-border-lighter: #eee;
+  --color-border-white: #ffffff;
+
+  // Accent colors
+  --color-accent: #646cff;
+  --color-accent-hover: #535bf2;
+
+  // Semantic colors
+  --color-success: #27ae60;
+  --color-success-alt: #2d8f47;
+  --color-warning: #e67e22;
+  --color-error: #e74c3c;
+  --color-info: #2196f3;
+
+  // Icon colors (more saturated for dark background)
+  --color-icon-danger: #ff6b6b;      // Delete, Reset, Remove - bright red
+  --color-icon-success: #51cf66;     // Start, Play, Finish, Add - bright green
+  --color-icon-warning: #ffd43b;     // Pause - bright yellow
+  --color-icon-navigate: #74c0fc;    // Prev/Next, Chevrons - bright blue
+  --color-icon-special: #da77f2;     // Change type - bright purple
+
+  // Timeline specific
+  --color-timeline-bg: skyblue;
+  --color-elapsed-overlay: rgba(255, 212, 59, 0.4);  // Semi-transparent current-time color
+  --color-overrun: #ac0000;
+  --color-subinterval-a: rgb(0 0 0 / 12%);
+  --color-subinterval-b: rgb(0 0 0 / 6%);
+  --color-outline-editable: rgb(255 255 255 / 90%);
+  --color-current-time: #ffd43b;  // Gold/yellow for current time indicator
+
+  // Stats specific
+  --color-stats-default: #000000;
+  --color-stats-elapsed: rgba(255, 255, 255, 0.5);
+
+  // Debug specific
+  --color-debug-finished-bg: rgb(0, 70, 0);
+  --color-debug-active-bg: #fff3cd;
+  --color-debug-active-outline: #ffeaa7;
+
+  // Input colors
+  --color-input-bg: rgba(255, 255, 255, 0.9);
+  --color-input-text: #333;
+
+  // Delete button
+  --color-delete-hover-bg: rgba(255, 0, 0, 0.8);
+}
+
+// Nord theme
+// Based on https://www.nordtheme.com/
+[data-theme='nord'] {
+  // Background colors - Nord Polar Night
+  --color-bg-body: #242933; // darker than nord0
+  --color-bg-button: #3b4252; // nord1
+  --color-bg-button-hover: #434c5e; // nord2
+  --color-bg-highlighted: #bf616a; // nord11
+  --color-bg-blink-start: #a54e56;
+  --color-bg-blink-end: #ebcb8b; // nord13
+  --color-bg-edit-form: rgba(46, 52, 64, 0.5);
+
+  // Button group colors
+  --color-bg-button-inactive: #4c566a; // nord3
+  --color-bg-button-inactive-hover: #5c6778;
+  --color-bg-button-semiactive: #434c5e; // nord2
+  --color-bg-button-semiactive-hover: #3b4252; // nord1
+  --color-bg-button-active: #5e81ac; // nord10
+  --color-bg-button-active-hover: #81a1c1; // nord9
+
+  // Button focus/hover highlight
+  --color-bg-button-focus: #88c0d0;       // nord8 - cyan for focus/hover
+  --color-text-button-focus: #2e3440;     // nord0 - dark text for contrast
+
+  // Text colors - Nord Snow Storm
+  --color-text-primary: #eceff4; // nord6
+  --color-text-button: #eceff4; // nord6
+  --color-text-button-inactive: #d8dee9; // nord4
+  --color-text-muted: #d8dee9; // nord4
+  --color-text-subtle: #4c566a; // nord3
+
+  // Small button text colors - Nord Snow Storm (high contrast)
+  --color-text-button-sm: #e5e9f0;    // nord5 - For button--sm
+  --color-text-button-xs: #d8dee9;    // nord4 - For button--xs
+
+  // Period colors - Nord Aurora
+  --color-period-work: #a3be8c; // nord14 (green)
+  --color-period-break: #88c0d0; // nord8 (cyan)
+  --color-period-fun: #ebcb8b; // nord13 (yellow)
+  --color-text-on-bg: #2e3440; // nord0 - dark text on light backgrounds
+
+  // Border colors
+  --color-border: #4c566a; // nord3
+  --color-border-light: #d8dee9; // nord4
+  --color-border-lighter: #e5e9f0; // nord5
+  --color-border-white: #eceff4; // nord6
+
+  // Accent colors - Nord Frost
+  --color-accent: #81a1c1; // nord9
+  --color-accent-hover: #88c0d0; // nord8
+
+  // Semantic colors - Nord Aurora
+  --color-success: #a3be8c; // nord14
+  --color-success-alt: #8fbcbb; // nord7
+  --color-warning: #d08770; // nord12
+  --color-error: #bf616a; // nord11
+  --color-info: #81a1c1; // nord9
+
+  // Icon colors - Nord Aurora palette
+  --color-icon-danger: #bf616a;      // nord11 - Delete, Reset, Remove
+  --color-icon-success: #a3be8c;     // nord14 - Start, Play, Finish, Add
+  --color-icon-warning: #ebcb8b;     // nord13 - Pause
+  --color-icon-navigate: #81a1c1;    // nord9 - Prev/Next, Chevrons
+  --color-icon-special: #b48ead;     // nord15 - Change type
+
+  // Timeline specific
+  --color-timeline-bg: #5e81ac; // nord10
+  --color-elapsed-overlay: rgba(235, 203, 139, 0.4);  // Semi-transparent nord13
+  --color-overrun: #bf616a; // nord11
+  --color-subinterval-a: rgba(46, 52, 64, 0.3);
+  --color-subinterval-b: rgba(46, 52, 64, 0.15);
+  --color-outline-editable: rgba(236, 239, 244, 0.9);
+  --color-current-time: #ebcb8b;  // nord13 - yellow for current time indicator
+
+  // Stats specific
+  --color-stats-default: #2e3440; // nord0
+  --color-stats-elapsed: rgba(236, 239, 244, 0.5);
+
+  // Debug specific
+  --color-debug-finished-bg: #4c566a; // nord3
+  --color-debug-active-bg: rgba(235, 203, 139, 0.2); // nord13 with alpha
+  --color-debug-active-outline: #ebcb8b; // nord13
+
+  // Input colors
+  --color-input-bg: rgba(236, 239, 244, 0.9);
+  --color-input-text: #2e3440; // nord0
+
+  // Delete button
+  --color-delete-hover-bg: rgba(191, 97, 106, 0.8); // nord11 with alpha
+}
+
+// Utility classes for status colors (used in JSX)
+.status--future {
+  color: var(--color-text-subtle);
+}
+
+.status--active {
+  color: var(--color-warning);
+  font-weight: bold;
+}
+
+.status--played {
+  color: var(--color-success);
+}
+
+.status--inactive {
+  color: var(--color-text-muted);
+}
+
+.status--error {
+  color: var(--color-error);
+}
+
+.status--success {
+  color: var(--color-success);
+  font-weight: bold;
+}
+
+.status--info {
+  color: var(--color-info);
+}
+
+.status--winner {
+  color: var(--color-success-alt);
+  font-weight: bold;
+}
+
+.status--competitors {
+  color: var(--color-text-subtle);
+  font-style: italic;
+}
+
+.row--highlight {
+  background: var(--color-info);
+}
+
+// Icon color classes
+.icon--danger {
+  color: var(--color-icon-danger);
+}
+
+.icon--success {
+  color: var(--color-icon-success);
+}
+
+.icon--warning {
+  color: var(--color-icon-warning);
+}
+
+.icon--navigate {
+  color: var(--color-icon-navigate);
+}
+
+.icon--special {
+  color: var(--color-icon-special);
+}
+
+// Icons inherit text color on button hover for contrast
+button:not(:disabled):hover {
+  .icon--danger,
+  .icon--success,
+  .icon--warning,
+  .icon--navigate,
+  .icon--special {
+    color: inherit;
+  }
+}

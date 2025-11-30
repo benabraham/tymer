@@ -1,3 +1,16 @@
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+    faMinus,
+    faPlus,
+    faChevronLeft,
+    faChevronRight,
+    faAnglesLeft,
+    faAnglesRight,
+    faRotateLeft,
+    faCirclePlus,
+    faCircleMinus,
+    faRepeat,
+} from '@fortawesome/free-solid-svg-icons'
 import {
     adjustDuration,
     adjustElapsed,
@@ -19,115 +32,87 @@ import {
 import { SoundWrapper } from '../../common/sound-wrapper'
 
 export const PeriodControls = () => (
-    <>
-        <section className="controls">
-            <div class="button-group">
-                <SoundWrapper
-                    onClick={moveElapsedTimeToPreviousPeriod}
-                    disabled={!canMoveElapsedToPrevious.value}
-                >
-                    move time to previous
-                </SoundWrapper>
-            </div>
-
-            <div class="button-group">
-                <SoundWrapper
-                    onClick={() => adjustElapsed(-timerDurationElapsed.value)}
-                    disabled={!canAdjustElapsedBackward.value}
-                >
-                    🔙
-                </SoundWrapper>
-                <SoundWrapper
-                    onClick={() => adjustElapsed(-6 * 60 * 1000)}
-                    disabled={!canAdjustElapsed(-6 * 60 * 1000)}
-                >
-                    &lt;--- 6 m
-                </SoundWrapper>
-                <SoundWrapper
-                    onClick={() => adjustElapsed(-1 * 60 * 1000)}
-                    disabled={!canAdjustElapsed(-1 * 60 * 1000)}
-                >
-                    &lt;-- 1 m
-                </SoundWrapper>
-                {/*<SoundWrapper
-                onClick={() => adjustElapsed(-12 * 1000)}
-                disabled={
-                    timerState.value.currentPeriodIndex === null || timerDurationElapsed.value === 0
-                }
+    <section className="controls">
+        <div class="button-group">
+            <SoundWrapper
+                onClick={moveElapsedTimeToPreviousPeriod}
+                disabled={!canMoveElapsedToPrevious.value}
             >
-                &lt;- 12 s
+                move time to previous
+            </SoundWrapper>
+        </div>
+
+        <div class="button-group">
+            <SoundWrapper
+                onClick={() => adjustElapsed(-timerDurationElapsed.value)}
+                disabled={!canAdjustElapsedBackward.value}
+            >
+                <FontAwesomeIcon icon={faRotateLeft} className="icon--danger" />
             </SoundWrapper>
             <SoundWrapper
-                onClick={() => adjustElapsed(12 * 1000)}
-                disabled={timerState.value.currentPeriodIndex === null}
+                onClick={() => adjustElapsed(-6 * 60 * 1000)}
+                disabled={!canAdjustElapsed(-6 * 60 * 1000)}
             >
-                12 s -&gt;
-            </SoundWrapper>*/}
-                <SoundWrapper
-                    onClick={() => adjustElapsed(1 * 60 * 1000)}
-                    disabled={!canAdjustElapsedForward.value}
-                >
-                    1 m --&gt;
-                </SoundWrapper>
-                <SoundWrapper
-                    onClick={() => adjustElapsed(6 * 60 * 1000)}
-                    disabled={!canAdjustElapsedForward.value}
-                >
-                    6 m ---&gt;
-                </SoundWrapper>
-            </div>
-        </section>
-
-        <section className="controls mb-0">
-            <div class="button-group">
-                <SoundWrapper
-                    onClick={() => adjustDuration(-6 * 60 * 1000)}
-                    disabled={!canAdjustDuration(-6 * 60 * 1000)}
-                >
-                    ➖ 6 min
-                </SoundWrapper>
-                <SoundWrapper
-                    onClick={() => adjustDuration(-1 * 60 * 1000)}
-                    disabled={!canAdjustDuration(-1 * 60 * 1000)}
-                >
-                    ➖ 1 min
-                </SoundWrapper>
-                <SoundWrapper
-                    onClick={() => adjustDuration(1 * 60 * 1000)}
-                    disabled={!canAdjustDurationForward.value}
-                >
-                    ➕ 1 min
-                </SoundWrapper>
-                <SoundWrapper
-                    onClick={() => adjustDuration(6 * 60 * 1000)}
-                    disabled={!canAdjustDurationForward.value}
-                >
-                    ➕ 6 min
-                </SoundWrapper>
-            </div>
-        </section>
-        <section className="controls">
-            <SoundWrapper
-                onClick={changeType}
-                disabled={!canChangeType.value}
-            >
-                change type
+                <FontAwesomeIcon icon={faAnglesLeft} className="icon--navigate" /> 6m
             </SoundWrapper>
-            <div class="button-group">
-                <SoundWrapper
-                    onClick={addPeriod}
-                    disabled={!canAddPeriod.value}
-                >
-                    add period
-                </SoundWrapper>
-                <SoundWrapper
-                    onClick={removePeriod}
-                    disabled={!canRemovePeriod.value}
-                >
-                    remove period
-                </SoundWrapper>
-            </div>
+            <SoundWrapper
+                onClick={() => adjustElapsed(-1 * 60 * 1000)}
+                disabled={!canAdjustElapsed(-1 * 60 * 1000)}
+            >
+                <FontAwesomeIcon icon={faChevronLeft} className="icon--navigate" /> 1m
+            </SoundWrapper>
+            <SoundWrapper
+                onClick={() => adjustElapsed(1 * 60 * 1000)}
+                disabled={!canAdjustElapsedForward.value}
+            >
+                1m <FontAwesomeIcon icon={faChevronRight} className="icon--navigate" />
+            </SoundWrapper>
+            <SoundWrapper
+                onClick={() => adjustElapsed(6 * 60 * 1000)}
+                disabled={!canAdjustElapsedForward.value}
+            >
+                6m <FontAwesomeIcon icon={faAnglesRight} className="icon--navigate" />
+            </SoundWrapper>
+        </div>
 
-        </section>
-    </>
+        <div class="button-group">
+            <SoundWrapper
+                onClick={() => adjustDuration(-6 * 60 * 1000)}
+                disabled={!canAdjustDuration(-6 * 60 * 1000)}
+            >
+                <FontAwesomeIcon icon={faMinus} className="icon--danger" /> 6 min
+            </SoundWrapper>
+            <SoundWrapper
+                onClick={() => adjustDuration(-1 * 60 * 1000)}
+                disabled={!canAdjustDuration(-1 * 60 * 1000)}
+            >
+                <FontAwesomeIcon icon={faMinus} className="icon--danger" /> 1 min
+            </SoundWrapper>
+            <SoundWrapper
+                onClick={() => adjustDuration(1 * 60 * 1000)}
+                disabled={!canAdjustDurationForward.value}
+            >
+                <FontAwesomeIcon icon={faPlus} className="icon--success" /> 1 min
+            </SoundWrapper>
+            <SoundWrapper
+                onClick={() => adjustDuration(6 * 60 * 1000)}
+                disabled={!canAdjustDurationForward.value}
+            >
+                <FontAwesomeIcon icon={faPlus} className="icon--success" /> 6 min
+            </SoundWrapper>
+        </div>
+
+        <SoundWrapper onClick={changeType} disabled={!canChangeType.value}>
+            <FontAwesomeIcon icon={faRepeat} className="icon--special" /> change type
+        </SoundWrapper>
+
+        <div class="button-group">
+            <SoundWrapper onClick={addPeriod} disabled={!canAddPeriod.value}>
+                <FontAwesomeIcon icon={faCirclePlus} className="icon--success" /> add period
+            </SoundWrapper>
+            <SoundWrapper onClick={removePeriod} disabled={!canRemovePeriod.value}>
+                <FontAwesomeIcon icon={faCircleMinus} className="icon--danger" /> remove period
+            </SoundWrapper>
+        </div>
+    </section>
 )

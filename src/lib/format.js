@@ -1,5 +1,5 @@
 // converts milliseconds to human-readable format
-export const formatTime = (ms, { mode, debug, compact } = {}) => {
+export const formatTime = (ms, { mode, debug, compact, figureSpace } = {}) => {
     // handle null/undefined input
     if (ms == null) return '––:––'
 
@@ -35,6 +35,12 @@ export const formatTime = (ms, { mode, debug, compact } = {}) => {
     // Compact mode: show just minutes if under 1 hour
     if (compact && hours === 0) {
         return `${minutes}`
+    }
+
+    // Figure space mode: pad hours with figure space, use space instead of colon
+    if (figureSpace) {
+        const hourStr = hours.toString().padStart(2, '\u2007') // figure space
+        return `${hourStr} ${pad(minutes)}`
     }
 
     return `${hours}:${pad(minutes)}`

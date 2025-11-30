@@ -1,5 +1,19 @@
 import { playSound } from '../../lib/sounds'
 
+// Track last clicked button globally
+let lastClickedButton = null
+
+// Global Tab handler to refocus last clicked button
+if (typeof window !== 'undefined') {
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Tab' && lastClickedButton && document.activeElement === document.body) {
+            e.preventDefault()
+            lastClickedButton.focus()
+            lastClickedButton = null
+        }
+    })
+}
+
 export const SoundWrapper = ({
     onClick,
     onChange,
@@ -16,6 +30,10 @@ export const SoundWrapper = ({
     const handleClick = async e => {
         if (playOnClick) await playSound('button')
         if (onClick) onClick(e)
+        if (as === 'button') {
+            lastClickedButton = e.currentTarget
+            e.currentTarget?.blur()
+        }
     }
 
     const handleChange = async e => {
