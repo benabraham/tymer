@@ -2,6 +2,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCaretLeft, faCaretRight } from '@fortawesome/free-solid-svg-icons'
 import { msToMinutes, formatTime } from '../../../lib/format'
 import { currentPeriod, timerState } from '../../../lib/timer'
+import { clocksVisible } from '../../../lib/clocks'
 import { useSignal } from '@preact/signals'
 import { useEffect } from 'preact/hooks'
 
@@ -41,9 +42,11 @@ export const TimelineCurrentTime = ({ period }) => {
                 </span>
                 {formatTime(currentPeriod.value.periodDurationRemaining, { mode: 'remaining' })}
             </span>
-            <span class="timeline__elapsed timeline__elapsed--timer">
-                {formatClockTime(currentTime.value)}
-            </span>
+            {clocksVisible.value && (
+                <span class="timeline__elapsed timeline__elapsed--clock">
+                    {formatClockTime(currentTime.value)}
+                </span>
+            )}
         </div>
     )
 }

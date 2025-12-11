@@ -11,6 +11,7 @@ import {
     addPeriodAtIndex,
     autoEditIndex,
 } from '../../../lib/timer'
+import { clocksVisible } from '../../../lib/clocks'
 import { TimelineCurrentTime } from './timeline-current-time'
 import { SoundWrapper } from '../../common/sound-wrapper'
 import { playSound } from '../../../lib/sounds'
@@ -368,13 +369,15 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                 </div>
                 {period.note && <div className="timeline__note">{period.note}</div>}
 
-                {index === 0 && startTime && (
+                {clocksVisible.value && index === 0 && startTime && (
                     <div
                         className="timeline__start-time"
                         dangerouslySetInnerHTML={{ __html: startTime }}
                     />
                 )}
-                <div className="timeline__end-time" dangerouslySetInnerHTML={{ __html: endTime }} />
+                {clocksVisible.value && (
+                    <div className="timeline__end-time" dangerouslySetInnerHTML={{ __html: endTime }} />
+                )}
             </div>
 
             <div
