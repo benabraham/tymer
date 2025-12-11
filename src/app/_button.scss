@@ -7,7 +7,7 @@ button {
     font-weight: 600;
     font-family: inherit;
     transition: background-color 0.15s, color 0.15s, opacity 0.2s, filter 0.2s;
-    padding: 0.25rem 0.625rem;
+    padding: 0.5rem 1rem;
     min-width: 9ch;
     user-select: none;
     background-color: var(--color-bg-button);
@@ -62,7 +62,7 @@ button.highlighted {
     &>button {
         min-width: auto;
         flex-basis: max-content;
-        padding-inline: 1ch;
+        padding-inline: 1.5ch;
 
         &:not(:first-child) {
             border-top-left-radius: 0;
@@ -109,7 +109,7 @@ button.highlighted {
 
     &--tight {
         &>button {
-            padding-inline: 0.5ch;
+            padding-inline: 1ch;
         }
     }
 }
