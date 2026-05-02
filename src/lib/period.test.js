@@ -428,3 +428,172 @@ describe('Period.absorbAsCompleted', () => {
         expect(result.config.note).toBe('deep work')
     })
 })
+
+describe('Period.create', () => {
+    it('happy path: returns valid Period with full duration, zero elapsed, full remaining, not finished', () => {
+        const durationMs = 48 * 60 * 1000
+        const result = Period.create({ type: 'work', note: '', durationMs })
+
+        expect(result.state.duration).toBe(durationMs)
+        expect(result.state.elapsed).toBe(0)
+        expect(result.state.remaining).toBe(durationMs)
+        expect(result.state.finished).toBe(false)
+    })
+
+    it('config has type, note, userIntendedDuration set correctly', () => {
+        const durationMs = 24 * 60 * 1000
+        const result = Period.create({ type: 'break', note: 'coffee', durationMs })
+
+        expect(result.config.type).toBe('break')
+        expect(result.config.note).toBe('coffee')
+        expect(result.config.userIntendedDuration).toBe(durationMs)
+    })
+
+    it('userIntendedDuration equals durationMs', () => {
+        const durationMs = 12 * 60 * 1000
+        const result = Period.create({ type: 'fun', note: '', durationMs })
+
+        expect(result.config.userIntendedDuration).toBe(durationMs)
+        expect(result.state.duration).toBe(durationMs)
+    })
+})
+
+describe('Period.unstarted', () => {
+    const makeConfig = ({
+        type = 'work',
+        note = '',
+        userIntendedDuration = 48 * 60 * 1000,
+    } = {}) => ({
+        type,
+        note,
+        userIntendedDuration,
+    })
+
+    it('returns a Period with the same config preserved', () => {
+        const config = makeConfig({
+            type: 'break',
+            note: 'coffee',
+            userIntendedDuration: 12 * 60 * 1000,
+        })
+        const result = Period.unstarted(config)
+
+        expect(result.config).toEqual(config)
+    })
+
+    it('state.duration equals config.userIntendedDuration', () => {
+        const config = makeConfig({ userIntendedDuration: 30 * 60 * 1000 })
+        const result = Period.unstarted(config)
+
+        expect(result.state.duration).toBe(config.userIntendedDuration)
+    })
+
+    it('state.elapsed = 0', () => {
+        const config = makeConfig()
+        const result = Period.unstarted(config)
+
+        expect(result.state.elapsed).toBe(0)
+    })
+
+    it('state.remaining = config.userIntendedDuration', () => {
+        const config = makeConfig({ userIntendedDuration: 20 * 60 * 1000 })
+        const result = Period.unstarted(config)
+
+        expect(result.state.remaining).toBe(config.userIntendedDuration)
+    })
+
+    it('state.finished = false', () => {
+        const config = makeConfig()
+        const result = Period.unstarted(config)
+
+        expect(result.state.finished).toBe(false)
+    })
+
+    it('input config is not mutated', () => {
+        const config = makeConfig({ userIntendedDuration: 48 * 60 * 1000 })
+        const originalDuration = config.userIntendedDuration
+
+        Period.unstarted(config)
+
+        expect(config.userIntendedDuration).toBe(originalDuration)
+    })
+})
+
+describe('Period.setType', () => {
+    it('only config.type changes; everything else is preserved', () => {
+        const period = makePeriod({
+            type: 'work',
+            note: 'hello',
+            duration: 30 * 60 * 1000,
+            elapsed: 5 * 60 * 1000,
+        })
+        const result = Period.setType(period, 'break')
+
+        expect(result.config.type).toBe('break')
+        expect(result.config.note).toBe('hello')
+        expect(result.config.userIntendedDuration).toBe(period.config.userIntendedDuration)
+        expect(result.state).toEqual(period.state)
+    })
+
+    it('input period is not mutated', () => {
+        const period = makePeriod({ type: 'work' })
+        Period.setType(period, 'fun')
+
+        expect(period.config.type).toBe('work')
+    })
+
+    it('state is fully preserved', () => {
+        const period = makePeriod({
+            duration: 48 * 60 * 1000,
+            elapsed: 10 * 60 * 1000,
+            remaining: 38 * 60 * 1000,
+        })
+        const result = Period.setType(period, 'fun')
+
+        expect(result.state.duration).toBe(period.state.duration)
+        expect(result.state.elapsed).toBe(period.state.elapsed)
+        expect(result.state.remaining).toBe(period.state.remaining)
+    })
+})
+
+describe('Period.setNote', () => {
+    it('only config.note changes; everything else is preserved', () => {
+        const period = makePeriod({ type: 'work', note: 'old note', duration: 30 * 60 * 1000 })
+        const result = Period.setNote(period, 'new note')
+
+        expect(result.config.note).toBe('new note')
+        expect(result.config.type).toBe('work')
+        expect(result.config.userIntendedDuration).toBe(period.config.userIntendedDuration)
+        expect(result.state).toEqual(period.state)
+    })
+
+    it('input period is not mutated', () => {
+        const period = makePeriod({ note: 'original' })
+        Period.setNote(period, 'changed')
+
+        expect(period.config.note).toBe('original')
+    })
+
+    it('state.duration, elapsed, remaining, finished are all untouched', () => {
+        const period = {
+            ...makePeriod({
+                duration: 48 * 60 * 1000,
+                elapsed: 10 * 60 * 1000,
+                remaining: 38 * 60 * 1000,
+            }),
+            state: {
+                ...makePeriod({
+                    duration: 48 * 60 * 1000,
+                    elapsed: 10 * 60 * 1000,
+                    remaining: 38 * 60 * 1000,
+                }).state,
+                finished: true,
+            },
+        }
+        const result = Period.setNote(period, 'new')
+
+        expect(result.state.duration).toBe(period.state.duration)
+        expect(result.state.elapsed).toBe(period.state.elapsed)
+        expect(result.state.remaining).toBe(period.state.remaining)
+        expect(result.state.finished).toBe(true)
+    })
+})

@@ -7,21 +7,6 @@ import { SoundScheduler } from './sound-scheduler'
 import { AVAILABLE_SOUNDS } from './sound-discovery'
 import { Period } from './period'
 
-// function to create a period from a period config
-const createPeriod = ({ duration, type, note }) => ({
-    config: {
-        type,
-        note,
-        userIntendedDuration: duration,
-    },
-    state: {
-        duration,
-        elapsed: 0,
-        remaining: duration,
-        finished: false,
-    },
-})
-
 // merge a partial { config?, state? } update into an existing Period
 const mergePeriod = (period, partial) => ({
     ...period,
@@ -36,7 +21,9 @@ export const initialState = {
     timestampPaused: null, // timestamp when timer was paused
     timestampStarted: null, // timestamp when timer was started
     types: ['work', 'break', 'fun'],
-    periods: PERIOD_CONFIG.map(createPeriod),
+    periods: PERIOD_CONFIG.map(({ duration, type, note }) =>
+        Period.create({ type, note, durationMs: duration }),
+    ),
 }
 
 // timer state signal, initialized from localStorage or defaults
@@ -566,9 +553,10 @@ export const changeType = () => {
     const currentIndex = types.indexOf(currentType) // Find the index of the current type
     const nextIndex = (currentIndex + 1) % types.length // Calculate the next index (with wrap-around)
 
+    const updated = Period.setType(currentPeriod.value, types[nextIndex])
     updateTimerState({
         currentPeriodProperties: {
-            config: { type: types[nextIndex] },
+            config: { type: updated.config.type },
         },
     })
     log('changed current type', timerState.value, 8)
@@ -582,9 +570,10 @@ export const setCurrentPeriodType = type => {
         return
     }
 
+    const updated = Period.setType(currentPeriod.value, type)
     updateTimerState({
         currentPeriodProperties: {
-            config: { type },
+            config: { type: updated.config.type },
         },
     })
     log(`set current period type to ${type}`, timerState.value, 8)
@@ -594,10 +583,7 @@ export const setCurrentPeriodType = type => {
 export const addPeriod = () => {
     if (timerState.value.currentPeriodIndex === null) return
 
-    const newPeriod = createPeriod({
-        duration: 24 * 60 * 1000, // 24 minutes
-        type: 'fun',
-    })
+    const newPeriod = Period.create({ type: 'fun', note: '', durationMs: 24 * 60 * 1000 })
 
     const currentIndex = timerState.value.currentPeriodIndex
     const hasElapsedMoreThan60Seconds = currentPeriod.value.state.elapsed > 60 * 1000
@@ -616,12 +602,13 @@ export const addPeriod = () => {
         moveToNextPeriod()
         log('added new period after current and moved to it', timerState.value, 5)
     } else {
-        // Insert before current period and make it current
+        // Insert before current period and make it current.
+        // Capture the displaced period's config before mutating the array so
+        // Period.unstarted can use config.userIntendedDuration as the fresh duration.
+        const displacedConfig = currentPeriod.value.config
+
         const newPeriods = [...timerState.value.periods]
         newPeriods.splice(currentIndex, 0, newPeriod)
-
-        // Use the current period's original duration (before any adjustments)
-        const currentPeriodOriginalDuration = currentPeriod.value.state.duration
 
         updateTimerState({
             timerProperties: {
@@ -632,20 +619,16 @@ export const addPeriod = () => {
             },
         })
 
-        // Reset the next period (originally current) to have 0 elapsed time and full duration
+        // Reset the displaced period (now at currentIndex + 1) to fresh state via Period.unstarted.
+        // config.userIntendedDuration is the source of truth for the fresh duration — if the
+        // period was only auto-extended, userIntendedDuration still holds the original user target.
+        // Manual extensions (via adjustDuration / Period.extendDuration) do update userIntendedDuration,
+        // so unstarted correctly reflects any manual duration edit the user had made.
+        const resetDisplaced = Period.unstarted(displacedConfig)
         updateTimerState({
             timerProperties: {
                 periods: timerState.value.periods.map((period, index) =>
-                    index !== currentIndex + 1
-                        ? period
-                        : mergePeriod(period, {
-                              state: {
-                                  duration: currentPeriodOriginalDuration,
-                                  elapsed: 0,
-                                  remaining: currentPeriodOriginalDuration,
-                                  finished: false,
-                              },
-                          }),
+                    index !== currentIndex + 1 ? period : resetDisplaced,
                 ),
             },
         })
@@ -738,7 +721,10 @@ export const handleTimerCompletion = () => {
     playSound('timerFinished')
 }
 
-// update a specific period by index. `updates` is a partial { config?, state? }.
+// Generic utility: update a specific period by index with an arbitrary partial { config?, state? }.
+// Kept as a deep-merge utility rather than typed Period ops because callers like the timeline edit
+// form use it for snapshot restore (handleCancel) which doesn't map to any single Period.X op.
+// For typed single-field edits prefer Period.setType / Period.setNote where possible.
 export const updatePeriod = (periodIndex, updates) => {
     const newPeriods = timerState.value.periods.map((period, index) =>
         index === periodIndex ? mergePeriod(period, updates) : period,
@@ -803,7 +789,11 @@ export const addPeriodAtIndex = (
     afterIndex,
     periodConfig = { duration: 24 * 60 * 1000, type: 'fun', note: '' },
 ) => {
-    const newPeriod = createPeriod(periodConfig)
+    const newPeriod = Period.create({
+        type: periodConfig.type,
+        note: periodConfig.note,
+        durationMs: periodConfig.duration,
+    })
     const newPeriods = [...timerState.value.periods]
 
     // Insert after the specified index

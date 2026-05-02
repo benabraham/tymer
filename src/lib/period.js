@@ -94,10 +94,60 @@ const extendDuration = (period, deltaMs) => {
     }
 }
 
+// Constructs a brand-new Period from scratch.
+// Returns { config: { type, note, userIntendedDuration }, state: { duration, elapsed: 0, remaining, finished: false } }.
+const create = ({ type, note, durationMs }) => ({
+    config: {
+        type,
+        note,
+        userIntendedDuration: durationMs,
+    },
+    state: {
+        duration: durationMs,
+        elapsed: 0,
+        remaining: durationMs,
+        finished: false,
+    },
+})
+
+// Produces a fresh Period from an existing PeriodConfig, resetting state to initial.
+// Uses config.userIntendedDuration as the source of truth for the fresh duration.
+const unstarted = config => ({
+    config,
+    state: {
+        duration: config.userIntendedDuration,
+        elapsed: 0,
+        remaining: config.userIntendedDuration,
+        finished: false,
+    },
+})
+
+// Returns a new Period with only config.type changed. Everything else is preserved.
+const setType = (period, type) => ({
+    ...period,
+    config: {
+        ...period.config,
+        type,
+    },
+})
+
+// Returns a new Period with only config.note changed. Everything else is preserved.
+const setNote = (period, note) => ({
+    ...period,
+    config: {
+        ...period.config,
+        note,
+    },
+})
+
 export const Period = {
     applyElapsed,
     autoExtendDuration,
     complete,
     absorbAsCompleted,
     extendDuration,
+    create,
+    unstarted,
+    setType,
+    setNote,
 }
