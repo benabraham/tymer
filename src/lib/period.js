@@ -1,6 +1,15 @@
 // Pure functions for Period operations.
 // No imports from signals, storage, sounds, or timer — fully mockless in tests.
 
+// Internal helper: round a millisecond value down to the nearest whole minute.
+// Returns { roundedDown, remainder }.
+const roundDownToBaseMinute = timeInMs => {
+    const oneMinute = 60 * 1000
+    const roundedDown = Math.floor(timeInMs / oneMinute) * oneMinute
+    const remainder = timeInMs - roundedDown
+    return { roundedDown, remainder }
+}
+
 const applyElapsed = (period, newElapsedMs) => ({
     ...period,
     state: {
@@ -26,4 +35,43 @@ const autoExtendDuration = (period, deltaMs) => {
     }
 }
 
-export const Period = { applyElapsed, autoExtendDuration }
+// Completes a period by snapping elapsed down to a whole-minute boundary.
+// Returns { period, remainder } where remainder is the sub-minute time that was
+// not claimed — the caller should push this into the next period's timestampStarted
+// so no real time is lost.
+const complete = period => {
+    const { roundedDown, remainder } = roundDownToBaseMinute(period.state.elapsed)
+    const completed = {
+        ...period,
+        config: {
+            ...period.config,
+            userIntendedDuration: roundedDown,
+        },
+        state: {
+            ...period.state,
+            duration: roundedDown,
+            elapsed: roundedDown,
+            remaining: 0,
+            finished: true,
+        },
+    }
+    return { period: completed, remainder }
+}
+
+// Extends BOTH duration AND elapsed of an already-completed period by extraMs.
+// Used when the user moves elapsed time backwards across a period boundary —
+// the previous (completed) period absorbs the time transferred from the current one.
+// state.remaining stays 0 and state.finished stays true.
+// config (including userIntendedDuration) is never touched.
+const absorbAsCompleted = (period, extraMs) => ({
+    ...period,
+    state: {
+        ...period.state,
+        duration: period.state.duration + extraMs,
+        elapsed: period.state.elapsed + extraMs,
+        remaining: 0,
+        finished: true,
+    },
+})
+
+export const Period = { applyElapsed, autoExtendDuration, complete, absorbAsCompleted }

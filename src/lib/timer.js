@@ -39,13 +39,6 @@ export const initialState = {
     periods: PERIOD_CONFIG.map(createPeriod),
 }
 
-export const roundDownToBaseMinute = timeInMs => {
-    const oneMinute = 60 * 1000
-    const roundedDown = Math.floor(timeInMs / oneMinute) * oneMinute
-    const remainder = timeInMs - roundedDown
-    return { roundedDown, remainder }
-}
-
 // timer state signal, initialized from localStorage or defaults
 export const timerState = signal(loadState(initialState))
 
@@ -472,19 +465,23 @@ const updateCurrentPeriod = () => {
 export const moveToNextPeriod = () => {
     if (timerState.value.currentPeriodIndex === null) return
 
+    // Ensure elapsed is fresh before Period.complete reads it (a tick may not
+    // have fired since the user clicked the button).
+    updateCurrentPeriod()
+
     const nextPeriodIndex = timerState.value.currentPeriodIndex + 1
     const nextPeriod = timerState.value.periods[nextPeriodIndex]
 
-    const { roundedDown, remainder } = roundDownToBaseMinute(currentPeriod.value.state.elapsed)
+    const { period: completed, remainder } = Period.complete(currentPeriod.value)
 
     updateTimerState({
         currentPeriodProperties: {
             config: {
-                userIntendedDuration: roundedDown,
+                userIntendedDuration: completed.config.userIntendedDuration,
             },
             state: {
-                duration: roundedDown,
-                elapsed: roundedDown,
+                duration: completed.state.duration,
+                elapsed: completed.state.elapsed,
                 remaining: 0,
                 finished: true,
             },
@@ -550,13 +547,15 @@ export const moveElapsedTimeToPreviousPeriod = () => {
     const elapsed = currentPeriod.value.state.elapsed
     const previousPeriodIndex = timerState.value.currentPeriodIndex - 1
     const previousPeriod = timerState.value.periods[previousPeriodIndex]
-    const extendedDuration = previousPeriod.state.duration + elapsed
+    const absorbed = Period.absorbAsCompleted(previousPeriod, elapsed)
 
     updateTimerState({
         previousPeriodProperties: {
             state: {
-                duration: extendedDuration,
-                elapsed: extendedDuration,
+                duration: absorbed.state.duration,
+                elapsed: absorbed.state.elapsed,
+                remaining: absorbed.state.remaining,
+                finished: absorbed.state.finished,
             },
         },
         timerProperties: {},
@@ -711,15 +710,22 @@ export const removePeriod = () => {
 export const handleTimerCompletion = () => {
     stopTick()
 
+    // Ensure elapsed is fresh before Period.complete reads it (a tick may not
+    // have fired since the user clicked the Finish button).
+    updateCurrentPeriod()
+
     // updates are not combined because they need to be run sequentially
 
-    const { roundedDown } = roundDownToBaseMinute(currentPeriod.value.state.elapsed)
+    const { period: completed } = Period.complete(currentPeriod.value)
 
     updateTimerState({
         currentPeriodProperties: {
+            config: {
+                userIntendedDuration: completed.config.userIntendedDuration,
+            },
             state: {
-                duration: roundedDown,
-                elapsed: roundedDown,
+                duration: completed.state.duration,
+                elapsed: completed.state.elapsed,
                 remaining: 0,
                 finished: true,
             },

@@ -6,7 +6,6 @@ import {
     timerDurationElapsed,
     timerDurationRemaining,
     timerHasFinished,
-    roundDownToBaseMinute,
     moveToNextPeriod,
     handleTimerCompletion,
 } from './timer'
@@ -83,24 +82,6 @@ describe('Timer Logic - Simple Tests', () => {
         })
     })
 
-    describe('Round Down to Base Minute Function', () => {
-        it('should round down to base minute and calculate remainder correctly', () => {
-            // Test exact minutes (no remainder)
-            expect(roundDownToBaseMinute(60000)).toEqual({ roundedDown: 60000, remainder: 0 }) // 1:00
-            expect(roundDownToBaseMinute(120000)).toEqual({ roundedDown: 120000, remainder: 0 }) // 2:00
-
-            // Test with seconds (should round down)
-            expect(roundDownToBaseMinute(61000)).toEqual({ roundedDown: 60000, remainder: 1000 }) // 1:01 -> 1:00 + 0:01
-            expect(roundDownToBaseMinute(119000)).toEqual({ roundedDown: 60000, remainder: 59000 }) // 1:59 -> 1:00 + 0:59
-            expect(roundDownToBaseMinute(121000)).toEqual({ roundedDown: 120000, remainder: 1000 }) // 2:01 -> 2:00 + 0:01
-
-            // Test edge cases
-            expect(roundDownToBaseMinute(0)).toEqual({ roundedDown: 0, remainder: 0 }) // 0:00
-            expect(roundDownToBaseMinute(1000)).toEqual({ roundedDown: 0, remainder: 1000 }) // 0:01 -> 0:00 + 0:01
-            expect(roundDownToBaseMinute(59000)).toEqual({ roundedDown: 0, remainder: 59000 }) // 0:59 -> 0:00 + 0:59
-        })
-    })
-
     describe('Move to Next Period with Remainder Carry-forward', () => {
         beforeEach(() => {
             // Set up a running timer
@@ -149,8 +130,21 @@ describe('Timer Logic - Simple Tests', () => {
             const originalTimestamp = Date.now()
             vi.spyOn(Date, 'now').mockReturnValue(originalTimestamp)
 
-            // Set exactly 2 minutes elapsed
-            timerState.value.periods[0].state.elapsed = 120000
+            // Set exactly 2 minutes elapsed — also align timestampStarted so
+            // updateCurrentPeriod() computes the same elapsed when called.
+            timerState.value = {
+                ...timerState.value,
+                timestampStarted: originalTimestamp - 120000,
+                periods: timerState.value.periods.map((period, index) => ({
+                    ...period,
+                    state: {
+                        ...period.state,
+                        elapsed: index === 0 ? 120000 : period.state.elapsed,
+                        remaining:
+                            index === 0 ? period.state.duration - 120000 : period.state.remaining,
+                    },
+                })),
+            }
 
             moveToNextPeriod()
 
@@ -309,9 +303,25 @@ describe('Timer Logic - Simple Tests', () => {
         })
 
         it('should handle exact minute completion without rounding', () => {
-            // Set exactly 3 minutes elapsed (well above filter threshold)
+            // Set exactly 3 minutes elapsed (well above filter threshold).
+            // Also align timestampStarted so updateCurrentPeriod() computes the
+            // same elapsed when called inside handleTimerCompletion.
             const lastPeriodIndex = timerState.value.periods.length - 1
-            timerState.value.periods[lastPeriodIndex].state.elapsed = 180000
+            timerState.value = {
+                ...timerState.value,
+                timestampStarted: Date.now() - 180000,
+                periods: timerState.value.periods.map((period, index) => ({
+                    ...period,
+                    state: {
+                        ...period.state,
+                        elapsed: index === lastPeriodIndex ? 180000 : period.state.elapsed,
+                        remaining:
+                            index === lastPeriodIndex
+                                ? period.state.duration - 180000
+                                : period.state.remaining,
+                    },
+                })),
+            }
 
             handleTimerCompletion()
 

@@ -180,7 +180,7 @@ const getPeriodContext = () => {
             const isOvertime = elapsedMs > intendedDuration
 
             return {
-                periodType: currentPeriod.type,
+                periodType: currentPeriod.config.type,
                 periodDuration: intendedDuration,
                 elapsed: elapsedMs,
                 remaining: remainingMs > 0 ? remainingMs : 0,

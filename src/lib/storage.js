@@ -15,8 +15,13 @@ export const loadState = initialState => {
         const loadedState = JSON.parse(localStorage.getItem('timerState'))
         // Get an array of property names from the initial state
         const requiredProperties = Object.keys(initialState)
-        // Check if all required properties exist in the loaded state
-        const isValidState = requiredProperties.every(prop => loadedState.hasOwnProperty(prop))
+        // Validate top-level keys AND that every Period has the nested {config, state} shape.
+        // Stale-shape Periods (e.g. from an older deployed bundle persisted in PWA storage)
+        // would crash downstream readers — fall back to defaults instead.
+        const isValidState =
+            requiredProperties.every(prop => loadedState.hasOwnProperty(prop))
+            && Array.isArray(loadedState.periods)
+            && loadedState.periods.every(p => p?.config && p?.state)
         if (isValidState) {
             // If the loaded state is valid, return it
             log('state loaded successfully', loadedState, 1)

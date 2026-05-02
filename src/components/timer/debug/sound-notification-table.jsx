@@ -257,7 +257,7 @@ export const SoundNotificationTable = () => {
                                             <div>
                                                 Duration:{' '}
                                                 {formatTimeFromMs(
-                                                    entry.periodContext.state.duration,
+                                                    entry.periodContext.periodDuration,
                                                 )}
                                             </div>
                                             <div>
