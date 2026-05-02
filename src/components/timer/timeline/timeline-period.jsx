@@ -240,11 +240,7 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                                 )
                             }
                             className="timeline__edit-duration"
-                            min={
-                                isActive
-                                    ? Math.round(period.state.elapsed / (60 * 1000))
-                                    : 1
-                            }
+                            min={isActive ? Math.round(period.state.elapsed / (60 * 1000)) : 1}
                             max="900"
                         />
                         <section className="controls controls--tighter">
@@ -377,7 +373,10 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                     />
                 )}
                 {clocksVisible.value && (
-                    <div className="timeline__end-time" dangerouslySetInnerHTML={{ __html: endTime }} />
+                    <div
+                        className="timeline__end-time"
+                        dangerouslySetInnerHTML={{ __html: endTime }}
+                    />
                 )}
             </div>
 

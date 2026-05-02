@@ -5,6 +5,7 @@ import { log } from './log.js'
 import { PERIOD_CONFIG, UI_UPDATE_INTERVAL, DURATION_TO_ADD_AUTOMATICALLY } from './config.js'
 import { SoundScheduler } from './sound-scheduler'
 import { AVAILABLE_SOUNDS } from './sound-discovery'
+import { Period } from './period'
 
 // function to create a period from a period config
 const createPeriod = ({ duration, type, note }) => ({
@@ -424,8 +425,16 @@ const hasPeriodReachedCompletion = (periodDurationElapsed, periodDuration) =>
 
 // handle actions when a period is completed
 const handlePeriodElapsed = () => {
-    // automatically extend duration (don't invalidate sound windows)
-    adjustDuration(DURATION_TO_ADD_AUTOMATICALLY, true)
+    // auto-extend state.duration only; config.userIntendedDuration is intentionally preserved
+    const extended = Period.autoExtendDuration(currentPeriod.value, DURATION_TO_ADD_AUTOMATICALLY)
+    updateTimerState({
+        currentPeriodProperties: {
+            state: {
+                duration: extended.state.duration,
+                remaining: extended.state.remaining,
+            },
+        },
+    })
 
     log('period automatically extended', timerState.value, 2)
 }
@@ -436,25 +445,27 @@ const updateCurrentPeriod = () => {
     if (!currentPeriod.value) return
 
     // calculate period times
-    const { periodDurationElapsed, periodDurationRemaining } = calculatePeriodTimes(
+    const { periodDurationElapsed } = calculatePeriodTimes(
         timerState.value.timestampStarted,
         timerState.value.timestampPaused,
         currentPeriod.value.state.duration,
     )
 
-    // handle period completion if necessary
-    if (hasPeriodReachedCompletion(periodDurationElapsed, currentPeriod.value.state.duration))
-        handlePeriodElapsed()
-
-    // update the current period's state
+    // Write fresh elapsed/remaining first so handlePeriodElapsed sees the
+    // real elapsed when it auto-extends (otherwise duration cannot clamp
+    // to elapsed and the elapsed bar can overflow the period block).
+    const withElapsed = Period.applyElapsed(currentPeriod.value, periodDurationElapsed)
     updateTimerState({
         currentPeriodProperties: {
             state: {
-                elapsed: periodDurationElapsed,
-                remaining: periodDurationRemaining,
+                elapsed: withElapsed.state.elapsed,
+                remaining: withElapsed.state.remaining,
             },
         },
     })
+
+    if (hasPeriodReachedCompletion(periodDurationElapsed, currentPeriod.value.state.duration))
+        handlePeriodElapsed()
 }
 
 // jump to the next period
@@ -464,9 +475,7 @@ export const moveToNextPeriod = () => {
     const nextPeriodIndex = timerState.value.currentPeriodIndex + 1
     const nextPeriod = timerState.value.periods[nextPeriodIndex]
 
-    const { roundedDown, remainder } = roundDownToBaseMinute(
-        currentPeriod.value.state.elapsed,
-    )
+    const { roundedDown, remainder } = roundDownToBaseMinute(currentPeriod.value.state.elapsed)
 
     updateTimerState({
         currentPeriodProperties: {

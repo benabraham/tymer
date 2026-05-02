@@ -114,9 +114,7 @@ describe('Timer Logic - Simple Tests', () => {
                         ...period.state,
                         elapsed: index === 0 ? 61000 : 0, // 1:01 on first period
                         remaining:
-                            index === 0
-                                ? period.state.duration - 61000
-                                : period.state.duration,
+                            index === 0 ? period.state.duration - 61000 : period.state.duration,
                     },
                 })),
             }
@@ -161,8 +159,7 @@ describe('Timer Logic - Simple Tests', () => {
             expect(timerState.value.periods[0].state.elapsed).toBe(120000)
 
             // No remainder to carry forward
-            const expectedTimestamp =
-                originalTimestamp - timerState.value.periods[1].state.elapsed
+            const expectedTimestamp = originalTimestamp - timerState.value.periods[1].state.elapsed
             expect(timerState.value.timestampStarted).toBe(expectedTimestamp)
 
             vi.restoreAllMocks()
@@ -184,9 +181,7 @@ describe('Timer Logic - Simple Tests', () => {
                         ...period.state,
                         elapsed: index === 0 ? 75000 : 0, // 1:15 on first period
                         remaining:
-                            index === 0
-                                ? period.state.duration - 75000
-                                : period.state.duration,
+                            index === 0 ? period.state.duration - 75000 : period.state.duration,
                     },
                 })),
             }
@@ -227,9 +222,7 @@ describe('Timer Logic - Simple Tests', () => {
                         ...period.state,
                         elapsed: index === 0 ? 119000 : 0, // 1:59 on first period
                         remaining:
-                            index === 0
-                                ? period.state.duration - 119000
-                                : period.state.duration,
+                            index === 0 ? period.state.duration - 119000 : period.state.duration,
                     },
                 })),
             }
@@ -393,11 +386,7 @@ describe('Timer Logic - Simple Tests', () => {
                     state: {
                         ...period.state,
                         elapsed:
-                            index === lastPeriodIndex
-                                ? 75000
-                                : index < lastPeriodIndex
-                                  ? 90000
-                                  : 0, // Previous periods have 1:30, last has 1:15
+                            index === lastPeriodIndex ? 75000 : index < lastPeriodIndex ? 90000 : 0, // Previous periods have 1:30, last has 1:15
                         remaining:
                             index === lastPeriodIndex
                                 ? period.state.duration - 75000
@@ -521,9 +510,7 @@ describe('Timer Logic - Simple Tests', () => {
             })
 
             // Should not find any periods with 0:00 elapsed (the filtered ones)
-            const zeroPeriods = remainingPeriods.filter(
-                period => period.state.elapsed === 0,
-            )
+            const zeroPeriods = remainingPeriods.filter(period => period.state.elapsed === 0)
             expect(zeroPeriods.length).toBe(0)
 
             // Timer should be in completed state

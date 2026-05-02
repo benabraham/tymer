@@ -43,8 +43,7 @@ export function Timer() {
         if (isRunning && period) {
             // Check if both times are under 60 minutes to determine format
             const bothUnderOneHour =
-                period.state.remaining < 60 * 60 * 1000
-                && period.state.duration < 60 * 60 * 1000
+                period.state.remaining < 60 * 60 * 1000 && period.state.duration < 60 * 60 * 1000
 
             let formattedPeriodDurationElapsed, periodUserIntendedDuration
 
@@ -58,11 +57,7 @@ export function Timer() {
                 ).toString()
             } else {
                 // Use full hours:minutes format
-                formattedPeriodDurationElapsed = formatTime(
-                    period.state.elapsed,
-                    true,
-                    false,
-                )
+                formattedPeriodDurationElapsed = formatTime(period.state.elapsed, true, false)
                 periodUserIntendedDuration = formatTime(
                     period.config.userIntendedDuration,
                     true,

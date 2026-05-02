@@ -16,10 +16,7 @@ import { format } from 'date-fns'
 export const calculateEndTimes = ({ periods, currentPeriodIndex }) => {
     if (!Array.isArray(periods) || !periods.length) return []
     const now = Date.now()
-    const totalElapsed = periods.reduce(
-        (acc, period) => acc + (period.state.elapsed || 0),
-        0,
-    )
+    const totalElapsed = periods.reduce((acc, period) => acc + (period.state.elapsed || 0), 0)
     let sumPeriodDurations = 0
     let prevEnd = null
     return periods.map((period, idx) => {
