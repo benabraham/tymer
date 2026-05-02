@@ -456,7 +456,6 @@ export const moveToNextPeriod = () => {
                 duration: completed.state.duration,
                 elapsed: completed.state.elapsed,
                 remaining: 0,
-                finished: true,
             },
         },
         timerProperties: {
@@ -495,12 +494,6 @@ export const moveToPreviousPeriod = () => {
         previousPeriodProperties: {
             state: {
                 duration: extendedDuration,
-                finished: false,
-            },
-        },
-        currentPeriodProperties: {
-            state: {
-                finished: false,
             },
         },
         timerProperties: {
@@ -528,7 +521,6 @@ export const moveElapsedTimeToPreviousPeriod = () => {
                 duration: absorbed.state.duration,
                 elapsed: absorbed.state.elapsed,
                 remaining: absorbed.state.remaining,
-                finished: absorbed.state.finished,
             },
         },
         timerProperties: {},
@@ -696,7 +688,6 @@ export const handleTimerCompletion = () => {
                 duration: completed.state.duration,
                 elapsed: completed.state.elapsed,
                 remaining: 0,
-                finished: true,
             },
         },
     })

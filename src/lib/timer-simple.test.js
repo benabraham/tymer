@@ -35,7 +35,7 @@ describe('Timer Logic - Simple Tests', () => {
             ...initialState,
             periods: PERIOD_CONFIG.map(({ duration, type, note = '' }) => ({
                 config: { type, note, userIntendedDuration: duration },
-                state: { duration, elapsed: 0, remaining: duration, finished: false },
+                state: { duration, elapsed: 0, remaining: duration },
             })),
         }
         vi.clearAllMocks()
@@ -56,7 +56,7 @@ describe('Timer Logic - Simple Tests', () => {
                 expect(period.state.duration).toBe(PERIOD_CONFIG[index].duration)
                 expect(period.config.type).toBe(PERIOD_CONFIG[index].type)
                 expect(period.state.elapsed).toBe(0)
-                expect(period.state.finished).toBe(false)
+                expect(period.state.finished).toBeUndefined()
             })
         })
     })
@@ -110,7 +110,6 @@ describe('Timer Logic - Simple Tests', () => {
                         ...period.state,
                         elapsed: 180000,
                         remaining: 0,
-                        finished: index < lastPeriodIndex,
                     },
                 })),
             }
@@ -163,7 +162,7 @@ describe('Timer Logic - Simple Tests', () => {
             // Current period (now previous) should be rounded down to 1:00
             expect(timerState.value.periods[0].state.duration).toBe(60000)
             expect(timerState.value.periods[0].state.elapsed).toBe(60000)
-            expect(timerState.value.periods[0].state.finished).toBe(true)
+            // Past lifecycle is determined by position (index < currentPeriodIndex), not a flag
 
             // Should have moved to next period
             expect(timerState.value.currentPeriodIndex).toBe(1)
@@ -237,7 +236,7 @@ describe('Timer Logic - Simple Tests', () => {
             // Current period (now previous) should be rounded down to 1:00
             expect(timerState.value.periods[0].state.duration).toBe(60000)
             expect(timerState.value.periods[0].state.elapsed).toBe(60000)
-            expect(timerState.value.periods[0].state.finished).toBe(true)
+            // Past lifecycle is determined by position (index < currentPeriodIndex), not a flag
 
             // Should have moved to next period
             expect(timerState.value.currentPeriodIndex).toBe(1)
@@ -278,7 +277,7 @@ describe('Timer Logic - Simple Tests', () => {
             // Current period (now previous) should be rounded down to 1:00
             expect(timerState.value.periods[0].state.duration).toBe(60000)
             expect(timerState.value.periods[0].state.elapsed).toBe(60000)
-            expect(timerState.value.periods[0].state.finished).toBe(true)
+            // Past lifecycle is determined by position (index < currentPeriodIndex), not a flag
 
             // Should have moved to next period
             expect(timerState.value.currentPeriodIndex).toBe(1)
@@ -314,7 +313,6 @@ describe('Timer Logic - Simple Tests', () => {
                             index === lastPeriodIndex
                                 ? period.state.duration - 149000
                                 : period.state.duration,
-                        finished: index < lastPeriodIndex,
                     },
                 })),
             }
@@ -336,16 +334,12 @@ describe('Timer Logic - Simple Tests', () => {
             // The period that was the last one should now have been rounded down to 2:00
             // We need to find it by checking which period was modified
             const modifiedPeriod = remainingPeriods.find(
-                period =>
-                    period.state.duration === 120000
-                    && period.state.elapsed === 120000
-                    && period.state.finished === true,
+                period => period.state.duration === 120000 && period.state.elapsed === 120000,
             )
 
             expect(modifiedPeriod).toBeDefined()
             expect(modifiedPeriod.state.duration).toBe(120000)
             expect(modifiedPeriod.state.elapsed).toBe(120000)
-            expect(modifiedPeriod.state.finished).toBe(true)
 
             // Timer should be in completed state
             expect(timerState.value.currentPeriodIndex).toBe(null)
@@ -405,7 +399,6 @@ describe('Timer Logic - Simple Tests', () => {
                             index === lastPeriodIndex
                                 ? period.state.duration - 61000
                                 : period.state.duration,
-                        finished: index < lastPeriodIndex,
                     },
                 })),
             }
@@ -417,17 +410,13 @@ describe('Timer Logic - Simple Tests', () => {
             // Find the period that was rounded down to exactly 1:00
             const remainingPeriods = timerState.value.periods
             const oneMinutePeriod = remainingPeriods.find(
-                period =>
-                    period.state.duration === 60000
-                    && period.state.elapsed === 60000
-                    && period.state.finished === true,
+                period => period.state.duration === 60000 && period.state.elapsed === 60000,
             )
 
             // Period with exactly 1:00 should be kept (>= threshold, not > threshold)
             expect(oneMinutePeriod).toBeDefined()
             expect(oneMinutePeriod.state.duration).toBe(60000)
             expect(oneMinutePeriod.state.elapsed).toBe(60000)
-            expect(oneMinutePeriod.state.finished).toBe(true)
 
             // Timer should be in completed state
             expect(timerState.value.currentPeriodIndex).toBe(null)
@@ -451,7 +440,6 @@ describe('Timer Logic - Simple Tests', () => {
                             index === lastPeriodIndex
                                 ? period.state.duration - 75000
                                 : period.state.duration,
-                        finished: index < lastPeriodIndex,
                     },
                 })),
             }
@@ -463,17 +451,13 @@ describe('Timer Logic - Simple Tests', () => {
             // Find the period that was rounded down to exactly 1:00
             const remainingPeriods = timerState.value.periods
             const oneMinutePeriod = remainingPeriods.find(
-                period =>
-                    period.state.duration === 60000
-                    && period.state.elapsed === 60000
-                    && period.state.finished === true,
+                period => period.state.duration === 60000 && period.state.elapsed === 60000,
             )
 
             // Period with 1:15 should be rounded down to exactly 1:00 and kept
             expect(oneMinutePeriod).toBeDefined()
             expect(oneMinutePeriod.state.duration).toBe(60000)
             expect(oneMinutePeriod.state.elapsed).toBe(60000)
-            expect(oneMinutePeriod.state.finished).toBe(true)
 
             // Timer should be in completed state
             expect(timerState.value.currentPeriodIndex).toBe(null)
@@ -501,7 +485,6 @@ describe('Timer Logic - Simple Tests', () => {
                             index === lastPeriodIndex
                                 ? period.state.duration - 119000
                                 : period.state.duration,
-                        finished: index < lastPeriodIndex,
                     },
                 })),
             }
@@ -513,10 +496,7 @@ describe('Timer Logic - Simple Tests', () => {
             // Find the period that was rounded down to exactly 1:00
             const remainingPeriods = timerState.value.periods
             const oneMinutePeriod = remainingPeriods.find(
-                period =>
-                    period.state.duration === 60000
-                    && period.state.elapsed === 60000
-                    && period.state.finished === true,
+                period => period.state.duration === 60000 && period.state.elapsed === 60000,
             )
 
             // Period with 1:59 should be rounded down to exactly 1:00 and kept (59 seconds lost)
@@ -550,7 +530,6 @@ describe('Timer Logic - Simple Tests', () => {
                                     ? 61000 // 1:01 -> 1:00 (should be kept)
                                     : 120000, // 2:00 (should be kept)
                         remaining: period.state.duration,
-                        finished: index < lastPeriodIndex,
                     },
                 })),
             }

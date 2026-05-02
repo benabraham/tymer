@@ -11,6 +11,7 @@ import {
     addPeriodAtIndex,
     autoEditIndex,
 } from '../../../lib/timer'
+import { Period } from '../../../lib/period'
 import { clocksVisible } from '../../../lib/clocks'
 import { TimelineCurrentTime } from './timeline-current-time'
 import { SoundWrapper } from '../../common/sound-wrapper'
@@ -94,28 +95,12 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
 
     const handleDurationChange = newDuration => {
         const durationMs = newDuration * 60 * 1000
-
-        // For active periods, preserve elapsed time and update remaining time accordingly
-        const stateUpdate = { duration: durationMs }
-
-        // Calculate new remaining time based on current elapsed time
-        if (isActive) {
-            stateUpdate.remaining = Math.max(0, durationMs - period.state.elapsed)
-        } else {
-            // For finished periods, set elapsed time to match new duration and remaining to 0
-            if (period.state.finished || period.state.remaining === 0) {
-                stateUpdate.elapsed = durationMs
-                stateUpdate.remaining = 0
-            } else {
-                // For unstarted periods, reset remaining time to match new duration
-                stateUpdate.remaining = durationMs
-            }
-        }
-
-        updatePeriod(index, {
-            config: { userIntendedDuration: durationMs },
-            state: stateUpdate,
-        })
+        const currentPeriodIndex = timerState.value.currentPeriodIndex
+        const isPast = currentPeriodIndex !== null && index < currentPeriodIndex
+        const updated = isPast
+            ? Period.amendRecordedDuration(period, durationMs)
+            : Period.setPlannedDuration(period, durationMs)
+        updatePeriod(index, { config: { ...updated.config }, state: { ...updated.state } })
     }
 
     const handleNoteChange = newNote => {

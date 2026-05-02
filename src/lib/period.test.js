@@ -95,11 +95,10 @@ describe('Period.complete', () => {
         expect(completed.state.elapsed).toBe(3 * 60 * 1000)
         expect(completed.state.duration).toBe(3 * 60 * 1000)
         expect(completed.state.remaining).toBe(0)
-        expect(completed.state.finished).toBe(true)
         expect(completed.config.userIntendedDuration).toBe(3 * 60 * 1000)
     })
 
-    it('elapsed mid-minute (1m 15s) → remainder = 15s, duration/elapsed = 1m, finished = true', () => {
+    it('elapsed mid-minute (1m 15s) → remainder = 15s, duration/elapsed = 1m', () => {
         const period = makePeriod({
             duration: 48 * 60 * 1000,
             elapsed: 75 * 1000, // 1m 15s
@@ -113,11 +112,10 @@ describe('Period.complete', () => {
         expect(completed.state.elapsed).toBe(60 * 1000)
         expect(completed.state.duration).toBe(60 * 1000)
         expect(completed.state.remaining).toBe(0)
-        expect(completed.state.finished).toBe(true)
         expect(completed.config.userIntendedDuration).toBe(60 * 1000)
     })
 
-    it('elapsed at 0 → remainder = 0, duration/elapsed = 0, finished = true', () => {
+    it('elapsed at 0 → remainder = 0, duration/elapsed = 0', () => {
         const period = makePeriod({
             duration: 48 * 60 * 1000,
             elapsed: 0,
@@ -131,7 +129,6 @@ describe('Period.complete', () => {
         expect(completed.state.elapsed).toBe(0)
         expect(completed.state.duration).toBe(0)
         expect(completed.state.remaining).toBe(0)
-        expect(completed.state.finished).toBe(true)
         expect(completed.config.userIntendedDuration).toBe(0)
     })
 
@@ -318,19 +315,6 @@ describe('Period.extendDuration', () => {
         expect(period.config.userIntendedDuration).toBe(originalUserIntended)
     })
 
-    it('state.finished is preserved', () => {
-        const period = {
-            ...makePeriod({ duration: 48 * 60 * 1000, elapsed: 10 * 60 * 1000 }),
-            state: {
-                ...makePeriod({ duration: 48 * 60 * 1000, elapsed: 10 * 60 * 1000 }).state,
-                finished: true,
-            },
-        }
-        const result = Period.extendDuration(period, 6 * 60 * 1000)
-
-        expect(result.state.finished).toBe(true)
-    })
-
     it('config.type and config.note are preserved', () => {
         const period = makePeriod({
             type: 'break',
@@ -369,20 +353,6 @@ describe('Period.absorbAsCompleted', () => {
         const result = Period.absorbAsCompleted(period, 3 * 60 * 1000)
 
         expect(result.state.remaining).toBe(0)
-    })
-
-    it('state.finished stays true', () => {
-        const period = {
-            ...makePeriod({ duration: 48 * 60 * 1000, elapsed: 48 * 60 * 1000, remaining: 0 }),
-            state: {
-                ...makePeriod({ duration: 48 * 60 * 1000, elapsed: 48 * 60 * 1000, remaining: 0 })
-                    .state,
-                finished: true,
-            },
-        }
-        const result = Period.absorbAsCompleted(period, 2 * 60 * 1000)
-
-        expect(result.state.finished).toBe(true)
     })
 
     it('input period is not mutated', () => {
@@ -430,14 +400,14 @@ describe('Period.absorbAsCompleted', () => {
 })
 
 describe('Period.create', () => {
-    it('happy path: returns valid Period with full duration, zero elapsed, full remaining, not finished', () => {
+    it('happy path: returns valid Period with full duration, zero elapsed, full remaining', () => {
         const durationMs = 48 * 60 * 1000
         const result = Period.create({ type: 'work', note: '', durationMs })
 
         expect(result.state.duration).toBe(durationMs)
         expect(result.state.elapsed).toBe(0)
         expect(result.state.remaining).toBe(durationMs)
-        expect(result.state.finished).toBe(false)
+        expect(result.state.finished).toBeUndefined()
     })
 
     it('config has type, note, userIntendedDuration set correctly', () => {
@@ -501,11 +471,11 @@ describe('Period.unstarted', () => {
         expect(result.state.remaining).toBe(config.userIntendedDuration)
     })
 
-    it('state.finished = false', () => {
+    it('state.finished is not present (lifecycle is position-based)', () => {
         const config = makeConfig()
         const result = Period.unstarted(config)
 
-        expect(result.state.finished).toBe(false)
+        expect(result.state.finished).toBeUndefined()
     })
 
     it('input config is not mutated', () => {
@@ -573,27 +543,193 @@ describe('Period.setNote', () => {
         expect(period.config.note).toBe('original')
     })
 
-    it('state.duration, elapsed, remaining, finished are all untouched', () => {
-        const period = {
-            ...makePeriod({
-                duration: 48 * 60 * 1000,
-                elapsed: 10 * 60 * 1000,
-                remaining: 38 * 60 * 1000,
-            }),
-            state: {
-                ...makePeriod({
-                    duration: 48 * 60 * 1000,
-                    elapsed: 10 * 60 * 1000,
-                    remaining: 38 * 60 * 1000,
-                }).state,
-                finished: true,
-            },
-        }
+    it('state.duration, elapsed, remaining are all untouched', () => {
+        const period = makePeriod({
+            duration: 48 * 60 * 1000,
+            elapsed: 10 * 60 * 1000,
+            remaining: 38 * 60 * 1000,
+        })
         const result = Period.setNote(period, 'new')
 
         expect(result.state.duration).toBe(period.state.duration)
         expect(result.state.elapsed).toBe(period.state.elapsed)
         expect(result.state.remaining).toBe(period.state.remaining)
-        expect(result.state.finished).toBe(true)
+    })
+})
+
+describe('Period.setPlannedDuration', () => {
+    it('happy path: ms > elapsed → duration and userIntendedDuration updated, remaining recomputed, elapsed preserved', () => {
+        const elapsed = 10 * 60 * 1000
+        const period = makePeriod({
+            duration: 48 * 60 * 1000,
+            elapsed,
+            remaining: 38 * 60 * 1000,
+            userIntendedDuration: 48 * 60 * 1000,
+        })
+        const newMs = 60 * 60 * 1000
+        const result = Period.setPlannedDuration(period, newMs)
+
+        expect(result.state.duration).toBe(newMs)
+        expect(result.config.userIntendedDuration).toBe(newMs)
+        expect(result.state.elapsed).toBe(elapsed)
+        expect(result.state.remaining).toBe(newMs - elapsed)
+    })
+
+    it('ms < elapsed → duration floors at elapsed; userIntendedDuration floors at elapsed', () => {
+        const elapsed = 40 * 60 * 1000
+        const period = makePeriod({
+            duration: 48 * 60 * 1000,
+            elapsed,
+            remaining: 8 * 60 * 1000,
+            userIntendedDuration: 48 * 60 * 1000,
+        })
+        const newMs = 20 * 60 * 1000 // less than elapsed
+        const result = Period.setPlannedDuration(period, newMs)
+
+        expect(result.state.duration).toBe(elapsed)
+        expect(result.config.userIntendedDuration).toBe(elapsed)
+        expect(result.state.remaining).toBe(0)
+        expect(result.state.elapsed).toBe(elapsed)
+    })
+
+    it('ms == elapsed → duration = elapsed, remaining = 0', () => {
+        const elapsed = 30 * 60 * 1000
+        const period = makePeriod({
+            duration: 48 * 60 * 1000,
+            elapsed,
+            remaining: 18 * 60 * 1000,
+            userIntendedDuration: 48 * 60 * 1000,
+        })
+        const result = Period.setPlannedDuration(period, elapsed)
+
+        expect(result.state.duration).toBe(elapsed)
+        expect(result.config.userIntendedDuration).toBe(elapsed)
+        expect(result.state.remaining).toBe(0)
+        expect(result.state.elapsed).toBe(elapsed)
+    })
+
+    it('input is not mutated', () => {
+        const period = makePeriod({
+            duration: 48 * 60 * 1000,
+            elapsed: 10 * 60 * 1000,
+            userIntendedDuration: 48 * 60 * 1000,
+        })
+        const originalDuration = period.state.duration
+        const originalUserIntended = period.config.userIntendedDuration
+
+        Period.setPlannedDuration(period, 60 * 60 * 1000)
+
+        expect(period.state.duration).toBe(originalDuration)
+        expect(period.config.userIntendedDuration).toBe(originalUserIntended)
+    })
+
+    it('config.type and config.note are preserved', () => {
+        const period = makePeriod({
+            type: 'break',
+            note: 'coffee',
+            duration: 12 * 60 * 1000,
+            elapsed: 3 * 60 * 1000,
+            userIntendedDuration: 12 * 60 * 1000,
+        })
+        const result = Period.setPlannedDuration(period, 15 * 60 * 1000)
+
+        expect(result.config.type).toBe('break')
+        expect(result.config.note).toBe('coffee')
+    })
+
+    it('unstarted period (elapsed = 0): ms sets duration and remaining to ms', () => {
+        const period = makePeriod({
+            duration: 48 * 60 * 1000,
+            elapsed: 0,
+            remaining: 48 * 60 * 1000,
+            userIntendedDuration: 48 * 60 * 1000,
+        })
+        const newMs = 30 * 60 * 1000
+        const result = Period.setPlannedDuration(period, newMs)
+
+        expect(result.state.duration).toBe(newMs)
+        expect(result.config.userIntendedDuration).toBe(newMs)
+        expect(result.state.elapsed).toBe(0)
+        expect(result.state.remaining).toBe(newMs)
+    })
+})
+
+describe('Period.amendRecordedDuration', () => {
+    it('happy path: elapsed = duration = userIntendedDuration = ms; remaining = 0', () => {
+        const period = makePeriod({
+            duration: 48 * 60 * 1000,
+            elapsed: 48 * 60 * 1000,
+            remaining: 0,
+            userIntendedDuration: 48 * 60 * 1000,
+        })
+        const newMs = 30 * 60 * 1000
+        const result = Period.amendRecordedDuration(period, newMs)
+
+        expect(result.state.elapsed).toBe(newMs)
+        expect(result.state.duration).toBe(newMs)
+        expect(result.config.userIntendedDuration).toBe(newMs)
+        expect(result.state.remaining).toBe(0)
+    })
+
+    it('works regardless of input elapsed (no floor — rewrites the record)', () => {
+        const period = makePeriod({
+            duration: 60 * 60 * 1000,
+            elapsed: 55 * 60 * 1000,
+            remaining: 5 * 60 * 1000,
+            userIntendedDuration: 60 * 60 * 1000,
+        })
+        const newMs = 30 * 60 * 1000 // less than current elapsed — allowed for Past periods
+        const result = Period.amendRecordedDuration(period, newMs)
+
+        expect(result.state.elapsed).toBe(newMs)
+        expect(result.state.duration).toBe(newMs)
+        expect(result.config.userIntendedDuration).toBe(newMs)
+        expect(result.state.remaining).toBe(0)
+    })
+
+    it('input is not mutated', () => {
+        const period = makePeriod({
+            duration: 48 * 60 * 1000,
+            elapsed: 48 * 60 * 1000,
+            remaining: 0,
+            userIntendedDuration: 48 * 60 * 1000,
+        })
+        const originalElapsed = period.state.elapsed
+        const originalDuration = period.state.duration
+
+        Period.amendRecordedDuration(period, 20 * 60 * 1000)
+
+        expect(period.state.elapsed).toBe(originalElapsed)
+        expect(period.state.duration).toBe(originalDuration)
+    })
+
+    it('config.type and config.note are preserved', () => {
+        const period = makePeriod({
+            type: 'work',
+            note: 'deep focus',
+            duration: 48 * 60 * 1000,
+            elapsed: 48 * 60 * 1000,
+            remaining: 0,
+            userIntendedDuration: 48 * 60 * 1000,
+        })
+        const result = Period.amendRecordedDuration(period, 30 * 60 * 1000)
+
+        expect(result.config.type).toBe('work')
+        expect(result.config.note).toBe('deep focus')
+    })
+
+    it('ms = 0 → elapsed = 0, duration = 0, remaining = 0 (degenerate but valid)', () => {
+        const period = makePeriod({
+            duration: 48 * 60 * 1000,
+            elapsed: 48 * 60 * 1000,
+            remaining: 0,
+            userIntendedDuration: 48 * 60 * 1000,
+        })
+        const result = Period.amendRecordedDuration(period, 0)
+
+        expect(result.state.elapsed).toBe(0)
+        expect(result.state.duration).toBe(0)
+        expect(result.config.userIntendedDuration).toBe(0)
+        expect(result.state.remaining).toBe(0)
     })
 })

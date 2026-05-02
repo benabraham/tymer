@@ -1,5 +1,7 @@
 // Pure functions for Period operations.
 // No imports from signals, storage, sounds, or timer — fully mockless in tests.
+// Lifecycle (Past / Current / Future) is NEVER stored — always derived from
+// index vs currentPeriodIndex at the call site.
 
 // Internal helper: round a millisecond value down to the nearest whole minute.
 // Returns { roundedDown, remainder }.
@@ -52,16 +54,15 @@ const complete = period => {
             duration: roundedDown,
             elapsed: roundedDown,
             remaining: 0,
-            finished: true,
         },
     }
     return { period: completed, remainder }
 }
 
-// Extends BOTH duration AND elapsed of an already-completed period by extraMs.
+// Extends BOTH duration AND elapsed of a Past period by extraMs.
 // Used when the user moves elapsed time backwards across a period boundary —
-// the previous (completed) period absorbs the time transferred from the current one.
-// state.remaining stays 0 and state.finished stays true.
+// the previous (Past) period absorbs the time transferred from the current one.
+// state.remaining stays 0.
 // config (including userIntendedDuration) is never touched.
 const absorbAsCompleted = (period, extraMs) => ({
     ...period,
@@ -70,7 +71,6 @@ const absorbAsCompleted = (period, extraMs) => ({
         duration: period.state.duration + extraMs,
         elapsed: period.state.elapsed + extraMs,
         remaining: 0,
-        finished: true,
     },
 })
 
@@ -95,7 +95,8 @@ const extendDuration = (period, deltaMs) => {
 }
 
 // Constructs a brand-new Period from scratch.
-// Returns { config: { type, note, userIntendedDuration }, state: { duration, elapsed: 0, remaining, finished: false } }.
+// Returns { config: { type, note, userIntendedDuration }, state: { duration, elapsed: 0, remaining } }.
+// Lifecycle (Past / Current / Future) is derived from position, never stored.
 const create = ({ type, note, durationMs }) => ({
     config: {
         type,
@@ -106,7 +107,6 @@ const create = ({ type, note, durationMs }) => ({
         duration: durationMs,
         elapsed: 0,
         remaining: durationMs,
-        finished: false,
     },
 })
 
@@ -118,7 +118,44 @@ const unstarted = config => ({
         duration: config.userIntendedDuration,
         elapsed: 0,
         remaining: config.userIntendedDuration,
-        finished: false,
+    },
+})
+
+// Sets the planned duration for a Current or Future Period.
+// Updates BOTH config.userIntendedDuration AND state.duration to ms.
+// Recomputes state.remaining = max(0, ms - state.elapsed), preserving elapsed.
+// Floors at state.elapsed — cannot shrink below time already lived.
+const setPlannedDuration = (period, ms) => {
+    const duration = Math.max(period.state.elapsed, ms)
+    return {
+        ...period,
+        config: {
+            ...period.config,
+            userIntendedDuration: duration,
+        },
+        state: {
+            ...period.state,
+            duration,
+            remaining: Math.max(0, duration - period.state.elapsed),
+        },
+    }
+}
+
+// Amends the recorded duration for a Past Period.
+// Overwrites the recording: state.elapsed = ms, state.duration = ms, state.remaining = 0.
+// Also updates config.userIntendedDuration = ms to keep config and state aligned.
+// No elapsed-floor — the caller is rewriting the historical record outright.
+const amendRecordedDuration = (period, ms) => ({
+    ...period,
+    config: {
+        ...period.config,
+        userIntendedDuration: ms,
+    },
+    state: {
+        ...period.state,
+        duration: ms,
+        elapsed: ms,
+        remaining: 0,
     },
 })
 
@@ -146,6 +183,8 @@ export const Period = {
     complete,
     absorbAsCompleted,
     extendDuration,
+    setPlannedDuration,
+    amendRecordedDuration,
     create,
     unstarted,
     setType,
