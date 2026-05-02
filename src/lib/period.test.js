@@ -259,6 +259,93 @@ describe('Period.autoExtendDuration', () => {
     })
 })
 
+describe('Period.extendDuration', () => {
+    it('positive delta → both duration and userIntendedDuration grow by delta; remaining recomputed', () => {
+        const elapsed = 10 * 60 * 1000
+        const duration = 48 * 60 * 1000
+        const delta = 6 * 60 * 1000
+        const period = makePeriod({ duration, elapsed, remaining: duration - elapsed })
+        const result = Period.extendDuration(period, delta)
+
+        expect(result.state.duration).toBe(duration + delta)
+        expect(result.config.userIntendedDuration).toBe(duration + delta)
+        expect(result.state.remaining).toBe(duration + delta - elapsed)
+    })
+
+    it('negative delta when elapsed allows it → duration and userIntendedDuration shrink by delta', () => {
+        const elapsed = 10 * 60 * 1000
+        const duration = 48 * 60 * 1000
+        const delta = -6 * 60 * 1000
+        const period = makePeriod({ duration, elapsed, remaining: duration - elapsed })
+        const result = Period.extendDuration(period, delta)
+
+        expect(result.state.duration).toBe(duration + delta)
+        expect(result.config.userIntendedDuration).toBe(duration + delta)
+        expect(result.state.remaining).toBe(duration + delta - elapsed)
+    })
+
+    it('negative delta that would underflow elapsed → duration floors at elapsed; userIntendedDuration follows', () => {
+        const elapsed = 40 * 60 * 1000
+        const duration = 48 * 60 * 1000
+        const delta = -30 * 60 * 1000 // would make duration = 18min, below elapsed 40min
+        const period = makePeriod({ duration, elapsed, remaining: duration - elapsed })
+        const result = Period.extendDuration(period, delta)
+
+        expect(result.state.duration).toBe(elapsed)
+        expect(result.config.userIntendedDuration).toBe(elapsed)
+        expect(result.state.remaining).toBe(0)
+    })
+
+    it('zero delta → duration and remaining unchanged, state and config consistent', () => {
+        const elapsed = 10 * 60 * 1000
+        const duration = 48 * 60 * 1000
+        const period = makePeriod({ duration, elapsed, remaining: duration - elapsed })
+        const result = Period.extendDuration(period, 0)
+
+        expect(result.state.duration).toBe(duration)
+        expect(result.config.userIntendedDuration).toBe(duration)
+        expect(result.state.remaining).toBe(duration - elapsed)
+    })
+
+    it('input period is not mutated', () => {
+        const period = makePeriod({ duration: 48 * 60 * 1000, elapsed: 10 * 60 * 1000 })
+        const originalDuration = period.state.duration
+        const originalUserIntended = period.config.userIntendedDuration
+
+        Period.extendDuration(period, 6 * 60 * 1000)
+
+        expect(period.state.duration).toBe(originalDuration)
+        expect(period.config.userIntendedDuration).toBe(originalUserIntended)
+    })
+
+    it('state.finished is preserved', () => {
+        const period = {
+            ...makePeriod({ duration: 48 * 60 * 1000, elapsed: 10 * 60 * 1000 }),
+            state: {
+                ...makePeriod({ duration: 48 * 60 * 1000, elapsed: 10 * 60 * 1000 }).state,
+                finished: true,
+            },
+        }
+        const result = Period.extendDuration(period, 6 * 60 * 1000)
+
+        expect(result.state.finished).toBe(true)
+    })
+
+    it('config.type and config.note are preserved', () => {
+        const period = makePeriod({
+            type: 'break',
+            note: 'coffee',
+            duration: 12 * 60 * 1000,
+            elapsed: 3 * 60 * 1000,
+            userIntendedDuration: 12 * 60 * 1000,
+        })
+        const result = Period.extendDuration(period, 6 * 60 * 1000)
+
+        expect(result.config.type).toBe('break')
+        expect(result.config.note).toBe('coffee')
+    })
+})
+
 describe('Period.absorbAsCompleted', () => {
     it('happy path: duration and elapsed both grow by extraMs', () => {
         const period = makePeriod({

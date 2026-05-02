@@ -74,4 +74,30 @@ const absorbAsCompleted = (period, extraMs) => ({
     },
 })
 
-export const Period = { applyElapsed, autoExtendDuration, complete, absorbAsCompleted }
+// User-driven duration delta. Updates BOTH state.duration AND config.userIntendedDuration
+// to the same new value (manual edits realign the two; auto-extension is the only thing
+// that lets them diverge). Floors at state.elapsed so duration cannot shrink below time
+// already lived. Recomputes state.remaining so the Period invariant holds in one step.
+const extendDuration = (period, deltaMs) => {
+    const duration = Math.max(period.state.elapsed, period.state.duration + deltaMs)
+    return {
+        ...period,
+        config: {
+            ...period.config,
+            userIntendedDuration: duration,
+        },
+        state: {
+            ...period.state,
+            duration,
+            remaining: Math.max(0, duration - period.state.elapsed),
+        },
+    }
+}
+
+export const Period = {
+    applyElapsed,
+    autoExtendDuration,
+    complete,
+    absorbAsCompleted,
+    extendDuration,
+}

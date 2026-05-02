@@ -338,30 +338,22 @@ export const resetTimer = () => {
     log('timer reset', timerState.value, 7)
 }
 
-// adjusts the duration of period
-export const adjustDuration = (durationDelta, isAutomaticExtension = false) => {
+// adjusts the duration of period (user-driven manual edit)
+export const adjustDuration = durationDelta => {
     // nothing to do if timer has finished or there is no current period
     if (timerHasFinished.value || timerState.value.currentPeriodIndex === null) return
 
-    const newDuration = Math.max(
-        currentPeriod.value.state.elapsed,
-        currentPeriod.value.state.duration + durationDelta,
-    )
+    // Ensure elapsed is fresh so the elapsed-floor in extendDuration uses the right value
+    updateCurrentPeriod()
 
-    const updateProperties = {
-        state: { duration: newDuration },
-    }
-
-    // Only update user intended duration for manual changes, not automatic extensions
-    if (!isAutomaticExtension) {
-        updateProperties.config = { userIntendedDuration: newDuration }
-    }
+    const extended = Period.extendDuration(currentPeriod.value, durationDelta)
 
     updateTimerState({
-        currentPeriodProperties: updateProperties,
+        currentPeriodProperties: {
+            config: { userIntendedDuration: extended.config.userIntendedDuration },
+            state: { duration: extended.state.duration, remaining: extended.state.remaining },
+        },
     })
-
-    updateCurrentPeriod()
 
     // Notify sound scheduler of duration change
     soundScheduler.onDurationChange()
