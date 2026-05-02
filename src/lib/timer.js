@@ -175,16 +175,6 @@ export const canAdjustDuration = amount => {
     return true
 }
 
-// Helper for rounding to multiples of 3
-export const getNextMultipleOf3Delta = (currentMs, direction) => {
-    const currentMinutes = Math.floor(currentMs / (60 * 1000))
-    const target =
-        direction === 'up'
-            ? Math.ceil((currentMinutes + 1) / 3) * 3
-            : Math.floor((currentMinutes - 1) / 3) * 3
-    return target * 60 * 1000 - currentMs
-}
-
 // ============================================================================
 
 // prepares timer for use, continuing an running timer or prepare a new one
@@ -208,8 +198,6 @@ export const initializeTimer = () => {
 // initialize timer state preserving period customizations but resetting runtime state
 const initializeTimerState = () => {
     stopTick()
-
-    // Clear all sound windows before resetting state
 
     // Reset only runtime properties, preserve existing periods
     updateTimerState({
@@ -235,15 +223,6 @@ const startTick = () => {
 const stopTick = () => {
     if (timerWorker) {
         timerWorker.postMessage('stop')
-    }
-}
-
-// cleanup worker when no longer needed
-export const cleanupWorker = () => {
-    if (timerWorker) {
-        timerWorker.postMessage('stop')
-        timerWorker.terminate()
-        timerWorker = null
     }
 }
 

@@ -25,8 +25,18 @@ import {
     canAddPeriod,
     canRemovePeriod,
     canMoveElapsedToPrevious,
-    getNextMultipleOf3Delta,
 } from '../../lib/timer'
+
+// Local helper: compute the delta needed to snap currentMs to the next multiple-of-3 minute boundary.
+// This is UI input math (keyboard shortcuts only) — not timer logic — so it lives here.
+const getNextMultipleOf3Delta = (currentMs, direction) => {
+    const currentMinutes = Math.floor(currentMs / (60 * 1000))
+    const target =
+        direction === 'up'
+            ? Math.ceil((currentMinutes + 1) / 3) * 3
+            : Math.floor((currentMinutes - 1) / 3) * 3
+    return target * 60 * 1000 - currentMs
+}
 import { unlockAudio } from '../../lib/sounds'
 
 export function KeyboardShortcuts() {
