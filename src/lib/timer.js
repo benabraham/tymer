@@ -17,8 +17,8 @@ const mergePeriod = (period, partial) => ({
 // default timer configuration
 export const initialState = {
     currentPeriodIndex: null, // track current period
-    runningIntervalId: null, // ID of the interval timer, null when not running
-    timestampPaused: null, // timestamp when timer was paused
+    phase: 'idle', // lifecycle phase: 'idle' | 'running' | 'paused' | 'completed'
+    timestampPaused: null, // timestamp when timer was paused (data for clock arithmetic)
     timestampStarted: null, // timestamp when timer was started
     types: ['work', 'break', 'fun'],
     periods: PERIOD_CONFIG.map(({ duration, type, note }) =>
@@ -48,9 +48,7 @@ const initWorker = () => {
 }
 
 // computed signals
-export const timerHasFinished = computed(
-    () => timerState.value.periods[timerState.value.periods.length - 1]?.state.finished,
-)
+export const timerHasFinished = computed(() => timerState.value.phase === 'completed')
 export const currentPeriod = computed(
     () => timerState.value.periods[timerState.value.currentPeriodIndex],
 )
@@ -195,9 +193,9 @@ export const initializeTimer = () => {
     log('initializeTimer', timerState.value, 2)
 
     // nothing more to do if timer has finished or is paused
-    if (timerHasFinished.value || timerState.value.timestampPaused) return
+    if (timerHasFinished.value || timerState.value.phase === 'paused') return
 
-    if (timerState.value.runningIntervalId) {
+    if (timerState.value.phase === 'running') {
         // continue (restart) the timer if it was running
         updateCurrentPeriod()
         startTick()
@@ -217,7 +215,7 @@ const initializeTimerState = () => {
     updateTimerState({
         timerProperties: {
             currentPeriodIndex: null,
-            runningIntervalId: null,
+            phase: 'idle',
             timestampPaused: null,
             timestampStarted: null,
         },
@@ -231,9 +229,6 @@ const initializeTimerState = () => {
 const startTick = () => {
     const worker = initWorker()
     worker.postMessage('start')
-    updateTimerState({
-        timerProperties: { runningIntervalId: 'worker-active' },
-    })
 }
 
 // stops repeating the tick function
@@ -241,9 +236,6 @@ const stopTick = () => {
     if (timerWorker) {
         timerWorker.postMessage('stop')
     }
-    updateTimerState({
-        timerProperties: { runningIntervalId: null },
-    })
 }
 
 // cleanup worker when no longer needed
@@ -264,6 +256,7 @@ export const startTimer = () => {
     updateTimerState({
         timerProperties: {
             currentPeriodIndex: 0,
+            phase: 'running',
             timestampStarted: Date.now(),
         },
     })
@@ -285,6 +278,7 @@ export const resumeTimer = () => {
 
     updateTimerState({
         timerProperties: {
+            phase: 'running',
             timestampPaused: null,
             // adjust the start time for the pause duration
             timestampStarted: timerState.value.timestampStarted + durationPaused,
@@ -305,7 +299,7 @@ export const pauseTimer = () => {
     playSound('button')
 
     updateTimerState({
-        timerProperties: { timestampPaused: Date.now() },
+        timerProperties: { phase: 'paused', timestampPaused: Date.now() },
     })
 
     stopTick()
@@ -709,6 +703,7 @@ export const handleTimerCompletion = () => {
 
     updateTimerState({
         timerProperties: {
+            phase: 'completed',
             timestampStarted: null,
             currentPeriodIndex: null,
             periods: timerState.value.periods.filter(
@@ -879,7 +874,7 @@ const tick = () => {
         const elapsedMs = currentPeriod.value.state.elapsed
         const intendedMs = currentPeriod.value.config.userIntendedDuration
         const periodType = currentPeriod.value.config.type
-        const isPaused = timerState.value.timestampPaused !== null
+        const isPaused = timerState.value.phase === 'paused'
 
         // Determine next period type for timesup sound selection
         const currentIndex = timerState.value.currentPeriodIndex

@@ -54,8 +54,8 @@ export function KeyboardShortcuts() {
             if (event.key === ' ') {
                 event.preventDefault()
                 if (canStartPause.value) {
-                    if (timerState.value.runningIntervalId) pauseTimer()
-                    else if (timerState.value.timestampPaused) resumeTimer()
+                    if (timerState.value.phase === 'running') pauseTimer()
+                    else if (timerState.value.phase === 'paused') resumeTimer()
                     else startTimer()
                     handled = true
                 }

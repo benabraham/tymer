@@ -44,7 +44,7 @@ describe('Timer Logic - Simple Tests', () => {
     describe('Initial State', () => {
         it('should have correct initial state', () => {
             expect(timerState.value.currentPeriodIndex).toBe(null)
-            expect(timerState.value.runningIntervalId).toBe(null)
+            expect(timerState.value.phase).toBe('idle')
             expect(timerState.value.timestampPaused).toBe(null)
             expect(timerState.value.timestampStarted).toBe(null)
             expect(timerState.value.periods.length).toBeGreaterThan(0)
@@ -78,6 +78,56 @@ describe('Timer Logic - Simple Tests', () => {
         })
 
         it('should detect when timer is not finished initially', () => {
+            expect(timerHasFinished.value).toBe(false)
+        })
+    })
+
+    describe('Phase field', () => {
+        it('should be idle on initial state', () => {
+            expect(timerState.value.phase).toBe('idle')
+        })
+
+        it('should carry phase = running when state is set directly', () => {
+            timerState.value = { ...timerState.value, phase: 'running' }
+            expect(timerState.value.phase).toBe('running')
+        })
+
+        it('should carry phase = paused when state is set directly', () => {
+            timerState.value = { ...timerState.value, phase: 'paused' }
+            expect(timerState.value.phase).toBe('paused')
+        })
+
+        it('should transition to completed when handleTimerCompletion is called', () => {
+            const lastPeriodIndex = timerState.value.periods.length - 1
+            timerState.value = {
+                ...timerState.value,
+                currentPeriodIndex: lastPeriodIndex,
+                phase: 'running',
+                timestampStarted: Date.now() - 180000,
+                periods: timerState.value.periods.map((period, index) => ({
+                    ...period,
+                    state: {
+                        ...period.state,
+                        elapsed: 180000,
+                        remaining: 0,
+                        finished: index < lastPeriodIndex,
+                    },
+                })),
+            }
+            handleTimerCompletion()
+            expect(timerState.value.phase).toBe('completed')
+        })
+
+        it('timerHasFinished should be true when phase is completed', () => {
+            timerState.value = { ...timerState.value, phase: 'completed' }
+            expect(timerHasFinished.value).toBe(true)
+        })
+
+        it('timerHasFinished should be false when phase is idle, running, or paused', () => {
+            expect(timerHasFinished.value).toBe(false)
+            timerState.value = { ...timerState.value, phase: 'running' }
+            expect(timerHasFinished.value).toBe(false)
+            timerState.value = { ...timerState.value, phase: 'paused' }
             expect(timerHasFinished.value).toBe(false)
         })
     })

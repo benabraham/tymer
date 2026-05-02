@@ -37,7 +37,7 @@ export function Timer() {
 
     // Update document title based on timer state
     useEffect(() => {
-        const isRunning = timerState.value.runningIntervalId !== null
+        const isRunning = timerState.value.phase === 'running'
         const period = currentPeriod.value
 
         if (isRunning && period) {
@@ -73,7 +73,7 @@ export function Timer() {
             document.title = 'Tymer'
         }
     }, [
-        timerState.value.runningIntervalId,
+        timerState.value.phase,
         currentPeriod.value?.state.remaining,
         currentPeriod.value?.state.elapsed,
         currentPeriod.value?.config.userIntendedDuration,

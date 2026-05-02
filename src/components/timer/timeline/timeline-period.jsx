@@ -38,7 +38,7 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
         await playSound('button')
 
         // Check if timer is running and pause it
-        const isTimerRunning = timerState.value.runningIntervalId !== null
+        const isTimerRunning = timerState.value.phase === 'running'
         setWasTimerRunning(isTimerRunning)
 
         if (isTimerRunning) {
