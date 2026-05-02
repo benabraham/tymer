@@ -47,11 +47,15 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
 
         // Store original values for potential cancellation
         setOriginalValues({
-            type: period.type,
-            note: period.note,
-            periodDuration: period.periodDuration,
-            periodUserIntendedDuration: period.periodUserIntendedDuration,
-            periodDurationRemaining: period.periodDurationRemaining,
+            config: {
+                type: period.config.type,
+                note: period.config.note,
+                userIntendedDuration: period.config.userIntendedDuration,
+            },
+            state: {
+                duration: period.state.duration,
+                remaining: period.state.remaining,
+            },
         })
 
         setIsEditing(true)
@@ -85,40 +89,37 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
 
     // Update timer state immediately when values change
     const handleTypeChange = newType => {
-        updatePeriod(index, { type: newType })
+        updatePeriod(index, { config: { type: newType } })
     }
 
     const handleDurationChange = newDuration => {
         const durationMs = newDuration * 60 * 1000
 
         // For active periods, preserve elapsed time and update remaining time accordingly
-        const updatedProps = {
-            periodDuration: durationMs,
-            periodUserIntendedDuration: durationMs,
-        }
+        const stateUpdate = { duration: durationMs }
 
         // Calculate new remaining time based on current elapsed time
         if (isActive) {
-            updatedProps.periodDurationRemaining = Math.max(
-                0,
-                durationMs - period.periodDurationElapsed,
-            )
+            stateUpdate.remaining = Math.max(0, durationMs - period.state.elapsed)
         } else {
             // For finished periods, set elapsed time to match new duration and remaining to 0
-            if (period.periodHasFinished || period.periodDurationRemaining === 0) {
-                updatedProps.periodDurationElapsed = durationMs
-                updatedProps.periodDurationRemaining = 0
+            if (period.state.finished || period.state.remaining === 0) {
+                stateUpdate.elapsed = durationMs
+                stateUpdate.remaining = 0
             } else {
                 // For unstarted periods, reset remaining time to match new duration
-                updatedProps.periodDurationRemaining = durationMs
+                stateUpdate.remaining = durationMs
             }
         }
 
-        updatePeriod(index, updatedProps)
+        updatePeriod(index, {
+            config: { userIntendedDuration: durationMs },
+            state: stateUpdate,
+        })
     }
 
     const handleNoteChange = newNote => {
-        updatePeriod(index, { note: newNote })
+        updatePeriod(index, { config: { note: newNote } })
     }
 
     const handleDelete = () => {
@@ -187,10 +188,10 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                 ref={editRef}
                 class={`
                     timeline__period
-                    timeline__period--${period.type}
+                    timeline__period--${period.config.type}
                     timeline__period--editing
                 `}
-                style={`--period-minutes: ${Math.round(period.periodDuration / (60 * 1000))};`}
+                style={`--period-minutes: ${Math.round(period.state.duration / (60 * 1000))};`}
             >
                 <div class="timeline__text timeline__edit-form">
                     <div className="timeline__edit-row">
@@ -198,12 +199,12 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                             <div className="button-group button-group--tight button-group--connected">
                                 {(() => {
                                     const totalMinutes = Math.round(
-                                        period.periodDuration / (60 * 1000),
+                                        period.state.duration / (60 * 1000),
                                     )
                                     const currentHours = Math.floor(totalMinutes / 60)
                                     const currentMinutes = totalMinutes % 60
                                     const elapsedMinutes = Math.round(
-                                        period.periodDurationElapsed / (60 * 1000),
+                                        period.state.elapsed / (60 * 1000),
                                     )
 
                                     return [0, 1, 2, 3, 4].map(hours => (
@@ -228,20 +229,20 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                         <input
                             type="number"
                             tabIndex={4}
-                            value={Math.round(period.periodDuration / (60 * 1000))}
+                            value={Math.round(period.state.duration / (60 * 1000))}
                             onChange={e =>
                                 handleDurationChange(
                                     parseInt(e.target.value)
                                         || Math.max(
                                             1,
-                                            Math.round(period.periodDurationElapsed / (60 * 1000)),
+                                            Math.round(period.state.elapsed / (60 * 1000)),
                                         ),
                                 )
                             }
                             className="timeline__edit-duration"
                             min={
                                 isActive
-                                    ? Math.round(period.periodDurationElapsed / (60 * 1000))
+                                    ? Math.round(period.state.elapsed / (60 * 1000))
                                     : 1
                             }
                             max="900"
@@ -250,12 +251,12 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                             <div className="button-group button-group--tight button-group--connected">
                                 {(() => {
                                     const totalMinutes = Math.round(
-                                        period.periodDuration / (60 * 1000),
+                                        period.state.duration / (60 * 1000),
                                     )
                                     const currentHours = Math.floor(totalMinutes / 60)
                                     const currentMinutes = totalMinutes % 60
                                     const elapsedMinutes = Math.round(
-                                        period.periodDurationElapsed / (60 * 1000),
+                                        period.state.elapsed / (60 * 1000),
                                     )
 
                                     return [
@@ -319,7 +320,7 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                                     key={type}
                                     type="button"
                                     tabIndex={3}
-                                    class={`button-group-item ${period.type === type ? 'button-group-item--active' : ''}`}
+                                    class={`button-group-item ${period.config.type === type ? 'button-group-item--active' : ''}`}
                                     onClick={() => handleTypeChange(type)}
                                 >
                                     {type}
@@ -330,7 +331,7 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                             ref={noteInputRef}
                             type="text"
                             tabIndex={5}
-                            value={period.note || ''}
+                            value={period.config.note || ''}
                             onChange={e => handleNoteChange(e.target.value)}
                             placeholder="Note…"
                             class="timeline__edit-note"
@@ -356,18 +357,18 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
             as="div"
             class={`
                     timeline__period
-                    timeline__period--${period.type}
+                    timeline__period--${period.config.type}
                     ${isActive ? 'timeline__period--active' : ''}
                     timeline__period--editable
                 `}
-            style={`--period-minutes: ${msToMinutes(period.periodDuration)};--userintended-minutes: ${msToMinutes(period.periodUserIntendedDuration)};`}
+            style={`--period-minutes: ${msToMinutes(period.state.duration)};--userintended-minutes: ${msToMinutes(period.config.userIntendedDuration)};`}
             onClick={handleClickOnPeriod}
         >
             <div className="timeline__text">
                 <div className="timeline__period-duration">
-                    {formatTime(period.periodDuration, { compact: true })}
+                    {formatTime(period.state.duration, { compact: true })}
                 </div>
-                {period.note && <div className="timeline__note">{period.note}</div>}
+                {period.config.note && <div className="timeline__note">{period.config.note}</div>}
 
                 {clocksVisible.value && index === 0 && startTime && (
                     <div
@@ -382,12 +383,12 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
 
             <div
                 class="timeline__elapsed-time"
-                style={`--elapsed-minutes: ${msToMinutes(period.periodDurationElapsed)};`}
+                style={`--elapsed-minutes: ${msToMinutes(period.state.elapsed)};`}
             >
                 {isActive && <TimelineCurrentTime period={period} />}
             </div>
             {isActive && <div class="timeline__subinterval"></div>}
-            {isActive && period.periodDurationElapsed > period.periodUserIntendedDuration && (
+            {isActive && period.state.elapsed > period.config.userIntendedDuration && (
                 <div class="timeline__userintended"></div>
             )}
 

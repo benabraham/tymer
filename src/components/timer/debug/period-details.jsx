@@ -17,25 +17,25 @@ export const PeriodDetails = () => (
                 class={`
                     tempPeriod 
                     ${index === timerState.value.currentPeriodIndex ? 'tempPeriod--current' : ''}
-                    ${period.periodHasFinished ? 'tempPeriod--finished' : ''}
+                    ${period.state.finished ? 'tempPeriod--finished' : ''}
                 `}
             >
-                <div class="tempPeriod__data">{period.type}</div>
+                <div class="tempPeriod__data">{period.config.type}</div>
                 <div class="tempPeriod__data">
-                    {formatTime(period.periodDuration, { debug: true })}
+                    {formatTime(period.state.duration, { debug: true })}
                 </div>
                 <div class="tempPeriod__data">
-                    {period.periodUserIntendedDuration === period.periodDuration
+                    {period.config.userIntendedDuration === period.state.duration
                         ? 'same as duration'
-                        : formatTime(period.periodUserIntendedDuration, { debug: true })}
+                        : formatTime(period.config.userIntendedDuration, { debug: true })}
                 </div>
                 <div class="tempPeriod__data">
-                    {formatTime(period.periodDurationRemaining, { mode: 'remaining', debug: true })}
+                    {formatTime(period.state.remaining, { mode: 'remaining', debug: true })}
                 </div>
                 <div class="tempPeriod__data">
-                    {formatTime(period.periodDurationElapsed, { mode: 'elapsed', debug: true })}
+                    {formatTime(period.state.elapsed, { mode: 'elapsed', debug: true })}
                 </div>
-                <div class="tempPeriod__data">{period.periodHasFinished ? 'yes' : 'no'}</div>
+                <div class="tempPeriod__data">{period.state.finished ? 'yes' : 'no'}</div>
             </div>
         ))}
     </div>

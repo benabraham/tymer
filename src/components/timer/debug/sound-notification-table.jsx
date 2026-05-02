@@ -12,15 +12,15 @@ export const SoundNotificationTable = () => {
     }
 
     const period = currentPeriod.value
-    const intendedDuration = period.periodUserIntendedDuration
-    const periodType = period.type
-    const elapsedMs = period.periodDurationElapsed
+    const intendedDuration = period.config.userIntendedDuration
+    const periodType = period.config.type
+    const elapsedMs = period.state.elapsed
 
     // Determine next period type for timesup sound
     const currentIndex = timerState.value.currentPeriodIndex
     const nextIndex = currentIndex + 1
     const nextPeriod = timerState.value.periods[nextIndex]
-    const nextPeriodType = nextPeriod ? nextPeriod.type : 'finish'
+    const nextPeriodType = nextPeriod ? nextPeriod.config.type : 'finish'
 
     const formatTimeFromMs = ms => {
         return formatTime(ms, { debug: true })
@@ -257,7 +257,7 @@ export const SoundNotificationTable = () => {
                                             <div>
                                                 Duration:{' '}
                                                 {formatTimeFromMs(
-                                                    entry.periodContext.periodDuration,
+                                                    entry.periodContext.state.duration,
                                                 )}
                                             </div>
                                             <div>

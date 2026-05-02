@@ -6,12 +6,15 @@ import { formatTime } from '../../../lib/format'
 export const Stats = () => {
     const calculateTypeSums = ({ periods, type }) => {
         const sumByKey = key =>
-            periods.reduce((sum, period) => (period.type === type ? sum + period[key] : sum), 0)
+            periods.reduce(
+                (sum, period) => (period.config.type === type ? sum + period.state[key] : sum),
+                0,
+            )
 
         return {
-            duration: sumByKey('periodDuration'),
-            durationElapsed: sumByKey('periodDurationElapsed'),
-            durationRemaining: sumByKey('periodDurationRemaining'),
+            duration: sumByKey('duration'),
+            durationElapsed: sumByKey('elapsed'),
+            durationRemaining: sumByKey('remaining'),
         }
     }
 

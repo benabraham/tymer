@@ -25,22 +25,22 @@ export const TimelineCurrentTime = ({ period }) => {
     return (
         <div
             class="timeline__current-time"
-            style={`--elapsed-minutes: ${msToMinutes(period.periodDurationElapsed)};`}
+            style={`--elapsed-minutes: ${msToMinutes(period.state.elapsed)};`}
         >
             <span class="timeline__elapsed timeline__elapsed--total">
                 {formatTime(
-                    timerState.value.periods.reduce((sum, p) => sum + p.periodDurationElapsed, 0),
+                    timerState.value.periods.reduce((sum, p) => sum + p.state.elapsed, 0),
                     { mode: 'elapsed', figureSpace: true },
                 )}
             </span>
             <span class="timeline__elapsed timeline__elapsed--period">
-                {formatTime(currentPeriod.value.periodDurationElapsed, { mode: 'elapsed' })}
+                {formatTime(currentPeriod.value.state.elapsed, { mode: 'elapsed' })}
                 <span class="timeline__symbol">
                     {' '}
                     <FontAwesomeIcon icon={faCaretLeft} />
                     <FontAwesomeIcon icon={faCaretRight} />{' '}
                 </span>
-                {formatTime(currentPeriod.value.periodDurationRemaining, { mode: 'remaining' })}
+                {formatTime(currentPeriod.value.state.remaining, { mode: 'remaining' })}
             </span>
             {clocksVisible.value && (
                 <span class="timeline__elapsed timeline__elapsed--clock">

@@ -174,8 +174,8 @@ const getPeriodContext = () => {
         const timerState = timerModule.timerState?.value
 
         if (currentPeriod) {
-            const elapsedMs = currentPeriod.periodDurationElapsed
-            const intendedDuration = currentPeriod.periodUserIntendedDuration
+            const elapsedMs = currentPeriod.state.elapsed
+            const intendedDuration = currentPeriod.config.userIntendedDuration
             const remainingMs = intendedDuration - elapsedMs
             const isOvertime = elapsedMs > intendedDuration
 

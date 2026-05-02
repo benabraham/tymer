@@ -191,7 +191,7 @@ export function KeyboardShortcuts() {
             // End - jump to end of current period
             else if (event.key === 'End') {
                 event.preventDefault()
-                const currentDuration = currentPeriod.value?.periodDuration || 0
+                const currentDuration = currentPeriod.value?.state.duration || 0
                 const delta = currentDuration - timerDurationElapsed.value
                 if (canAdjustElapsed(delta)) {
                     adjustElapsed(delta)
@@ -208,7 +208,7 @@ export function KeyboardShortcuts() {
                 && !event.shiftKey
             ) {
                 event.preventDefault()
-                const currentDuration = currentPeriod.value?.periodDuration || 0
+                const currentDuration = currentPeriod.value?.state.duration || 0
                 const delta = getNextMultipleOf3Delta(currentDuration, 'up')
                 if (canAdjustDuration(delta)) {
                     adjustDuration(delta)
@@ -216,7 +216,7 @@ export function KeyboardShortcuts() {
                 }
             } else if (event.key === '-' && !event.ctrlKey && !event.altKey && !event.shiftKey) {
                 event.preventDefault()
-                const currentDuration = currentPeriod.value?.periodDuration || 0
+                const currentDuration = currentPeriod.value?.state.duration || 0
                 const delta = getNextMultipleOf3Delta(currentDuration, 'down')
                 if (canAdjustDuration(delta)) {
                     adjustDuration(delta)

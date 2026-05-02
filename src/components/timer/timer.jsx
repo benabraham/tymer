@@ -43,35 +43,35 @@ export function Timer() {
         if (isRunning && period) {
             // Check if both times are under 60 minutes to determine format
             const bothUnderOneHour =
-                period.periodDurationRemaining < 60 * 60 * 1000
-                && period.periodDuration < 60 * 60 * 1000
+                period.state.remaining < 60 * 60 * 1000
+                && period.state.duration < 60 * 60 * 1000
 
             let formattedPeriodDurationElapsed, periodUserIntendedDuration
 
             if (bothUnderOneHour) {
                 // Show only minutes when both are under 60 minutes
                 formattedPeriodDurationElapsed = Math.ceil(
-                    period.periodDurationElapsed / (60 * 1000),
+                    period.state.elapsed / (60 * 1000),
                 ).toString()
                 periodUserIntendedDuration = Math.ceil(
-                    period.periodUserIntendedDuration / (60 * 1000),
+                    period.config.userIntendedDuration / (60 * 1000),
                 ).toString()
             } else {
                 // Use full hours:minutes format
                 formattedPeriodDurationElapsed = formatTime(
-                    period.periodDurationElapsed,
+                    period.state.elapsed,
                     true,
                     false,
                 )
                 periodUserIntendedDuration = formatTime(
-                    period.periodUserIntendedDuration,
+                    period.config.userIntendedDuration,
                     true,
                     false,
                 )
             }
 
-            const periodTypeInitial = period.type.charAt(0).toUpperCase()
-            const isOvertime = period.periodDurationElapsed > period.periodUserIntendedDuration
+            const periodTypeInitial = period.config.type.charAt(0).toUpperCase()
+            const isOvertime = period.state.elapsed > period.config.userIntendedDuration
             const overtimeIndicator = isOvertime ? '🛑 ' : ''
             document.title = `${periodTypeInitial} ${overtimeIndicator}${formattedPeriodDurationElapsed}/${periodUserIntendedDuration}`
         } else {
@@ -79,10 +79,10 @@ export function Timer() {
         }
     }, [
         timerState.value.runningIntervalId,
-        currentPeriod.value?.periodDurationRemaining,
-        currentPeriod.value?.periodDurationElapsed,
-        currentPeriod.value?.periodUserIntendedDuration,
-        currentPeriod.value?.type,
+        currentPeriod.value?.state.remaining,
+        currentPeriod.value?.state.elapsed,
+        currentPeriod.value?.config.userIntendedDuration,
+        currentPeriod.value?.config.type,
     ])
 
     return (
