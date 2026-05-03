@@ -64,8 +64,8 @@ export function KeyboardShortcuts() {
             if (event.key === ' ') {
                 event.preventDefault()
                 if (canStartPause.value) {
-                    if (Schedule.phase.value === 'running') pauseTimer()
-                    else if (Schedule.phase.value === 'paused') resumeTimer()
+                    if (Schedule.isRunning.value) pauseTimer()
+                    else if (Schedule.isPaused.value) resumeTimer()
                     else startTimer()
                     handled = true
                 }

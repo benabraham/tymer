@@ -33,8 +33,8 @@ export const TimerControls = () => {
         // Unlock audio on first user interaction
         await unlockAudio()
 
-        if (Schedule.phase.value === 'running') pauseTimer()
-        else if (Schedule.phase.value === 'paused') resumeTimer()
+        if (Schedule.isRunning.value) pauseTimer()
+        else if (Schedule.isPaused.value) resumeTimer()
         else startTimer()
     }
 
@@ -49,9 +49,9 @@ export const TimerControls = () => {
                     <FontAwesomeIcon icon={faArrowRotateLeft} className="icon--danger" /> Reset
                 </SoundWrapper>
                 <SoundWrapper onClick={handleStartPause} disabled={!canStartPause.value}>
-                    {Schedule.phase.value === 'running' ? (
+                    {Schedule.isRunning.value ? (
                         <FontAwesomeIcon icon={faPause} className="icon--warning" />
-                    ) : Schedule.phase.value === 'paused' ? (
+                    ) : Schedule.isPaused.value ? (
                         <FontAwesomeIcon icon={faPlay} className="icon--success" />
                     ) : (
                         <>

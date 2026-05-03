@@ -82,7 +82,7 @@ export const shouldGoToNextPeriod = computed(
 )
 
 // check if periods have been modified from initial configuration
-export const periodsModifiedFromInitial = computed(() => {
+const periodsModifiedFromInitial = computed(() => {
     const currentPeriods = timerState.value.periods
     const initialPeriods = initialState.periods
 
@@ -193,9 +193,9 @@ export const initializeTimer = () => {
     log('initializeTimer', logSnapshot(), 2)
 
     // nothing more to do if timer has finished or is paused
-    if (timerHasFinished.value || Schedule.phase.value === 'paused') return
+    if (timerHasFinished.value || Schedule.isPaused.value) return
 
-    if (Schedule.phase.value === 'running') {
+    if (Schedule.isRunning.value) {
         // continue (restart) the timer if it was running
         updateCurrentPeriod()
         startTick()
@@ -482,7 +482,6 @@ export const moveElapsedTimeToPreviousPeriod = () => {
                 remaining: absorbed.state.remaining,
             },
         },
-        timerProperties: {},
     })
 
     adjustElapsed(-elapsed)
@@ -742,13 +741,12 @@ export const addPeriodAtIndex = (
     log('added period at index', { afterIndex, newLength: newPeriods.length }, 5)
 }
 
-// helper function to update state
+// helper function to update currentPeriodProperties and/or previousPeriodProperties
+// in timerState. Both keys accept a partial { config?, state? } object that is
+// deep-merged into the respective period. Phase/timestamps/index are owned by
+// Schedule — this function only touches the periods array.
 const updateTimerState = updateParams => {
-    const {
-        previousPeriodProperties = {},
-        currentPeriodProperties = {},
-        timerProperties = {},
-    } = updateParams
+    const { previousPeriodProperties = {}, currentPeriodProperties = {} } = updateParams
 
     batch(() => {
         // Update the previous period
@@ -783,13 +781,6 @@ const updateTimerState = updateParams => {
                 ),
             }
         }
-        // Then, update timer properties (periods/types only — no phase/timestamps/index)
-        if (Object.keys(timerProperties).length > 0) {
-            timerState.value = {
-                ...timerState.value,
-                ...timerProperties,
-            }
-        }
     })
 }
 
@@ -802,7 +793,7 @@ const tick = () => {
         const elapsedMs = currentPeriod.value.state.elapsed
         const intendedMs = currentPeriod.value.config.userIntendedDuration
         const periodType = currentPeriod.value.config.type
-        const isPaused = Schedule.phase.value === 'paused'
+        const isPaused = Schedule.isPaused.value
 
         // Determine next period type for timesup sound selection
         const currentIndex = Schedule.currentPeriodIndex.value
