@@ -8,32 +8,54 @@ export const saveState = state => {
     return state
 }
 
-// Function to load the timer state from localStorage
-export const loadState = initialState => {
+// Function to load the timer state from localStorage.
+//
+// Accepts two initial-state objects:
+//   initialTimerState    — the { periods, types } shape owned by timerState signal
+//   initialScheduleSnapshot — the { phase, currentPeriodIndex, timestampStarted, timestampPaused }
+//                             shape owned by Schedule
+//
+// Returns { timerState, scheduleSnapshot } so the caller can hydrate each signal
+// independently.  Extra keys in the persisted blob beyond the required ones are
+// allowed — they are silently ignored.
+//
+// Falls back to defaults for the entire blob if any required key is missing or
+// if the Period shape is stale (no backward-compat migration — just reset).
+export const loadState = (initialTimerState, initialScheduleSnapshot) => {
     try {
         // Attempt to retrieve and parse the state from localStorage
         const loadedState = JSON.parse(localStorage.getItem('timerState'))
-        // Get an array of property names from the initial state
-        const requiredProperties = Object.keys(initialState)
-        // Validate top-level keys AND that every Period has the nested {config, state} shape.
-        // Stale-shape Periods (e.g. from an older deployed bundle persisted in PWA storage)
-        // would crash downstream readers — fall back to defaults instead.
+
+        // Validate timer-state keys
+        const timerKeys = Object.keys(initialTimerState)
+        // Validate schedule-snapshot keys
+        const scheduleKeys = Object.keys(initialScheduleSnapshot)
+
         const isValidState =
-            requiredProperties.every(prop => loadedState.hasOwnProperty(prop))
+            timerKeys.every(prop => loadedState.hasOwnProperty(prop))
+            && scheduleKeys.every(prop => loadedState.hasOwnProperty(prop))
             && Array.isArray(loadedState.periods)
             && loadedState.periods.every(p => p?.config && p?.state)
+
         if (isValidState) {
-            // If the loaded state is valid, return it
+            // Extract each slice from the flat persisted blob
+            const timerState = timerKeys.reduce((acc, key) => {
+                acc[key] = loadedState[key]
+                return acc
+            }, {})
+            const scheduleSnapshot = scheduleKeys.reduce((acc, key) => {
+                acc[key] = loadedState[key]
+                return acc
+            }, {})
+
             log('state loaded successfully', loadedState, 1)
-            return loadedState
+            return { timerState, scheduleSnapshot }
         } else {
-            // If the loaded state is invalid, return the initial state
-            log('loaded state was invalid, initial state returned', initialState, 2)
-            return initialState
+            log('loaded state was invalid, initial state returned', initialTimerState, 2)
+            return { timerState: initialTimerState, scheduleSnapshot: initialScheduleSnapshot }
         }
     } catch (error) {
-        // If there's an error (e.g., parsing JSON), return the initial state
-        log('initial state saved (there was an error loading the state)', initialState, 3)
-        return initialState
+        log('initial state saved (there was an error loading the state)', initialTimerState, 3)
+        return { timerState: initialTimerState, scheduleSnapshot: initialScheduleSnapshot }
     }
 }

@@ -1,5 +1,6 @@
 import { formatTime } from '../../../lib/format'
 import { currentPeriod, timerState, timerDurationElapsed } from '../../../lib/timer'
+import { Schedule } from '../../../lib/schedule'
 import { SoundScheduler } from '../../../lib/sound-scheduler'
 import { AVAILABLE_SOUNDS } from '../../../lib/sound-discovery'
 import { soundPlaybackLog } from '../../../lib/sounds'
@@ -17,7 +18,7 @@ export const SoundNotificationTable = () => {
     const elapsedMs = period.state.elapsed
 
     // Determine next period type for timesup sound
-    const currentIndex = timerState.value.currentPeriodIndex
+    const currentIndex = Schedule.currentPeriodIndex.value
     const nextIndex = currentIndex + 1
     const nextPeriod = timerState.value.periods[nextIndex]
     const nextPeriodType = nextPeriod ? nextPeriod.config.type : 'finish'

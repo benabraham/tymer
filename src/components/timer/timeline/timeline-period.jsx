@@ -11,6 +11,7 @@ import {
     addPeriodAtIndex,
     autoEditIndex,
 } from '../../../lib/timer'
+import { Schedule } from '../../../lib/schedule'
 import { Period } from '../../../lib/period'
 import { clocksVisible } from '../../../lib/clocks'
 import { TimelineCurrentTime } from './timeline-current-time'
@@ -39,7 +40,7 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
         await playSound('button')
 
         // Check if timer is running and pause it
-        const isTimerRunning = timerState.value.phase === 'running'
+        const isTimerRunning = Schedule.phase.value === 'running'
         setWasTimerRunning(isTimerRunning)
 
         if (isTimerRunning) {
@@ -95,7 +96,7 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
 
     const handleDurationChange = newDuration => {
         const durationMs = newDuration * 60 * 1000
-        const currentPeriodIndex = timerState.value.currentPeriodIndex
+        const currentPeriodIndex = Schedule.currentPeriodIndex.value
         const isPast = currentPeriodIndex !== null && index < currentPeriodIndex
         const updated = isPast
             ? Period.amendRecordedDuration(period, durationMs)

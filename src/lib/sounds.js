@@ -171,7 +171,6 @@ const getPeriodContext = () => {
         if (!timerModule) return null
 
         const currentPeriod = timerModule.currentPeriod?.value
-        const timerState = timerModule.timerState?.value
 
         if (currentPeriod) {
             const elapsedMs = currentPeriod.state.elapsed
@@ -185,7 +184,7 @@ const getPeriodContext = () => {
                 elapsed: elapsedMs,
                 remaining: remainingMs > 0 ? remainingMs : 0,
                 overtime: isOvertime ? elapsedMs - intendedDuration : 0,
-                periodIndex: timerState?.currentPeriodIndex || 0,
+                periodIndex: timerModule.Schedule?.currentPeriodIndex.value ?? 0,
             }
         }
     } catch (e) {

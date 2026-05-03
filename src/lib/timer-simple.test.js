@@ -9,6 +9,7 @@ import {
     moveToNextPeriod,
     handleTimerCompletion,
 } from './timer'
+import { Schedule } from './schedule'
 import { PERIOD_CONFIG } from './config'
 
 // Mock localStorage
@@ -27,6 +28,8 @@ vi.mock('./sounds', () => ({
 
 describe('Timer Logic - Simple Tests', () => {
     beforeEach(() => {
+        // Reset Schedule to idle before each test
+        Schedule.reset()
         // Reset timer state before each test
         timerState.value = {
             ...initialState,
@@ -40,10 +43,10 @@ describe('Timer Logic - Simple Tests', () => {
 
     describe('Initial State', () => {
         it('should have correct initial state', () => {
-            expect(timerState.value.currentPeriodIndex).toBe(null)
-            expect(timerState.value.phase).toBe('idle')
-            expect(timerState.value.timestampPaused).toBe(null)
-            expect(timerState.value.timestampStarted).toBe(null)
+            expect(Schedule.currentPeriodIndex.value).toBe(null)
+            expect(Schedule.phase.value).toBe('idle')
+            expect(Schedule.timestampPaused.value).toBe(null)
+            expect(Schedule.timestampStarted.value).toBe(null)
             expect(timerState.value.periods.length).toBeGreaterThan(0)
         })
 
@@ -81,26 +84,39 @@ describe('Timer Logic - Simple Tests', () => {
 
     describe('Phase field', () => {
         it('should be idle on initial state', () => {
-            expect(timerState.value.phase).toBe('idle')
+            expect(Schedule.phase.value).toBe('idle')
         })
 
-        it('should carry phase = running when state is set directly', () => {
-            timerState.value = { ...timerState.value, phase: 'running' }
-            expect(timerState.value.phase).toBe('running')
+        it('should carry phase = running when Schedule.setSnapshot is called', () => {
+            Schedule.setSnapshot({
+                phase: 'running',
+                currentPeriodIndex: 0,
+                timestampStarted: Date.now(),
+                timestampPaused: null,
+            })
+            expect(Schedule.phase.value).toBe('running')
         })
 
-        it('should carry phase = paused when state is set directly', () => {
-            timerState.value = { ...timerState.value, phase: 'paused' }
-            expect(timerState.value.phase).toBe('paused')
+        it('should carry phase = paused when Schedule.setSnapshot is called', () => {
+            Schedule.setSnapshot({
+                phase: 'paused',
+                currentPeriodIndex: 0,
+                timestampStarted: Date.now() - 60000,
+                timestampPaused: Date.now(),
+            })
+            expect(Schedule.phase.value).toBe('paused')
         })
 
         it('should transition to completed when handleTimerCompletion is called', () => {
             const lastPeriodIndex = timerState.value.periods.length - 1
+            Schedule.setSnapshot({
+                phase: 'running',
+                currentPeriodIndex: lastPeriodIndex,
+                timestampStarted: Date.now() - 180000,
+                timestampPaused: null,
+            })
             timerState.value = {
                 ...timerState.value,
-                currentPeriodIndex: lastPeriodIndex,
-                phase: 'running',
-                timestampStarted: Date.now() - 180000,
                 periods: timerState.value.periods.map((period, index) => ({
                     ...period,
                     state: {
@@ -111,19 +127,34 @@ describe('Timer Logic - Simple Tests', () => {
                 })),
             }
             handleTimerCompletion()
-            expect(timerState.value.phase).toBe('completed')
+            expect(Schedule.phase.value).toBe('completed')
         })
 
         it('timerHasFinished should be true when phase is completed', () => {
-            timerState.value = { ...timerState.value, phase: 'completed' }
+            Schedule.setSnapshot({
+                phase: 'completed',
+                currentPeriodIndex: null,
+                timestampStarted: null,
+                timestampPaused: null,
+            })
             expect(timerHasFinished.value).toBe(true)
         })
 
         it('timerHasFinished should be false when phase is idle, running, or paused', () => {
             expect(timerHasFinished.value).toBe(false)
-            timerState.value = { ...timerState.value, phase: 'running' }
+            Schedule.setSnapshot({
+                phase: 'running',
+                currentPeriodIndex: 0,
+                timestampStarted: Date.now(),
+                timestampPaused: null,
+            })
             expect(timerHasFinished.value).toBe(false)
-            timerState.value = { ...timerState.value, phase: 'paused' }
+            Schedule.setSnapshot({
+                phase: 'paused',
+                currentPeriodIndex: 0,
+                timestampStarted: Date.now() - 60000,
+                timestampPaused: Date.now(),
+            })
             expect(timerHasFinished.value).toBe(false)
         })
     })
@@ -131,10 +162,14 @@ describe('Timer Logic - Simple Tests', () => {
     describe('Move to Next Period with Remainder Carry-forward', () => {
         beforeEach(() => {
             // Set up a running timer
-            timerState.value = {
-                ...timerState.value,
+            Schedule.setSnapshot({
+                phase: 'running',
                 currentPeriodIndex: 0,
                 timestampStarted: Date.now() - 61000, // 1:01 elapsed
+                timestampPaused: null,
+            })
+            timerState.value = {
+                ...timerState.value,
                 periods: timerState.value.periods.map((period, index) => ({
                     ...period,
                     state: {
@@ -162,12 +197,12 @@ describe('Timer Logic - Simple Tests', () => {
             // Past lifecycle is determined by position (index < currentPeriodIndex), not a flag
 
             // Should have moved to next period
-            expect(timerState.value.currentPeriodIndex).toBe(1)
+            expect(Schedule.currentPeriodIndex.value).toBe(1)
 
             // Timestamp should be adjusted to carry forward the 1 second remainder
             const expectedTimestamp =
                 originalTimestamp - timerState.value.periods[1].state.elapsed - 1000
-            expect(timerState.value.timestampStarted).toBe(expectedTimestamp)
+            expect(Schedule.timestampStarted.value).toBe(expectedTimestamp)
 
             vi.restoreAllMocks()
         })
@@ -178,9 +213,14 @@ describe('Timer Logic - Simple Tests', () => {
 
             // Set exactly 2 minutes elapsed — also align timestampStarted so
             // updateCurrentPeriod() computes the same elapsed when called.
+            Schedule.setSnapshot({
+                phase: 'running',
+                currentPeriodIndex: 0,
+                timestampStarted: originalTimestamp - 120000,
+                timestampPaused: null,
+            })
             timerState.value = {
                 ...timerState.value,
-                timestampStarted: originalTimestamp - 120000,
                 periods: timerState.value.periods.map((period, index) => ({
                     ...period,
                     state: {
@@ -200,7 +240,7 @@ describe('Timer Logic - Simple Tests', () => {
 
             // No remainder to carry forward
             const expectedTimestamp = originalTimestamp - timerState.value.periods[1].state.elapsed
-            expect(timerState.value.timestampStarted).toBe(expectedTimestamp)
+            expect(Schedule.timestampStarted.value).toBe(expectedTimestamp)
 
             vi.restoreAllMocks()
         })
@@ -211,10 +251,14 @@ describe('Timer Logic - Simple Tests', () => {
             vi.spyOn(Date, 'now').mockReturnValue(originalTimestamp)
 
             // Set up with 1:15 elapsed (rounds down to 1:00, carries 15 seconds)
-            timerState.value = {
-                ...timerState.value,
+            Schedule.setSnapshot({
+                phase: 'running',
                 currentPeriodIndex: 0,
                 timestampStarted: originalTimestamp - 75000, // 1:15 elapsed
+                timestampPaused: null,
+            })
+            timerState.value = {
+                ...timerState.value,
                 periods: timerState.value.periods.map((period, index) => ({
                     ...period,
                     state: {
@@ -236,12 +280,12 @@ describe('Timer Logic - Simple Tests', () => {
             // Past lifecycle is determined by position (index < currentPeriodIndex), not a flag
 
             // Should have moved to next period
-            expect(timerState.value.currentPeriodIndex).toBe(1)
+            expect(Schedule.currentPeriodIndex.value).toBe(1)
 
             // Timestamp should be adjusted to carry forward the 15 second remainder
             const expectedTimestamp =
                 originalTimestamp - timerState.value.periods[1].state.elapsed - 15000
-            expect(timerState.value.timestampStarted).toBe(expectedTimestamp)
+            expect(Schedule.timestampStarted.value).toBe(expectedTimestamp)
 
             vi.restoreAllMocks()
         })
@@ -252,10 +296,14 @@ describe('Timer Logic - Simple Tests', () => {
             vi.spyOn(Date, 'now').mockReturnValue(originalTimestamp)
 
             // Set up with 1:59 elapsed (rounds down to 1:00, carries 59 seconds)
-            timerState.value = {
-                ...timerState.value,
+            Schedule.setSnapshot({
+                phase: 'running',
                 currentPeriodIndex: 0,
                 timestampStarted: originalTimestamp - 119000, // 1:59 elapsed
+                timestampPaused: null,
+            })
+            timerState.value = {
+                ...timerState.value,
                 periods: timerState.value.periods.map((period, index) => ({
                     ...period,
                     state: {
@@ -277,12 +325,12 @@ describe('Timer Logic - Simple Tests', () => {
             // Past lifecycle is determined by position (index < currentPeriodIndex), not a flag
 
             // Should have moved to next period
-            expect(timerState.value.currentPeriodIndex).toBe(1)
+            expect(Schedule.currentPeriodIndex.value).toBe(1)
 
             // Timestamp should be adjusted to carry forward the 59 second remainder
             const expectedTimestamp =
                 originalTimestamp - timerState.value.periods[1].state.elapsed - 59000
-            expect(timerState.value.timestampStarted).toBe(expectedTimestamp)
+            expect(Schedule.timestampStarted.value).toBe(expectedTimestamp)
 
             vi.restoreAllMocks()
         })
@@ -292,10 +340,14 @@ describe('Timer Logic - Simple Tests', () => {
         beforeEach(() => {
             // Set up timer on last period with substantial elapsed time to avoid filtering
             const lastPeriodIndex = timerState.value.periods.length - 1
-            timerState.value = {
-                ...timerState.value,
+            Schedule.setSnapshot({
+                phase: 'running',
                 currentPeriodIndex: lastPeriodIndex,
                 timestampStarted: Date.now() - 149000, // 2:29 elapsed - rounds down to 2:00 (120000ms > 60000ms threshold)
+                timestampPaused: null,
+            })
+            timerState.value = {
+                ...timerState.value,
                 periods: timerState.value.periods.map((period, index) => ({
                     ...period,
                     state: {
@@ -339,8 +391,8 @@ describe('Timer Logic - Simple Tests', () => {
             expect(modifiedPeriod.state.elapsed).toBe(120000)
 
             // Timer should be in completed state
-            expect(timerState.value.currentPeriodIndex).toBe(null)
-            expect(timerState.value.timestampStarted).toBe(null)
+            expect(Schedule.currentPeriodIndex.value).toBe(null)
+            expect(Schedule.timestampStarted.value).toBe(null)
         })
 
         it('should handle exact minute completion without rounding', () => {
@@ -348,9 +400,14 @@ describe('Timer Logic - Simple Tests', () => {
             // Also align timestampStarted so updateCurrentPeriod() computes the
             // same elapsed when called inside handleTimerCompletion.
             const lastPeriodIndex = timerState.value.periods.length - 1
+            Schedule.setSnapshot({
+                phase: 'running',
+                currentPeriodIndex: lastPeriodIndex,
+                timestampStarted: Date.now() - 180000,
+                timestampPaused: null,
+            })
             timerState.value = {
                 ...timerState.value,
-                timestampStarted: Date.now() - 180000,
                 periods: timerState.value.periods.map((period, index) => ({
                     ...period,
                     state: {
@@ -378,10 +435,14 @@ describe('Timer Logic - Simple Tests', () => {
         it('should keep periods with exactly 1 minute elapsed time', () => {
             // Set up a scenario where a period rounds down to exactly 1:00 (60000ms)
             const lastPeriodIndex = timerState.value.periods.length - 1
-            timerState.value = {
-                ...timerState.value,
+            Schedule.setSnapshot({
+                phase: 'running',
                 currentPeriodIndex: lastPeriodIndex,
                 timestampStarted: Date.now() - 61000, // 1:01 elapsed - rounds down to 1:00
+                timestampPaused: null,
+            })
+            timerState.value = {
+                ...timerState.value,
                 periods: timerState.value.periods.map((period, index) => ({
                     ...period,
                     state: {
@@ -416,17 +477,21 @@ describe('Timer Logic - Simple Tests', () => {
             expect(oneMinutePeriod.state.elapsed).toBe(60000)
 
             // Timer should be in completed state
-            expect(timerState.value.currentPeriodIndex).toBe(null)
-            expect(timerState.value.timestampStarted).toBe(null)
+            expect(Schedule.currentPeriodIndex.value).toBe(null)
+            expect(Schedule.timestampStarted.value).toBe(null)
         })
 
         it('should round small elapsed times down to base minute on completion', () => {
             // Test with small numbers that round down to exactly 1:00 (the boundary case)
             const lastPeriodIndex = timerState.value.periods.length - 1
-            timerState.value = {
-                ...timerState.value,
+            Schedule.setSnapshot({
+                phase: 'running',
                 currentPeriodIndex: lastPeriodIndex,
                 timestampStarted: Date.now() - 75000, // 1:15 elapsed - rounds down to 1:00
+                timestampPaused: null,
+            })
+            timerState.value = {
+                ...timerState.value,
                 periods: timerState.value.periods.map((period, index) => ({
                     ...period,
                     state: {
@@ -457,17 +522,21 @@ describe('Timer Logic - Simple Tests', () => {
             expect(oneMinutePeriod.state.elapsed).toBe(60000)
 
             // Timer should be in completed state
-            expect(timerState.value.currentPeriodIndex).toBe(null)
-            expect(timerState.value.timestampStarted).toBe(null)
+            expect(Schedule.currentPeriodIndex.value).toBe(null)
+            expect(Schedule.timestampStarted.value).toBe(null)
         })
 
         it('should handle edge case of 1:59 rounding down to 1:00 on completion', () => {
             // Test the largest possible remainder (59 seconds) that still rounds to 1:00
             const lastPeriodIndex = timerState.value.periods.length - 1
-            timerState.value = {
-                ...timerState.value,
+            Schedule.setSnapshot({
+                phase: 'running',
                 currentPeriodIndex: lastPeriodIndex,
                 timestampStarted: Date.now() - 119000, // 1:59 elapsed - rounds down to 1:00
+                timestampPaused: null,
+            })
+            timerState.value = {
+                ...timerState.value,
                 periods: timerState.value.periods.map((period, index) => ({
                     ...period,
                     state: {
@@ -502,17 +571,21 @@ describe('Timer Logic - Simple Tests', () => {
             expect(oneMinutePeriod.state.elapsed).toBe(60000)
 
             // Timer should be in completed state
-            expect(timerState.value.currentPeriodIndex).toBe(null)
-            expect(timerState.value.timestampStarted).toBe(null)
+            expect(Schedule.currentPeriodIndex.value).toBe(null)
+            expect(Schedule.timestampStarted.value).toBe(null)
         })
 
         it('should filter out periods with less than 1 minute elapsed time', () => {
             // Set up a scenario with periods having various elapsed times
             const lastPeriodIndex = timerState.value.periods.length - 1
-            timerState.value = {
-                ...timerState.value,
+            Schedule.setSnapshot({
+                phase: 'running',
                 currentPeriodIndex: lastPeriodIndex,
                 timestampStarted: Date.now() - 59000, // 0:59 elapsed - rounds down to 0:00
+                timestampPaused: null,
+            })
+            timerState.value = {
+                ...timerState.value,
                 periods: timerState.value.periods.map((period, index) => ({
                     ...period,
                     state: {
@@ -550,8 +623,8 @@ describe('Timer Logic - Simple Tests', () => {
             expect(zeroPeriods.length).toBe(0)
 
             // Timer should be in completed state
-            expect(timerState.value.currentPeriodIndex).toBe(null)
-            expect(timerState.value.timestampStarted).toBe(null)
+            expect(Schedule.currentPeriodIndex.value).toBe(null)
+            expect(Schedule.timestampStarted.value).toBe(null)
         })
     })
 })

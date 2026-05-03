@@ -161,6 +161,25 @@ const setIndex = index => {
     }
 }
 
+// Hydration / test-fixture escape hatch: set all four fields at once.
+// Used by storage hydration at boot (loadState path) and by timer-simple.test.js
+// fixture setup to replace direct timerState.value mutations.
+const setSnapshot = ({ phase, currentPeriodIndex, timestampStarted, timestampPaused }) => {
+    state.value = { phase, currentPeriodIndex, timestampStarted, timestampPaused }
+}
+
+// Reset timestampStarted to (timestampPaused ?? Date.now()).
+// Used by addPeriod when a new period is inserted before the current one and
+// must begin with zero elapsed. No-op if timestampStarted is already null.
+const restartCurrentPeriod = () => {
+    if (state.value.timestampStarted === null) return
+
+    state.value = {
+        ...state.value,
+        timestampStarted: state.value.timestampPaused ?? Date.now(),
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Field computeds — read-only projections of the private state
 // ---------------------------------------------------------------------------
@@ -205,6 +224,8 @@ export const Schedule = {
     rewind,
     shiftStartedAt,
     setIndex,
+    setSnapshot,
+    restartCurrentPeriod,
     // field computeds
     phase,
     currentPeriodIndex,

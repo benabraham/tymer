@@ -1,6 +1,5 @@
 import { useEffect } from 'preact/hooks'
 import {
-    timerState,
     pauseTimer,
     resumeTimer,
     startTimer,
@@ -26,6 +25,7 @@ import {
     canRemovePeriod,
     canMoveElapsedToPrevious,
 } from '../../lib/timer'
+import { Schedule } from '../../lib/schedule'
 
 // Local helper: compute the delta needed to snap currentMs to the next multiple-of-3 minute boundary.
 // This is UI input math (keyboard shortcuts only) — not timer logic — so it lives here.
@@ -64,8 +64,8 @@ export function KeyboardShortcuts() {
             if (event.key === ' ') {
                 event.preventDefault()
                 if (canStartPause.value) {
-                    if (timerState.value.phase === 'running') pauseTimer()
-                    else if (timerState.value.phase === 'paused') resumeTimer()
+                    if (Schedule.phase.value === 'running') pauseTimer()
+                    else if (Schedule.phase.value === 'paused') resumeTimer()
                     else startTimer()
                     handled = true
                 }
@@ -378,8 +378,8 @@ export function KeyboardShortcuts() {
             // Enter - edit current period
             else if (event.key === 'Enter' && !event.ctrlKey && !event.altKey && !event.shiftKey) {
                 event.preventDefault()
-                if (timerState.value.currentPeriodIndex !== null) {
-                    autoEditIndex.value = timerState.value.currentPeriodIndex
+                if (Schedule.currentPeriodIndex.value !== null) {
+                    autoEditIndex.value = Schedule.currentPeriodIndex.value
                     handled = true
                 }
             }

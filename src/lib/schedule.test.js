@@ -794,6 +794,126 @@ describe('invariants', () => {
 })
 
 // ---------------------------------------------------------------------------
+// setSnapshot()
+// ---------------------------------------------------------------------------
+
+describe('Schedule.setSnapshot()', () => {
+    it('sets all four fields at once', () => {
+        Schedule.setSnapshot({
+            phase: 'running',
+            currentPeriodIndex: 2,
+            timestampStarted: 1_500_000,
+            timestampPaused: null,
+        })
+
+        expect(Schedule.phase.value).toBe('running')
+        expect(Schedule.currentPeriodIndex.value).toBe(2)
+        expect(Schedule.timestampStarted.value).toBe(1_500_000)
+        expect(Schedule.timestampPaused.value).toBeNull()
+    })
+
+    it('field computeds reflect the new snapshot immediately', () => {
+        Schedule.setSnapshot({
+            phase: 'paused',
+            currentPeriodIndex: 1,
+            timestampStarted: 2_000_000,
+            timestampPaused: 2_060_000,
+        })
+
+        expect(Schedule.isPaused.value).toBe(true)
+        expect(Schedule.isRunning.value).toBe(false)
+        expect(Schedule.currentPeriodIndex.value).toBe(1)
+        expect(Schedule.timestampStarted.value).toBe(2_000_000)
+        expect(Schedule.timestampPaused.value).toBe(2_060_000)
+    })
+
+    it('snapshot computed mirrors the written values', () => {
+        const input = {
+            phase: 'completed',
+            currentPeriodIndex: null,
+            timestampStarted: null,
+            timestampPaused: null,
+        }
+        Schedule.setSnapshot(input)
+        expect(Schedule.snapshot.value).toEqual(input)
+    })
+
+    it('can restore idle state', () => {
+        Schedule.start()
+        Schedule.setSnapshot({
+            phase: 'idle',
+            currentPeriodIndex: null,
+            timestampStarted: null,
+            timestampPaused: null,
+        })
+        expect(Schedule.isIdle.value).toBe(true)
+        expect(Schedule.currentPeriodIndex.value).toBeNull()
+    })
+})
+
+// ---------------------------------------------------------------------------
+// restartCurrentPeriod()
+// ---------------------------------------------------------------------------
+
+describe('Schedule.restartCurrentPeriod()', () => {
+    it('running: sets timestampStarted = Date.now()', () => {
+        vi.useFakeTimers()
+        vi.setSystemTime(1_000_000)
+        Schedule.start()
+
+        vi.setSystemTime(1_060_000) // 60 s later
+        Schedule.restartCurrentPeriod()
+
+        // timestampStarted = timestampPaused ?? Date.now() = Date.now() = 1_060_000
+        expect(Schedule.timestampStarted.value).toBe(1_060_000)
+    })
+
+    it('paused: sets timestampStarted = timestampPaused', () => {
+        vi.useFakeTimers()
+        vi.setSystemTime(1_000_000)
+        Schedule.start()
+
+        vi.setSystemTime(1_060_000)
+        Schedule.pause() // timestampPaused = 1_060_000
+
+        vi.setSystemTime(1_120_000) // wall clock moves
+        Schedule.restartCurrentPeriod()
+
+        // timestampStarted = timestampPaused = 1_060_000 (NOT Date.now())
+        expect(Schedule.timestampStarted.value).toBe(1_060_000)
+        // phase still paused, timestampPaused preserved
+        expect(Schedule.phase.value).toBe('paused')
+        expect(Schedule.timestampPaused.value).toBe(1_060_000)
+    })
+
+    it('no-op if timestampStarted is null (idle)', () => {
+        Schedule.restartCurrentPeriod()
+        expect(Schedule.timestampStarted.value).toBeNull()
+    })
+
+    it('no-op if timestampStarted is null (completed)', () => {
+        Schedule.start()
+        Schedule.complete()
+        Schedule.restartCurrentPeriod()
+        expect(Schedule.timestampStarted.value).toBeNull()
+    })
+
+    it('does not modify currentPeriodIndex or phase', () => {
+        vi.useFakeTimers()
+        vi.setSystemTime(1_000_000)
+        Schedule.start()
+        Schedule.setIndex(3)
+        const beforePhase = Schedule.phase.value
+        const beforeIndex = Schedule.currentPeriodIndex.value
+
+        Schedule.restartCurrentPeriod()
+
+        expect(Schedule.phase.value).toBe(beforePhase)
+        expect(Schedule.currentPeriodIndex.value).toBe(beforeIndex)
+    })
+})
+
+// ---------------------------------------------------------------------------
 // Full lifecycle walkthrough
 // ---------------------------------------------------------------------------
 

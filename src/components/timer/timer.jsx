@@ -1,5 +1,6 @@
 import { useEffect } from 'preact/hooks'
-import { initializeTimer, timerState, currentPeriod } from '../../lib/timer'
+import { initializeTimer, currentPeriod } from '../../lib/timer'
+import { Schedule } from '../../lib/schedule'
 import { formatTime } from '../../lib/format'
 import { unlockAudio } from '../../lib/sounds'
 import { debugVisible } from '../../lib/debug'
@@ -37,7 +38,7 @@ export function Timer() {
 
     // Update document title based on timer state
     useEffect(() => {
-        const isRunning = timerState.value.phase === 'running'
+        const isRunning = Schedule.phase.value === 'running'
         const period = currentPeriod.value
 
         if (isRunning && period) {
@@ -73,7 +74,7 @@ export function Timer() {
             document.title = 'Tymer'
         }
     }, [
-        timerState.value.phase,
+        Schedule.phase.value,
         currentPeriod.value?.state.remaining,
         currentPeriod.value?.state.elapsed,
         currentPeriod.value?.config.userIntendedDuration,

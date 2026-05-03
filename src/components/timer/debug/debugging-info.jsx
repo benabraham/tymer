@@ -3,11 +3,11 @@ import {
     timerDuration,
     timerDurationElapsed,
     timerDurationRemaining,
-    timerState,
     timerOnLastPeriod,
     timerHasFinished,
     shouldGoToNextPeriod,
 } from '../../../lib/timer'
+import { Schedule } from '../../../lib/schedule'
 import { PeriodDetails } from './period-details'
 import { SoundNotificationTable } from './sound-notification-table'
 
@@ -26,13 +26,13 @@ export const DebuggingInfo = () => {
                 <code>timerDurationRemaining </code>{' '}
                 {formatTime(timerDurationRemaining.value, { mode: 'remaining', debug: true })}
                 <br />
-                <code>currentPeriodIndex </code> {timerState.value.currentPeriodIndex}
+                <code>currentPeriodIndex </code> {Schedule.currentPeriodIndex.value}
                 <br />
                 <code>timestampStarted </code>{' '}
-                {(timerState.value.timestampStarted || 0).toLocaleString()}
+                {(Schedule.timestampStarted.value || 0).toLocaleString()}
                 <br />
                 <code>timestampPaused </code>{' '}
-                {(timerState.value.timestampPaused || 0).toLocaleString()}
+                {(Schedule.timestampPaused.value || 0).toLocaleString()}
                 <br />
                 <code>shouldGoToNextPeriod </code> {shouldGoToNextPeriod.value ? 'YES' : 'no'}
                 <br />

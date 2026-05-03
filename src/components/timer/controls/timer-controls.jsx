@@ -8,7 +8,6 @@ import {
     faFlagCheckered,
 } from '@fortawesome/free-solid-svg-icons'
 import {
-    timerState,
     timerOnLastPeriod,
     shouldGoToNextPeriod,
     timerHasFinished,
@@ -25,6 +24,7 @@ import {
     moveToNextPeriod,
     moveToPreviousPeriod,
 } from '../../../lib/timer'
+import { Schedule } from '../../../lib/schedule'
 import { unlockAudio } from '../../../lib/sounds'
 import { SoundWrapper } from '../../common/sound-wrapper'
 
@@ -33,8 +33,8 @@ export const TimerControls = () => {
         // Unlock audio on first user interaction
         await unlockAudio()
 
-        if (timerState.value.phase === 'running') pauseTimer()
-        else if (timerState.value.phase === 'paused') resumeTimer()
+        if (Schedule.phase.value === 'running') pauseTimer()
+        else if (Schedule.phase.value === 'paused') resumeTimer()
         else startTimer()
     }
 
@@ -49,9 +49,9 @@ export const TimerControls = () => {
                     <FontAwesomeIcon icon={faArrowRotateLeft} className="icon--danger" /> Reset
                 </SoundWrapper>
                 <SoundWrapper onClick={handleStartPause} disabled={!canStartPause.value}>
-                    {timerState.value.phase === 'running' ? (
+                    {Schedule.phase.value === 'running' ? (
                         <FontAwesomeIcon icon={faPause} className="icon--warning" />
-                    ) : timerState.value.phase === 'paused' ? (
+                    ) : Schedule.phase.value === 'paused' ? (
                         <FontAwesomeIcon icon={faPlay} className="icon--success" />
                     ) : (
                         <>

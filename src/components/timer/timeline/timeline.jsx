@@ -5,6 +5,7 @@
  * @returns {JSX.Element}
  */
 import { timerDuration, timerState, autoEditIndex } from '../../../lib/timer'
+import { Schedule } from '../../../lib/schedule'
 import { msToMinutes } from '../../../lib/format'
 import { TimelinePeriod } from './timeline-period'
 import { useMemo, useEffect, useRef } from 'preact/hooks'
@@ -20,9 +21,9 @@ export const Timeline = () => {
 
     // Handle Enter key when timeline is focused
     const handleKeyDown = event => {
-        if (event.key === 'Enter' && timerState.value.currentPeriodIndex !== null) {
+        if (event.key === 'Enter' && Schedule.currentPeriodIndex.value !== null) {
             event.preventDefault()
-            autoEditIndex.value = timerState.value.currentPeriodIndex
+            autoEditIndex.value = Schedule.currentPeriodIndex.value
         }
     }
 
@@ -31,9 +32,9 @@ export const Timeline = () => {
         () =>
             getTimelineData({
                 periods: timerState.value.periods,
-                currentPeriodIndex: timerState.value.currentPeriodIndex,
+                currentPeriodIndex: Schedule.currentPeriodIndex.value,
             }),
-        [timerState.value.periods, timerState.value.currentPeriodIndex, timerState.value.elapsed],
+        [timerState.value.periods, Schedule.currentPeriodIndex.value, timerState.value.elapsed],
     )
 
     if (!timelinePeriods.length) return null

@@ -1,5 +1,6 @@
 import { formatTime } from '../../../lib/format'
 import { timerState } from '../../../lib/timer'
+import { Schedule } from '../../../lib/schedule'
 
 const getPeriodLifecycle = (index, currentPeriodIndex) => {
     if (currentPeriodIndex === null) return 'Future'
@@ -19,7 +20,7 @@ export const PeriodDetails = () => (
             <div class="tempPeriod__data">Lifecycle</div>
         </div>
         {timerState.value.periods.map((period, index) => {
-            const lifecycle = getPeriodLifecycle(index, timerState.value.currentPeriodIndex)
+            const lifecycle = getPeriodLifecycle(index, Schedule.currentPeriodIndex.value)
             return (
                 <div
                     key={index}
