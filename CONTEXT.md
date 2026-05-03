@@ -34,8 +34,20 @@ A Period whose index is greater than `currentPeriodIndex`. Not yet reached.
 _Avoid_: pending, scheduled
 
 **Phase**:
-The Timer's lifecycle stage: `idle` (never started), `running` (ticking), `paused` (started but stopped), `completed` (last Period was finalized).
+The Timer's lifecycle stage: `idle` (never started), `running` (ticking), `paused` (started but stopped), `completed` (last Period was finalized). Owned by **Schedule**.
 _Avoid_: status, mode
+
+### Schedule
+
+**Schedule**:
+The Timer's position-and-clock state — `phase`, `currentPeriodIndex`, `timestampStarted`, `timestampPaused`. Owned by a single signal-backed module that exposes verbs (`start`, `pause`, `resume`, `advance`, `rewind`, `complete`, `reset`) and read-only computeds. Schedule does not see Periods; Timer composes Schedule with the Periods list for verbs that need both.
+_Avoid_: state, status, clock
+
+**Schedule advance**:
+The Schedule transition that moves the Current Period one forward. Bumps `currentPeriodIndex` and recomputes `timestampStarted` from the unclaimed sub-minute remainder plus any pre-existing elapsed on the new Current Period. Pairs with **Period.complete** in Timer's `moveToNextPeriod`.
+
+**Schedule rewind**:
+The Schedule transition that moves the Current Period one backward. Adjusts `timestampStarted` to compensate for the elapsed swap between the old and new Current Period. Pairs with **Period.extendDuration** in Timer's `moveToPreviousPeriod`.
 
 ### Duration semantics
 
@@ -61,11 +73,13 @@ A periodic update driven by a Web Worker. Recomputes the Current Period's elapse
 
 ## Relationships
 
-- A **Timer** owns an ordered list of **Periods** plus a `currentPeriodIndex` and a `Phase`
+- A **Timer** owns an ordered list of **Periods** plus a **Schedule**
+- A **Schedule** owns `phase`, `currentPeriodIndex`, `timestampStarted`, `timestampPaused`. Phase ↔ timestamp coherence (e.g. `running ⇒ timestampStarted !== null`) is a Schedule invariant
 - Each **Period** has exactly one **PeriodConfig** and one **PeriodState**
-- **Past / Current / Future** are derived from a Period's index vs `currentPeriodIndex` — never stored
+- **Past / Current / Future** are derived from a Period's index vs Schedule's `currentPeriodIndex` — never stored
 - **Planned duration** lives in `PeriodConfig`; **Recorded duration** lives in `PeriodState` (as `elapsed` once a Period becomes Past)
 - **Auto-extension** mutates `PeriodState.duration` only; **Overtime** is the condition that may trigger it
+- Mixed verbs that touch both Schedule and Periods (e.g. `moveToNextPeriod`) live in Timer and wrap their multi-signal writes in `batch()`
 
 ## Example dialogue
 
