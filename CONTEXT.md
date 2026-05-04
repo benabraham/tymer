@@ -19,6 +19,10 @@ The clock-driven facet of a Period: `duration`, `elapsed`, `remaining`. Mutated 
 **Period type**:
 Categorizes a Period as `work`, `break`, or `fun`. Affects sound selection and display styling. Never feeds into time math.
 
+**Periods**:
+The ordered list of Period objects owned by Timer. Mutations of this list (insertion, removal) must keep `Schedule.currentPeriodIndex` coherent — the rules live in the `Periods` Module, which exposes `insert` (preserves the conceptual Current Period), `insertMakingCurrent` (new Period takes over the Current Period's slot), and `remove` (precondition: `indexToRemove` is not the Current Period — caller pre-navigates).
+_Avoid_: list, array, sequence
+
 ### Lifecycle
 
 **Past Period**:

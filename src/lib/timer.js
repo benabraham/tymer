@@ -6,6 +6,7 @@ import { PERIOD_CONFIG, UI_UPDATE_INTERVAL, DURATION_TO_ADD_AUTOMATICALLY } from
 import { SoundScheduler } from './sound-scheduler'
 import { AVAILABLE_SOUNDS } from './sound-discovery'
 import { Period } from './period'
+import { Periods } from './periods'
 import { Schedule } from './schedule'
 
 // default timer configuration — periods and types only; Schedule owns phase/timestamps/index
@@ -596,26 +597,18 @@ export const removePeriodByIndex = periodIndex => {
         }
     }
 
-    const newPeriods = timerState.value.periods.filter((_, index) => index !== periodIndex)
-
-    // Adjust current period index if needed
-    let newCurrentPeriodIndex = Schedule.currentPeriodIndex.value
-    if (newCurrentPeriodIndex !== null && newCurrentPeriodIndex > periodIndex) {
-        newCurrentPeriodIndex = newCurrentPeriodIndex - 1
-    } else if (newCurrentPeriodIndex === periodIndex) {
-        // If we moved to next and then removed, adjust index down by 1
-        const wasLastPeriod = periodIndex === timerState.value.periods.length - 1
-        newCurrentPeriodIndex = wasLastPeriod
-            ? Schedule.currentPeriodIndex.value
-            : Schedule.currentPeriodIndex.value - 1
-    }
-
-    batch(() => {
-        timerState.value = { ...timerState.value, periods: newPeriods }
-        Schedule.setIndex(newCurrentPeriodIndex)
+    const result = Periods.remove({
+        periods: timerState.value.periods,
+        currentIndex: Schedule.currentPeriodIndex.value,
+        indexToRemove: periodIndex,
     })
 
-    log('removed period by index', { periodIndex, newLength: newPeriods.length }, 5)
+    batch(() => {
+        timerState.value = { ...timerState.value, periods: result.periods }
+        Schedule.setIndex(result.currentIndex)
+    })
+
+    log('removed period by index', { periodIndex, newLength: result.periods.length }, 5)
 }
 
 // Signal to track which period should auto-open for editing
@@ -631,27 +624,23 @@ export const addPeriodAtIndex = (
         note: periodConfig.note,
         durationMs: periodConfig.duration,
     })
-    const newPeriods = [...timerState.value.periods]
 
-    // Insert after the specified index
-    const newPeriodIndex = afterIndex + 1
-    newPeriods.splice(newPeriodIndex, 0, newPeriod)
-
-    // Adjust current period index if needed
-    let newCurrentPeriodIndex = Schedule.currentPeriodIndex.value
-    if (newCurrentPeriodIndex !== null && newCurrentPeriodIndex > afterIndex) {
-        newCurrentPeriodIndex = newCurrentPeriodIndex + 1
-    }
+    const result = Periods.insert({
+        periods: timerState.value.periods,
+        currentIndex: Schedule.currentPeriodIndex.value,
+        atIndex: afterIndex + 1,
+        period: newPeriod,
+    })
 
     batch(() => {
-        timerState.value = { ...timerState.value, periods: newPeriods }
-        Schedule.setIndex(newCurrentPeriodIndex)
+        timerState.value = { ...timerState.value, periods: result.periods }
+        Schedule.setIndex(result.currentIndex)
     })
 
     // Signal that the new period should auto-open for editing
-    autoEditIndex.value = newPeriodIndex
+    autoEditIndex.value = afterIndex + 1
 
-    log('added period at index', { afterIndex, newLength: newPeriods.length }, 5)
+    log('added period at index', { afterIndex, newLength: result.periods.length }, 5)
 }
 
 // Apply a Period → Period op to the period at the given index.
