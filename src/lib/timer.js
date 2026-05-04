@@ -8,13 +8,6 @@ import { AVAILABLE_SOUNDS } from './sound-discovery'
 import { Period } from './period'
 import { Schedule } from './schedule'
 
-// merge a partial { config?, state? } update into an existing Period
-const mergePeriod = (period, partial) => ({
-    ...period,
-    ...(partial.config && { config: { ...period.config, ...partial.config } }),
-    ...(partial.state && { state: { ...period.state, ...partial.state } }),
-})
-
 // default timer configuration — periods and types only; Schedule owns phase/timestamps/index
 export const initialState = {
     types: ['work', 'break', 'fun'],
@@ -295,14 +288,7 @@ export const adjustDuration = durationDelta => {
     // Ensure elapsed is fresh so the elapsed-floor in extendDuration uses the right value
     updateCurrentPeriod()
 
-    const extended = Period.extendDuration(currentPeriod.value, durationDelta)
-
-    updateTimerState({
-        currentPeriodProperties: {
-            config: { userIntendedDuration: extended.config.userIntendedDuration },
-            state: { duration: extended.state.duration, remaining: extended.state.remaining },
-        },
-    })
+    applyToPeriod(Schedule.currentPeriodIndex.value, p => Period.extendDuration(p, durationDelta))
 
     // Notify sound scheduler of duration change
     soundScheduler.onDurationChange()
@@ -356,15 +342,9 @@ const hasPeriodReachedCompletion = (periodDurationElapsed, periodDuration) =>
 // handle actions when a period is completed
 const handlePeriodElapsed = () => {
     // auto-extend state.duration only; config.userIntendedDuration is intentionally preserved
-    const extended = Period.autoExtendDuration(currentPeriod.value, DURATION_TO_ADD_AUTOMATICALLY)
-    updateTimerState({
-        currentPeriodProperties: {
-            state: {
-                duration: extended.state.duration,
-                remaining: extended.state.remaining,
-            },
-        },
-    })
+    applyToPeriod(Schedule.currentPeriodIndex.value, p =>
+        Period.autoExtendDuration(p, DURATION_TO_ADD_AUTOMATICALLY),
+    )
 
     log('period automatically extended', logSnapshot(), 2)
 }
@@ -384,15 +364,9 @@ const updateCurrentPeriod = () => {
     // Write fresh elapsed/remaining first so handlePeriodElapsed sees the
     // real elapsed when it auto-extends (otherwise duration cannot clamp
     // to elapsed and the elapsed bar can overflow the period block).
-    const withElapsed = Period.applyElapsed(currentPeriod.value, periodDurationElapsed)
-    updateTimerState({
-        currentPeriodProperties: {
-            state: {
-                elapsed: withElapsed.state.elapsed,
-                remaining: withElapsed.state.remaining,
-            },
-        },
-    })
+    applyToPeriod(Schedule.currentPeriodIndex.value, p =>
+        Period.applyElapsed(p, periodDurationElapsed),
+    )
 
     if (hasPeriodReachedCompletion(periodDurationElapsed, currentPeriod.value.state.duration))
         handlePeriodElapsed()
@@ -412,18 +386,7 @@ export const moveToNextPeriod = () => {
     const { period: completed, remainder } = Period.complete(currentPeriod.value)
 
     batch(() => {
-        updateTimerState({
-            currentPeriodProperties: {
-                config: {
-                    userIntendedDuration: completed.config.userIntendedDuration,
-                },
-                state: {
-                    duration: completed.state.duration,
-                    elapsed: completed.state.elapsed,
-                    remaining: 0,
-                },
-            },
-        })
+        applyToPeriod(Schedule.currentPeriodIndex.value, () => completed)
 
         Schedule.advance({ remainderMs: remainder, nextPeriodElapsedMs: nextPeriod.state.elapsed })
     })
@@ -443,16 +406,12 @@ export const moveToPreviousPeriod = () => {
     const previousPeriod = timerState.value.periods[previousPeriodIndex]
 
     // add duration to the previous period's duration so it doesn't finish right away
-    const extendedDuration = previousPeriod.state.duration + DURATION_TO_ADD_AUTOMATICALLY
 
     batch(() => {
-        updateTimerState({
-            previousPeriodProperties: {
-                state: {
-                    duration: extendedDuration,
-                },
-            },
-        })
+        applyToPeriod(previousPeriodIndex, p => ({
+            ...p,
+            state: { ...p.state, duration: p.state.duration + DURATION_TO_ADD_AUTOMATICALLY },
+        }))
 
         Schedule.rewind({
             extensionMs: DURATION_TO_ADD_AUTOMATICALLY,
@@ -471,18 +430,8 @@ export const moveElapsedTimeToPreviousPeriod = () => {
     log('move time back', logSnapshot(), 2)
     const elapsed = currentPeriod.value.state.elapsed
     const previousPeriodIndex = Schedule.currentPeriodIndex.value - 1
-    const previousPeriod = timerState.value.periods[previousPeriodIndex]
-    const absorbed = Period.absorbAsCompleted(previousPeriod, elapsed)
 
-    updateTimerState({
-        previousPeriodProperties: {
-            state: {
-                duration: absorbed.state.duration,
-                elapsed: absorbed.state.elapsed,
-                remaining: absorbed.state.remaining,
-            },
-        },
-    })
+    applyToPeriod(previousPeriodIndex, p => Period.absorbAsCompleted(p, elapsed))
 
     adjustElapsed(-elapsed)
 
@@ -497,12 +446,7 @@ export const changeType = () => {
     const currentIndex = types.indexOf(currentType) // Find the index of the current type
     const nextIndex = (currentIndex + 1) % types.length // Calculate the next index (with wrap-around)
 
-    const updated = Period.setType(currentPeriod.value, types[nextIndex])
-    updateTimerState({
-        currentPeriodProperties: {
-            config: { type: updated.config.type },
-        },
-    })
+    applyToPeriod(Schedule.currentPeriodIndex.value, p => Period.setType(p, types[nextIndex]))
     log('changed current type', logSnapshot(), 8)
 }
 
@@ -514,12 +458,7 @@ export const setCurrentPeriodType = type => {
         return
     }
 
-    const updated = Period.setType(currentPeriod.value, type)
-    updateTimerState({
-        currentPeriodProperties: {
-            config: { type: updated.config.type },
-        },
-    })
+    applyToPeriod(Schedule.currentPeriodIndex.value, p => Period.setType(p, type))
     log(`set current period type to ${type}`, logSnapshot(), 8)
 }
 
@@ -623,19 +562,7 @@ export const handleTimerCompletion = () => {
     // updates are not combined because they need to be run sequentially
 
     const { period: completed } = Period.complete(currentPeriod.value)
-
-    updateTimerState({
-        currentPeriodProperties: {
-            config: {
-                userIntendedDuration: completed.config.userIntendedDuration,
-            },
-            state: {
-                duration: completed.state.duration,
-                elapsed: completed.state.elapsed,
-                remaining: 0,
-            },
-        },
-    })
+    applyToPeriod(Schedule.currentPeriodIndex.value, () => completed)
 
     const filteredPeriods = timerState.value.periods.filter(
         period => period.state.elapsed >= DURATION_TO_ADD_AUTOMATICALLY,
@@ -656,11 +583,11 @@ export const handleTimerCompletion = () => {
 // form use it for snapshot restore (handleCancel) which doesn't map to any single Period.X op.
 // For typed single-field edits prefer Period.setType / Period.setNote where possible.
 export const updatePeriod = (periodIndex, updates) => {
-    const newPeriods = timerState.value.periods.map((period, index) =>
-        index === periodIndex ? mergePeriod(period, updates) : period,
-    )
-
-    timerState.value = { ...timerState.value, periods: newPeriods }
+    applyToPeriod(periodIndex, period => ({
+        ...period,
+        ...(updates.config && { config: { ...period.config, ...updates.config } }),
+        ...(updates.state && { state: { ...period.state, ...updates.state } }),
+    }))
 
     log('updated period', { periodIndex, updates }, 5)
 }
@@ -741,47 +668,13 @@ export const addPeriodAtIndex = (
     log('added period at index', { afterIndex, newLength: newPeriods.length }, 5)
 }
 
-// helper function to update currentPeriodProperties and/or previousPeriodProperties
-// in timerState. Both keys accept a partial { config?, state? } object that is
-// deep-merged into the respective period. Phase/timestamps/index are owned by
-// Schedule — this function only touches the periods array.
-const updateTimerState = updateParams => {
-    const { previousPeriodProperties = {}, currentPeriodProperties = {} } = updateParams
-
-    batch(() => {
-        // Update the previous period
-        if (
-            Schedule.currentPeriodIndex.value === 0
-            && Object.keys(previousPeriodProperties).length > 0
-        ) {
-            console.error(
-                'Tried to update the previous period but there is none. Aborting. State not changed.',
-            )
-            return
-        }
-
-        if (Object.keys(previousPeriodProperties).length > 0) {
-            timerState.value = {
-                ...timerState.value,
-                periods: timerState.value.periods.map((period, index) =>
-                    index !== Schedule.currentPeriodIndex.value - 1
-                        ? period
-                        : mergePeriod(period, previousPeriodProperties),
-                ),
-            }
-        }
-        // Update the current period
-        if (Object.keys(currentPeriodProperties).length > 0) {
-            timerState.value = {
-                ...timerState.value,
-                periods: timerState.value.periods.map((period, index) =>
-                    index !== Schedule.currentPeriodIndex.value
-                        ? period
-                        : mergePeriod(period, currentPeriodProperties),
-                ),
-            }
-        }
-    })
+// Apply a Period → Period op to the period at the given index.
+// Out-of-range index produces a no-op write. Index validation is the caller's responsibility.
+export const applyToPeriod = (index, op) => {
+    timerState.value = {
+        ...timerState.value,
+        periods: timerState.value.periods.map((period, i) => (i === index ? op(period) : period)),
+    }
 }
 
 // update function called by interval timer
