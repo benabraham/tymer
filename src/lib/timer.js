@@ -578,20 +578,6 @@ export const handleTimerCompletion = () => {
     playSound('timerFinished')
 }
 
-// Generic utility: update a specific period by index with an arbitrary partial { config?, state? }.
-// Kept as a deep-merge utility rather than typed Period ops because callers like the timeline edit
-// form use it for snapshot restore (handleCancel) which doesn't map to any single Period.X op.
-// For typed single-field edits prefer Period.setType / Period.setNote where possible.
-export const updatePeriod = (periodIndex, updates) => {
-    applyToPeriod(periodIndex, period => ({
-        ...period,
-        ...(updates.config && { config: { ...period.config, ...updates.config } }),
-        ...(updates.state && { state: { ...period.state, ...updates.state } }),
-    }))
-
-    log('updated period', { periodIndex, updates }, 5)
-}
-
 // remove a specific period by index
 export const removePeriodByIndex = periodIndex => {
     if (timerState.value.periods.length <= 1) return // Prevent removing the last period

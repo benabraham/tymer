@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCircleMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { msToMinutes, formatTime } from '../../../lib/format'
 import {
-    updatePeriod,
+    applyToPeriod,
     pauseTimer,
     resumeTimer,
     timerState,
@@ -21,7 +21,7 @@ import { playSound } from '../../../lib/sounds'
 export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) => {
     const [isEditing, setIsEditing] = useState(false)
     const [wasTimerRunning, setWasTimerRunning] = useState(false)
-    const [originalValues, setOriginalValues] = useState(null)
+    const [originalPeriod, setOriginalPeriod] = useState(null)
     const editRef = useRef()
     const noteInputRef = useRef()
 
@@ -47,18 +47,8 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
             pauseTimer()
         }
 
-        // Store original values for potential cancellation
-        setOriginalValues({
-            config: {
-                type: period.config.type,
-                note: period.config.note,
-                userIntendedDuration: period.config.userIntendedDuration,
-            },
-            state: {
-                duration: period.state.duration,
-                remaining: period.state.remaining,
-            },
-        })
+        // Store original period for potential cancellation
+        setOriginalPeriod(period)
 
         setIsEditing(true)
     }
@@ -66,7 +56,7 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
     const handleSave = useCallback(() => {
         // Values are already in timer state, just exit edit mode
         setIsEditing(false)
-        setOriginalValues(null)
+        setOriginalPeriod(null)
 
         // Resume timer if it was running before edit
         if (wasTimerRunning) {
@@ -75,37 +65,38 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
     }, [wasTimerRunning])
 
     const handleCancel = useCallback(() => {
-        // Restore original values if we have them
-        if (originalValues) {
-            updatePeriod(index, originalValues)
+        // Restore original period if we have it
+        if (originalPeriod) {
+            applyToPeriod(index, () => originalPeriod)
         }
 
         setIsEditing(false)
-        setOriginalValues(null)
+        setOriginalPeriod(null)
 
         // Resume timer if it was running before edit
         if (wasTimerRunning) {
             resumeTimer()
         }
-    }, [originalValues, index, wasTimerRunning])
+    }, [originalPeriod, index, wasTimerRunning])
 
     // Update timer state immediately when values change
     const handleTypeChange = newType => {
-        updatePeriod(index, { config: { type: newType } })
+        applyToPeriod(index, p => Period.setType(p, newType))
     }
 
     const handleDurationChange = newDuration => {
         const durationMs = newDuration * 60 * 1000
         const currentPeriodIndex = Schedule.currentPeriodIndex.value
         const isPast = currentPeriodIndex !== null && index < currentPeriodIndex
-        const updated = isPast
-            ? Period.amendRecordedDuration(period, durationMs)
-            : Period.setPlannedDuration(period, durationMs)
-        updatePeriod(index, { config: { ...updated.config }, state: { ...updated.state } })
+        applyToPeriod(index, p =>
+            isPast
+                ? Period.amendRecordedDuration(p, durationMs)
+                : Period.setPlannedDuration(p, durationMs),
+        )
     }
 
     const handleNoteChange = newNote => {
-        updatePeriod(index, { config: { note: newNote } })
+        applyToPeriod(index, p => Period.setNote(p, newNote))
     }
 
     const handleDelete = () => {
