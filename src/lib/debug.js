@@ -1,10 +1,6 @@
-import { signal } from '@preact/signals'
+import { createTogglePreference } from './preference'
 
-const DEBUG_KEY = 'tymer-debug-visible'
-
-export const debugVisible = signal(localStorage.getItem(DEBUG_KEY) === 'true')
-
-export const toggleDebug = () => {
-    debugVisible.value = !debugVisible.value
-    localStorage.setItem(DEBUG_KEY, debugVisible.value)
-}
+export const { value: debugVisible, toggle: toggleDebug } = createTogglePreference(
+    'tymer-debug-visible',
+    false,
+)

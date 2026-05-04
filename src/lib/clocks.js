@@ -1,10 +1,6 @@
-import { signal } from '@preact/signals'
+import { createTogglePreference } from './preference'
 
-const CLOCKS_KEY = 'tymer-clocks-visible'
-
-export const clocksVisible = signal(localStorage.getItem(CLOCKS_KEY) !== 'false')
-
-export const toggleClocks = () => {
-    clocksVisible.value = !clocksVisible.value
-    localStorage.setItem(CLOCKS_KEY, clocksVisible.value)
-}
+export const { value: clocksVisible, toggle: toggleClocks } = createTogglePreference(
+    'tymer-clocks-visible',
+    true,
+)
