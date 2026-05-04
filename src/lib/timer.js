@@ -463,6 +463,14 @@ export const setCurrentPeriodType = type => {
     log(`set current period type to ${type}`, logSnapshot(), 8)
 }
 
+// Private helper: write a Periods.X result tuple atomically into timerState + Schedule.
+const writePeriodsState = ({ periods, currentIndex }) => {
+    batch(() => {
+        timerState.value = { ...timerState.value, periods }
+        Schedule.setIndex(currentIndex)
+    })
+}
+
 // add a new period after the current one
 export const addPeriod = () => {
     if (Schedule.currentPeriodIndex.value === null) return
@@ -473,12 +481,15 @@ export const addPeriod = () => {
     const hasElapsedMoreThan60Seconds = currentPeriod.value.state.elapsed > 60 * 1000
 
     if (hasElapsedMoreThan60Seconds) {
-        // Insert after current period and move to it
-        const newPeriods = [...timerState.value.periods]
-        newPeriods.splice(currentIndex + 1, 0, newPeriod)
-
-        timerState.value = { ...timerState.value, periods: newPeriods }
-
+        // Insert after current period and move to it.
+        // atIndex > currentIndex so Periods.insert keeps currentIndex unchanged.
+        const result = Periods.insert({
+            periods: timerState.value.periods,
+            currentIndex,
+            atIndex: currentIndex + 1,
+            period: newPeriod,
+        })
+        writePeriodsState(result)
         moveToNextPeriod()
         log('added new period after current and moved to it', logSnapshot(), 5)
     } else {
@@ -487,13 +498,17 @@ export const addPeriod = () => {
         // Period.unstarted can use config.userIntendedDuration as the fresh duration.
         const displacedConfig = currentPeriod.value.config
 
-        const newPeriods = [...timerState.value.periods]
-        newPeriods.splice(currentIndex, 0, newPeriod)
+        const result = Periods.insertMakingCurrent({
+            periods: timerState.value.periods,
+            currentIndex,
+            atIndex: currentIndex,
+            period: newPeriod,
+        })
 
         batch(() => {
-            timerState.value = { ...timerState.value, periods: newPeriods }
+            timerState.value = { ...timerState.value, periods: result.periods }
+            Schedule.setIndex(result.currentIndex)
             // Stay at same index (now the new period) and reset start timestamp
-            Schedule.setIndex(currentIndex)
             Schedule.restartCurrentPeriod()
         })
 
@@ -502,13 +517,7 @@ export const addPeriod = () => {
         // period was only auto-extended, userIntendedDuration still holds the original user target.
         // Manual extensions (via adjustDuration / Period.extendDuration) do update userIntendedDuration,
         // so unstarted correctly reflects any manual duration edit the user had made.
-        const resetDisplaced = Period.unstarted(displacedConfig)
-        timerState.value = {
-            ...timerState.value,
-            periods: timerState.value.periods.map((period, index) =>
-                index !== currentIndex + 1 ? period : resetDisplaced,
-            ),
-        }
+        applyToPeriod(currentIndex + 1, () => Period.unstarted(displacedConfig))
 
         log('added new period before current, reset current period elapsed time', logSnapshot(), 5)
     }
@@ -519,35 +528,24 @@ export const removePeriod = () => {
     if (Schedule.currentPeriodIndex.value === null) return
     if (timerState.value.periods.length <= 1) return // Prevent removing the last period
 
-    const currentIndex = Schedule.currentPeriodIndex.value
-    const isLastPeriod = currentIndex === timerState.value.periods.length - 1
+    const indexToRemove = Schedule.currentPeriodIndex.value
+    const isLastPeriod = indexToRemove === timerState.value.periods.length - 1
 
-    // Store the period to remove
-    const periodToRemove = currentIndex
-
-    // First move to the next or previous period
+    // First move to the next or previous period (carries Period.complete round-down + sound)
     if (isLastPeriod) {
-        // If we're on the last period, move to the previous period
         moveToPreviousPeriod()
     } else {
-        // Otherwise move to next period
         moveToNextPeriod()
     }
 
-    // After navigation, remove the original period
-    const newPeriods = timerState.value.periods.filter((_, index) => index !== periodToRemove)
-
-    // Adjust current index if needed
-    // If we moved to next, we need to subtract 1 from currentPeriodIndex
-    // because removing a period shifts all indices down by 1
-    const newIndex = isLastPeriod
-        ? Schedule.currentPeriodIndex.value
-        : Schedule.currentPeriodIndex.value - 1
-
-    batch(() => {
-        timerState.value = { ...timerState.value, periods: newPeriods }
-        Schedule.setIndex(newIndex)
+    // After navigation, remove the original period using the post-navigation currentIndex
+    const result = Periods.remove({
+        periods: timerState.value.periods,
+        currentIndex: Schedule.currentPeriodIndex.value,
+        indexToRemove,
     })
+
+    writePeriodsState(result)
 
     log('removed period', logSnapshot(), 5)
 }
