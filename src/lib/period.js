@@ -3,6 +3,8 @@
 // Lifecycle (Past / Current / Future) is NEVER stored — always derived from
 // index vs currentPeriodIndex at the call site.
 
+import { MIN_PERIOD_MS } from './config.js'
+
 // Internal helper: round a millisecond value down to the nearest whole minute.
 // Returns { roundedDown, remainder }.
 const roundDownToBaseMinute = timeInMs => {
@@ -37,11 +39,27 @@ const autoExtendDuration = (period, deltaMs) => {
     }
 }
 
-// Completes a period by snapping elapsed down to a whole-minute boundary.
-// Returns { period, remainder } where remainder is the sub-minute time that was
-// not claimed — the caller should push this into the next period's timestampStarted
-// so no real time is lost.
+// Completes a period by snapping elapsed to a whole-minute boundary.
+// When elapsed >= MIN_PERIOD_MS: round DOWN to the nearest minute (remainder
+// is positive — caller backdates the next period's start so no time is lost).
+// When elapsed < MIN_PERIOD_MS: snap UP to MIN_PERIOD_MS so no past period
+// is ever shorter than the floor (remainder is negative — caller pushes the
+// next period's start forward to "pay back" the credited time).
 const complete = period => {
+    if (period.state.elapsed < MIN_PERIOD_MS) {
+        const completed = {
+            ...period,
+            config: { ...period.config, userIntendedDuration: MIN_PERIOD_MS },
+            state: {
+                ...period.state,
+                duration: MIN_PERIOD_MS,
+                elapsed: MIN_PERIOD_MS,
+                remaining: 0,
+            },
+        }
+        return { period: completed, remainder: period.state.elapsed - MIN_PERIOD_MS }
+    }
+
     const { roundedDown, remainder } = roundDownToBaseMinute(period.state.elapsed)
     const completed = {
         ...period,
@@ -77,9 +95,10 @@ const absorbAsCompleted = (period, extraMs) => ({
 // User-driven duration delta. Updates BOTH state.duration AND config.userIntendedDuration
 // to the same new value (manual edits realign the two; auto-extension is the only thing
 // that lets them diverge). Floors at state.elapsed so duration cannot shrink below time
-// already lived. Recomputes state.remaining so the Period invariant holds in one step.
+// already lived, and at MIN_PERIOD_MS so periods are never shorter than the floor.
+// Recomputes state.remaining so the Period invariant holds in one step.
 const extendDuration = (period, deltaMs) => {
-    const duration = Math.max(period.state.elapsed, period.state.duration + deltaMs)
+    const duration = Math.max(MIN_PERIOD_MS, period.state.elapsed, period.state.duration + deltaMs)
     return {
         ...period,
         config: {
@@ -97,36 +116,45 @@ const extendDuration = (period, deltaMs) => {
 // Constructs a brand-new Period from scratch.
 // Returns { config: { type, note, userIntendedDuration }, state: { duration, elapsed: 0, remaining } }.
 // Lifecycle (Past / Current / Future) is derived from position, never stored.
-const create = ({ type, note, durationMs }) => ({
-    config: {
-        type,
-        note,
-        userIntendedDuration: durationMs,
-    },
-    state: {
-        duration: durationMs,
-        elapsed: 0,
-        remaining: durationMs,
-    },
-})
+// Clamps durationMs to MIN_PERIOD_MS so a period can never be created shorter than the floor.
+const create = ({ type, note, durationMs }) => {
+    const duration = Math.max(MIN_PERIOD_MS, durationMs)
+    return {
+        config: {
+            type,
+            note,
+            userIntendedDuration: duration,
+        },
+        state: {
+            duration,
+            elapsed: 0,
+            remaining: duration,
+        },
+    }
+}
 
 // Produces a fresh Period from an existing PeriodConfig, resetting state to initial.
-// Uses config.userIntendedDuration as the source of truth for the fresh duration.
-const unstarted = config => ({
-    config,
-    state: {
-        duration: config.userIntendedDuration,
-        elapsed: 0,
-        remaining: config.userIntendedDuration,
-    },
-})
+// Uses config.userIntendedDuration as the source of truth for the fresh duration,
+// clamped to MIN_PERIOD_MS in case persisted state was below the floor.
+const unstarted = config => {
+    const duration = Math.max(MIN_PERIOD_MS, config.userIntendedDuration)
+    return {
+        config: { ...config, userIntendedDuration: duration },
+        state: {
+            duration,
+            elapsed: 0,
+            remaining: duration,
+        },
+    }
+}
 
 // Sets the planned duration for a Current or Future Period.
 // Updates BOTH config.userIntendedDuration AND state.duration to ms.
 // Recomputes state.remaining = max(0, ms - state.elapsed), preserving elapsed.
-// Floors at state.elapsed — cannot shrink below time already lived.
+// Floors at state.elapsed (cannot shrink below time already lived) and
+// at MIN_PERIOD_MS (periods are never shorter than the floor).
 const setPlannedDuration = (period, ms) => {
-    const duration = Math.max(period.state.elapsed, ms)
+    const duration = Math.max(MIN_PERIOD_MS, period.state.elapsed, ms)
     return {
         ...period,
         config: {
@@ -142,22 +170,26 @@ const setPlannedDuration = (period, ms) => {
 }
 
 // Amends the recorded duration for a Past Period.
-// Overwrites the recording: state.elapsed = ms, state.duration = ms, state.remaining = 0.
+// Overwrites the recording: state.elapsed = duration = ms, state.remaining = 0.
 // Also updates config.userIntendedDuration = ms to keep config and state aligned.
-// No elapsed-floor — the caller is rewriting the historical record outright.
-const amendRecordedDuration = (period, ms) => ({
-    ...period,
-    config: {
-        ...period.config,
-        userIntendedDuration: ms,
-    },
-    state: {
-        ...period.state,
-        duration: ms,
-        elapsed: ms,
-        remaining: 0,
-    },
-})
+// No elapsed-floor — the caller is rewriting the historical record outright — but
+// floored at MIN_PERIOD_MS so the past record cannot be set shorter than the floor.
+const amendRecordedDuration = (period, ms) => {
+    const duration = Math.max(MIN_PERIOD_MS, ms)
+    return {
+        ...period,
+        config: {
+            ...period.config,
+            userIntendedDuration: duration,
+        },
+        state: {
+            ...period.state,
+            duration,
+            elapsed: duration,
+            remaining: 0,
+        },
+    }
+}
 
 // Returns a new Period with only config.type changed. Everything else is preserved.
 const setType = (period, type) => ({

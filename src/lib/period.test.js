@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Period } from './period'
+import { MIN_PERIOD_MS } from './config'
 
 // Helper to build a minimal period for tests
 const makePeriod = ({
@@ -115,7 +116,7 @@ describe('Period.complete', () => {
         expect(completed.config.userIntendedDuration).toBe(60 * 1000)
     })
 
-    it('elapsed at 0 → remainder = 0, duration/elapsed = 0', () => {
+    it('elapsed at 0 → snaps up to MIN_PERIOD_MS, remainder is negative', () => {
         const period = makePeriod({
             duration: 48 * 60 * 1000,
             elapsed: 0,
@@ -125,11 +126,31 @@ describe('Period.complete', () => {
 
         const { period: completed, remainder } = Period.complete(period)
 
-        expect(remainder).toBe(0)
-        expect(completed.state.elapsed).toBe(0)
-        expect(completed.state.duration).toBe(0)
+        // Snap up to 1 minute so no past period is ever shorter than the floor.
+        // Negative remainder pushes the next period's start forward to pay back
+        // the time credited to the past period.
+        expect(remainder).toBe(-MIN_PERIOD_MS)
+        expect(completed.state.elapsed).toBe(MIN_PERIOD_MS)
+        expect(completed.state.duration).toBe(MIN_PERIOD_MS)
         expect(completed.state.remaining).toBe(0)
-        expect(completed.config.userIntendedDuration).toBe(0)
+        expect(completed.config.userIntendedDuration).toBe(MIN_PERIOD_MS)
+    })
+
+    it('elapsed sub-minute (30s) → snaps up to MIN_PERIOD_MS, remainder = elapsed - MIN_PERIOD_MS', () => {
+        const period = makePeriod({
+            duration: 48 * 60 * 1000,
+            elapsed: 30 * 1000,
+            remaining: 48 * 60 * 1000 - 30 * 1000,
+            userIntendedDuration: 48 * 60 * 1000,
+        })
+
+        const { period: completed, remainder } = Period.complete(period)
+
+        expect(remainder).toBe(30 * 1000 - MIN_PERIOD_MS)
+        expect(completed.state.elapsed).toBe(MIN_PERIOD_MS)
+        expect(completed.state.duration).toBe(MIN_PERIOD_MS)
+        expect(completed.state.remaining).toBe(0)
+        expect(completed.config.userIntendedDuration).toBe(MIN_PERIOD_MS)
     })
 
     it('config.userIntendedDuration is updated to the rounded-down value', () => {
@@ -328,6 +349,20 @@ describe('Period.extendDuration', () => {
         expect(result.config.type).toBe('break')
         expect(result.config.note).toBe('coffee')
     })
+
+    it('negative delta on small unstarted period → floors at MIN_PERIOD_MS, not at 0', () => {
+        const period = makePeriod({
+            duration: 2 * 60 * 1000,
+            elapsed: 0,
+            remaining: 2 * 60 * 1000,
+            userIntendedDuration: 2 * 60 * 1000,
+        })
+        const result = Period.extendDuration(period, -5 * 60 * 1000)
+
+        expect(result.state.duration).toBe(MIN_PERIOD_MS)
+        expect(result.config.userIntendedDuration).toBe(MIN_PERIOD_MS)
+        expect(result.state.remaining).toBe(MIN_PERIOD_MS)
+    })
 })
 
 describe('Period.absorbAsCompleted', () => {
@@ -426,6 +461,14 @@ describe('Period.create', () => {
         expect(result.config.userIntendedDuration).toBe(durationMs)
         expect(result.state.duration).toBe(durationMs)
     })
+
+    it('durationMs below MIN_PERIOD_MS → clamped to MIN_PERIOD_MS', () => {
+        const result = Period.create({ type: 'work', note: '', durationMs: 30 * 1000 })
+
+        expect(result.state.duration).toBe(MIN_PERIOD_MS)
+        expect(result.state.remaining).toBe(MIN_PERIOD_MS)
+        expect(result.config.userIntendedDuration).toBe(MIN_PERIOD_MS)
+    })
 })
 
 describe('Period.unstarted', () => {
@@ -485,6 +528,15 @@ describe('Period.unstarted', () => {
         Period.unstarted(config)
 
         expect(config.userIntendedDuration).toBe(originalDuration)
+    })
+
+    it('userIntendedDuration below MIN_PERIOD_MS → clamped to MIN_PERIOD_MS', () => {
+        const config = makeConfig({ userIntendedDuration: 30 * 1000 })
+        const result = Period.unstarted(config)
+
+        expect(result.state.duration).toBe(MIN_PERIOD_MS)
+        expect(result.state.remaining).toBe(MIN_PERIOD_MS)
+        expect(result.config.userIntendedDuration).toBe(MIN_PERIOD_MS)
     })
 })
 
@@ -652,6 +704,20 @@ describe('Period.setPlannedDuration', () => {
         expect(result.state.elapsed).toBe(0)
         expect(result.state.remaining).toBe(newMs)
     })
+
+    it('ms below MIN_PERIOD_MS on unstarted period → floored at MIN_PERIOD_MS', () => {
+        const period = makePeriod({
+            duration: 5 * 60 * 1000,
+            elapsed: 0,
+            remaining: 5 * 60 * 1000,
+            userIntendedDuration: 5 * 60 * 1000,
+        })
+        const result = Period.setPlannedDuration(period, 30 * 1000)
+
+        expect(result.state.duration).toBe(MIN_PERIOD_MS)
+        expect(result.config.userIntendedDuration).toBe(MIN_PERIOD_MS)
+        expect(result.state.remaining).toBe(MIN_PERIOD_MS)
+    })
 })
 
 describe('Period.amendRecordedDuration', () => {
@@ -671,7 +737,7 @@ describe('Period.amendRecordedDuration', () => {
         expect(result.state.remaining).toBe(0)
     })
 
-    it('works regardless of input elapsed (no floor — rewrites the record)', () => {
+    it('works regardless of input elapsed (no elapsed-floor — rewrites the record)', () => {
         const period = makePeriod({
             duration: 60 * 60 * 1000,
             elapsed: 55 * 60 * 1000,
@@ -718,7 +784,7 @@ describe('Period.amendRecordedDuration', () => {
         expect(result.config.note).toBe('deep focus')
     })
 
-    it('ms = 0 → elapsed = 0, duration = 0, remaining = 0 (degenerate but valid)', () => {
+    it('ms below MIN_PERIOD_MS → floored at MIN_PERIOD_MS', () => {
         const period = makePeriod({
             duration: 48 * 60 * 1000,
             elapsed: 48 * 60 * 1000,
@@ -727,9 +793,9 @@ describe('Period.amendRecordedDuration', () => {
         })
         const result = Period.amendRecordedDuration(period, 0)
 
-        expect(result.state.elapsed).toBe(0)
-        expect(result.state.duration).toBe(0)
-        expect(result.config.userIntendedDuration).toBe(0)
+        expect(result.state.elapsed).toBe(MIN_PERIOD_MS)
+        expect(result.state.duration).toBe(MIN_PERIOD_MS)
+        expect(result.config.userIntendedDuration).toBe(MIN_PERIOD_MS)
         expect(result.state.remaining).toBe(0)
     })
 })

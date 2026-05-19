@@ -2,7 +2,12 @@ import { signal, effect, computed, batch } from '@preact/signals'
 import { saveState, loadState } from './storage'
 import { playSound, playTimerFinishedSound, playPeriodSound, getSoundKeyFromPath } from './sounds'
 import { log } from './log.js'
-import { PERIOD_CONFIG, UI_UPDATE_INTERVAL, DURATION_TO_ADD_AUTOMATICALLY } from './config.js'
+import {
+    PERIOD_CONFIG,
+    UI_UPDATE_INTERVAL,
+    DURATION_TO_ADD_AUTOMATICALLY,
+    MIN_PERIOD_MS,
+} from './config.js'
 import { SoundScheduler } from './sound-scheduler'
 import { AVAILABLE_SOUNDS } from './sound-discovery'
 import { Period } from './period'
@@ -174,7 +179,10 @@ export const canAdjustDuration = amount => {
         if (!timerState.value.periods.some(p => p.state.remaining > 0)) {
             return false
         }
-        return currentPeriod.value.state.remaining >= Math.abs(amount)
+        if (currentPeriod.value.state.remaining < Math.abs(amount)) {
+            return false
+        }
+        return currentPeriod.value.state.duration - Math.abs(amount) >= MIN_PERIOD_MS
     }
     return true
 }

@@ -184,22 +184,23 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                                         period.state.elapsed / (60 * 1000),
                                     )
 
-                                    return [0, 1, 2, 3, 4].map(hours => (
-                                        <button
-                                            key={hours}
-                                            tabIndex={1}
-                                            className={`button-group-item ${currentHours === hours ? 'button-group-item--active' : ''}`}
-                                            onClick={() =>
-                                                handleDurationChange(hours * 60 + currentMinutes)
-                                            }
-                                            disabled={
-                                                isActive
-                                                && hours * 60 + currentMinutes < elapsedMinutes
-                                            }
-                                        >
-                                            {hours}
-                                        </button>
-                                    ))
+                                    return [0, 1, 2, 3, 4].map(hours => {
+                                        const resultMinutes = hours * 60 + currentMinutes
+                                        return (
+                                            <button
+                                                key={hours}
+                                                tabIndex={1}
+                                                className={`button-group-item ${currentHours === hours ? 'button-group-item--active' : ''}`}
+                                                onClick={() => handleDurationChange(resultMinutes)}
+                                                disabled={
+                                                    resultMinutes < 1
+                                                    || (isActive && resultMinutes < elapsedMinutes)
+                                                }
+                                            >
+                                                {hours}
+                                            </button>
+                                        )
+                                    })
                                 })()}
                             </div>
                         </section>
@@ -263,19 +264,16 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                                                     && minutes === minuteButtonValues[higherIndex])
                                         }
 
+                                        const resultMinutes = currentHours * 60 + minutes
                                         return (
                                             <button
                                                 key={minutes}
                                                 tabIndex={2}
                                                 className={`button-group-item ${minutes % 12 === 0 ? 'fw-900' : minutes % 6 === 0 ? 'button--sm' : 'button--xs'} ${isActive ? 'button-group-item--active' : isSemiActive ? 'button-group-item--semiactive' : ''}`}
-                                                onClick={() =>
-                                                    handleDurationChange(
-                                                        currentHours * 60 + minutes,
-                                                    )
-                                                }
+                                                onClick={() => handleDurationChange(resultMinutes)}
                                                 disabled={
-                                                    isActive
-                                                    && currentHours * 60 + minutes < elapsedMinutes
+                                                    resultMinutes < 1
+                                                    || (isActive && resultMinutes < elapsedMinutes)
                                                 }
                                             >
                                                 {minutes}
