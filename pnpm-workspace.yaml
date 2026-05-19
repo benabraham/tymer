@@ -1,3 +1,5 @@
 packages:
   # Current project root
   - '.'
+allowBuilds:
+  '@parcel/watcher': false
