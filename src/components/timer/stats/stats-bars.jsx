@@ -1,10 +1,11 @@
 import { formatTime } from '../../../lib/format'
 
-export const StatsBars = ({ periodSums }) => {
+export const StatsBars = ({ periodSums, workProjectedMs }) => {
     const renderStatBar = (type, variant) => {
         const periodData = periodSums[type][variant]
         const isElapsed = variant === 'current'
         const showElapsed = isElapsed && periodData.duration !== periodData.durationElapsed
+        const showProjected = type === 'work' && variant === 'current' && workProjectedMs != null
 
         return (
             <div class={`stats-bar stats-bar--${type} stats-bar--${variant}`}>
@@ -22,6 +23,13 @@ export const StatsBars = ({ periodSums }) => {
                     >
                         <div class="stats-text stats-elapsed-text">
                             {formatTime(periodData.durationElapsed, { mode: 'elapsed' })}
+                        </div>
+                    </div>
+                )}
+                {showProjected && (
+                    <div class="stats-projected">
+                        <div class="stats-text stats-projected-text">
+                            {formatTime(workProjectedMs)}
                         </div>
                     </div>
                 )}

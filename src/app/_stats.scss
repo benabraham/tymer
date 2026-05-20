@@ -137,6 +137,33 @@
 .stats-elapsed--none {
     display: none;
 }
+
+.stats-projected {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    pointer-events: none;
+
+    .stats-bar--work & {
+        left: 0;
+        width: calc(var(--work-projected) / var(--work-planned) * 100%);
+        border-right: 2px solid var(--color-border-white);
+    }
+}
+
+.stats-projected-text {
+    position: relative;
+    top: -100%;
+    left: 100%;
+    width: max-content;
+    opacity: 0.75;
+    color: var(--color-text-on-bg);
+
+    .stats-bar--work & {
+        text-align: right;
+    }
+}
+
 .stats-text {
     padding: 0.125rem;
     color: var(--color-text-on-bg);

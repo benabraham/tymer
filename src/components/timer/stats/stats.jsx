@@ -1,7 +1,6 @@
-import { initialState, timerState, timerDuration } from '../../../lib/timer'
-import { msToMinutes } from '../../../lib/format'
+import { initialState, timerState, timerDuration, currentPeriod } from '../../../lib/timer'
+import { msToMinutes, formatTime } from '../../../lib/format'
 import { StatsBars } from './stats-bars'
-import { formatTime } from '../../../lib/format'
 
 export const Stats = () => {
     const calculateTypeSums = ({ periods, type }) => {
@@ -39,6 +38,12 @@ export const Stats = () => {
         currentPeriods: timerState.value.periods,
     })
 
+    const current = currentPeriod.value
+    const isWorkCurrent = current?.config.type === 'work'
+    const workProjectedMs = isWorkCurrent
+        ? periodSums.work.current.durationElapsed + current.state.remaining
+        : 0
+
     return (
         <div
             class="stats"
@@ -46,18 +51,22 @@ export const Stats = () => {
                 --break-original: ${msToMinutes(periodSums.break.original.duration)};
                 --break-planned: ${msToMinutes(periodSums.break.current.duration)};
                 --break-elapsed: ${msToMinutes(periodSums.break.current.durationElapsed)};
-            
+
                 --fun-original: ${msToMinutes(periodSums.fun.original.duration)};
                 --fun-planned: ${msToMinutes(periodSums.fun.current.duration)};
                 --fun-elapsed: ${msToMinutes(periodSums.fun.current.durationElapsed)};
-            
+
                 --work-original: ${msToMinutes(periodSums.work.original.duration)};
                 --work-planned: ${msToMinutes(periodSums.work.current.duration)};
                 --work-elapsed: ${msToMinutes(periodSums.work.current.durationElapsed)};
+                --work-projected: ${msToMinutes(workProjectedMs)};
             `}
         >
             <h2>{formatTime(timerDuration.value)} total</h2>
-            <StatsBars periodSums={periodSums} />
+            <StatsBars
+                periodSums={periodSums}
+                workProjectedMs={isWorkCurrent ? workProjectedMs : null}
+            />
         </div>
     )
 }
