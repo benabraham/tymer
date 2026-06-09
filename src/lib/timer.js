@@ -13,6 +13,7 @@ import { AVAILABLE_SOUNDS } from './sound-discovery'
 import { Period } from './period'
 import { Periods } from './periods'
 import { Schedule } from './schedule'
+import { parseConfigText, activeConfig, selectConfig, configPanelOpen } from './period-configs'
 
 // default timer configuration — periods and types only; Schedule owns phase/timestamps/index
 export const initialState = {
@@ -56,6 +57,15 @@ const initWorker = () => {
     return timerWorker
 }
 
+// Build Period objects from a config's text definition (active config drives
+// reset and the modified-from-config comparison).
+const buildPeriods = text =>
+    parseConfigText(text).map(({ type, durationMs, note }) =>
+        Period.create({ type, note, durationMs }),
+    )
+
+export const activeConfigPeriods = computed(() => buildPeriods(activeConfig.value.text))
+
 // computed signals
 export const timerHasFinished = computed(() => Schedule.isCompleted.value)
 export const currentPeriod = computed(
@@ -80,19 +90,19 @@ export const shouldGoToNextPeriod = computed(
         && currentPeriod.value.state.duration !== currentPeriod.value.config.userIntendedDuration,
 )
 
-// check if periods have been modified from initial configuration
-const periodsModifiedFromInitial = computed(() => {
+// check if periods have been modified from the active config
+const periodsModifiedFromConfig = computed(() => {
     const currentPeriods = timerState.value.periods
-    const initialPeriods = initialState.periods
+    const configPeriods = activeConfigPeriods.value
 
-    if (currentPeriods.length !== initialPeriods.length) return true
+    if (currentPeriods.length !== configPeriods.length) return true
 
     return currentPeriods.some((period, index) => {
-        const initialPeriod = initialPeriods[index]
+        const configPeriod = configPeriods[index]
         return (
-            period.config.type !== initialPeriod.config.type
-            || period.config.note !== initialPeriod.config.note
-            || period.state.duration !== initialPeriod.state.duration
+            period.config.type !== configPeriod.config.type
+            || period.config.note !== configPeriod.config.note
+            || period.state.duration !== configPeriod.state.duration
         )
     })
 })
@@ -109,12 +119,12 @@ export const canStartPause = computed(
 export const canReset = computed(
     () =>
         !(
-            (!periodsModifiedFromInitial.value
+            (!periodsModifiedFromConfig.value
                 && !Schedule.timestampStarted.value
                 && timerDurationRemaining.value !== 0)
             || (Schedule.currentPeriodIndex.value === null
                 && !timerHasFinished.value
-                && !periodsModifiedFromInitial.value)
+                && !periodsModifiedFromConfig.value)
         ),
 )
 
@@ -138,6 +148,10 @@ export const canFinishTimer = computed(
         && Schedule.currentPeriodIndex.value !== null
         && timerDurationElapsed.value >= 1 * 60 * 1000,
 )
+
+// Editing the durations config is only allowed before any meaningful time has
+// elapsed — i.e. while the Finish button is disabled.
+export const canConfigureDurations = computed(() => !canFinishTimer.value)
 
 export const canAdjustElapsedForward = computed(() => Schedule.currentPeriodIndex.value !== null)
 
@@ -237,6 +251,9 @@ export const startTimer = () => {
 
     playSound('button')
 
+    // hide the durations-config panel once the timer is underway
+    configPanelOpen.value = false
+
     Schedule.start()
 
     updateCurrentPeriod()
@@ -276,14 +293,30 @@ export const pauseTimer = () => {
     log('timer paused', logSnapshot(), 8)
 }
 
-// resets timer to the initial state
-export const resetTimer = () => {
+// Replace the timeline's periods with a fresh build and reset the schedule.
+const setPeriodsFromConfig = periods => {
     stopTick()
-
     batch(() => {
         Schedule.reset()
-        timerState.value = initialState
+        timerState.value = { ...timerState.value, periods }
     })
+}
+
+// Rebuild the timeline from the currently active config without logging/clearing
+// (used for live edits while the config panel is open).
+export const applyActiveConfig = () => {
+    setPeriodsFromConfig(activeConfigPeriods.value)
+}
+
+// Select a config and apply it to the timeline.
+export const selectAndApplyConfig = id => {
+    selectConfig(id)
+    applyActiveConfig()
+}
+
+// resets timer to the active config
+export const resetTimer = () => {
+    setPeriodsFromConfig(activeConfigPeriods.value)
 
     console.clear()
     log('timer reset', logSnapshot(), 7)

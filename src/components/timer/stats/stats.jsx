@@ -1,4 +1,4 @@
-import { initialState, timerState, timerDuration, currentPeriod } from '../../../lib/timer'
+import { activeConfigPeriods, timerState, timerDuration, currentPeriod } from '../../../lib/timer'
 import { msToMinutes, formatTime } from '../../../lib/format'
 import { StatsBars } from './stats-bars'
 
@@ -34,7 +34,7 @@ export const Stats = () => {
     }
 
     const periodSums = calculatePeriodSums({
-        initialPeriods: initialState.periods,
+        initialPeriods: activeConfigPeriods.value,
         currentPeriods: timerState.value.periods,
     })
 

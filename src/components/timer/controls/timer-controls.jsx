@@ -6,6 +6,7 @@ import {
     faBackwardStep,
     faForwardStep,
     faFlagCheckered,
+    faSliders,
 } from '@fortawesome/free-solid-svg-icons'
 import {
     timerOnLastPeriod,
@@ -16,6 +17,7 @@ import {
     canMoveToNextPeriod,
     canMoveToPreviousPeriod,
     canFinishTimer,
+    canConfigureDurations,
     handleTimerCompletion,
     pauseTimer,
     resumeTimer,
@@ -26,6 +28,7 @@ import {
 } from '../../../lib/timer'
 import { Schedule } from '../../../lib/schedule'
 import { unlockAudio } from '../../../lib/sounds'
+import { activeConfig, configPanelOpen, toggleConfigPanel } from '../../../lib/period-configs'
 import { SoundWrapper } from '../../common/sound-wrapper'
 
 export const TimerControls = () => {
@@ -42,11 +45,19 @@ export const TimerControls = () => {
         <>
             <section class="controls">
                 <SoundWrapper
+                    onClick={toggleConfigPanel}
+                    disabled={!canConfigureDurations.value}
+                    class={`config-toggle ${configPanelOpen.value ? 'config-toggle--open' : ''}`}
+                >
+                    <FontAwesomeIcon icon={faSliders} className="icon--navigate" /> Durations config
+                </SoundWrapper>
+                <SoundWrapper
                     onClick={resetTimer}
                     disabled={!canReset.value}
                     class={timerHasFinished.value ? 'highlighted' : ''}
                 >
-                    <FontAwesomeIcon icon={faArrowRotateLeft} className="icon--danger" /> Reset
+                    <FontAwesomeIcon icon={faArrowRotateLeft} className="icon--danger" />{' '}
+                    {activeConfig.value.readonly ? 'Reset' : `Reset to ${activeConfig.value.name}`}
                 </SoundWrapper>
                 <SoundWrapper onClick={handleStartPause} disabled={!canStartPause.value}>
                     {Schedule.isRunning.value ? (

@@ -6,6 +6,7 @@ import { unlockAudio } from '../../lib/sounds'
 import { debugVisible } from '../../lib/debug'
 import { Timeline } from './timeline/timeline'
 import { TimerControls } from './controls/timer-controls'
+import { DurationsConfigPanel } from './durations-config/durations-config-panel'
 import { PeriodControls } from './controls/period-controls'
 import { Stats } from './stats/stats'
 import { DebuggingInfo } from './debug/debugging-info'
@@ -86,6 +87,7 @@ export function Timer() {
             <KeyboardShortcuts />
             <BuildInfo />
             <TimerControls />
+            <DurationsConfigPanel />
             <Timeline />
             <PeriodControls />
             <Stats />

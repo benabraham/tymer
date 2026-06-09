@@ -24,6 +24,7 @@ This is a countdown timer web application built with Preact and Vite called "Tym
 ## Architecture
 
 ### Core Libraries
+
 - **Preact**: React-like UI library (smaller than React)
 - **@preact/signals**: State management with reactive signals
 - **Vite**: Build tool and development server
@@ -37,15 +38,18 @@ This is a countdown timer web application built with Preact and Vite called "Tym
 **State Management**: Uses Preact signals for reactive state management. The main timer state is in `src/lib/timer.js` with signals like `timerState`, `currentPeriod`, `timerHasFinished`.
 
 **Timer Logic**: Core timer functionality in `src/lib/timer.js` includes:
+
 - Multi-period timer configuration with work/break periods
 - Auto-extension when periods complete
 - Persistence to localStorage
 - Sound effects on period transitions
 
 **Component Architecture**:
+
 - `src/app/main.jsx` - Entry point, renders Timer component
 - `src/components/timer/timer.jsx` - Main timer component that initializes timer and renders all sub-components
 - `src/components/timer/controls/` - Timer controls (start/pause/reset) and period controls
+- `src/components/timer/durations-config/` - Durations-config editor (pick/edit named period configs)
 - `src/components/timer/timeline/` - Visual timeline representation
 - `src/components/timer/stats/` - Statistics display
 - `src/components/timer/debug/` - Debug information components
@@ -53,29 +57,43 @@ This is a countdown timer web application built with Preact and Vite called "Tym
 **Styling**: SCSS files in `src/app/` with component-specific styling using BEM-like naming conventions.
 
 ### Key Files
+
 - `src/lib/timer.js` - Core timer logic and state management (580+ lines)
+- `src/lib/period-configs.js` - Named period configurations: parsing, persistence, CRUD
 - `src/lib/storage.js` - localStorage persistence helpers
 - `src/lib/sounds.js` - Audio playback using Howler
 - `src/lib/format.js` - Time formatting utilities
 - `vite.config.js` - Vite configuration with PWA plugin
 
 ### Testing
+
 - Test files use `.test.js` or `.test.jsx` extensions
 - Tests located in `src/lib/timer.test.js` and `src/components/timer/timer.test.jsx`
 - Test setup in `src/test/setup.js`
 - Testing library: Vitest with jsdom environment
 
 ### PWA Features
+
 The app is configured as a Progressive Web App with:
+
 - Service worker for offline functionality
 - Web app manifest for installability
 - Icons and assets in `public/` directory
 
 ### Period Configuration
-Default timer has predefined work/break periods (48min work, 12min break pattern) defined in `PERIOD_CONFIG` constant in `src/lib/timer.js:10-24`.
+
+The hardcoded default periods live in the `PERIOD_CONFIG` constant in `src/lib/config.js`. It is exposed as the readonly built-in "Default" config.
+
+Users can also create unlimited named period configurations via the durations-config editor (`src/lib/period-configs.js`):
+
+- Each config is a text definition, one period per line: `<Type> <Duration> <Note>` — `Type` is `W`/`B`/`F` (work/break/fun, case-insensitive); `Duration` is minutes (plain number) or `h:mm` (when it contains `:`); `Note` is optional. Empty and unparseable lines are ignored. See `parseConfigText`.
+- Configs and the last-selected config are persisted to localStorage (`periodConfigs` / `activeConfigId`). The Reset button restores the active config (`activeConfigPeriods` in `timer.js`).
+- Editing is only allowed while no meaningful time has elapsed (`canConfigureDurations` — i.e. when Finish is disabled). Edits save and re-apply to the timeline immediately (no save button).
 
 ### Sound System
+
 Audio files in `public/` directory:
+
 - `button.wav` - Button interactions
 - `period-end.wav` - Period completion
 - `timer-end.wav` - Timer completion
