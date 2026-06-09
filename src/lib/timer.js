@@ -14,6 +14,7 @@ import { Period } from './period'
 import { Periods } from './periods'
 import { Schedule } from './schedule'
 import { parseConfigText, activeConfig, selectConfig, configPanelOpen } from './period-configs'
+import { parseCurrentDurationsText, serializeCurrentDurations } from './durations-format'
 
 // default timer configuration — periods and types only; Schedule owns phase/timestamps/index
 export const initialState = {
@@ -320,6 +321,107 @@ export const resetTimer = () => {
 
     console.clear()
     log('timer reset', logSnapshot(), 7)
+}
+
+// ============================================================================
+// "Edit current durations" — live-edit the running timeline as text.
+// The timer is paused while editing so elapsed values stay still, then resumed
+// (only if it had been running) when editing ends.
+// ============================================================================
+
+export const editingCurrentDurations = signal(false)
+// Source of truth for the live-editor textarea. Held here (not in the component)
+// so external mutations can write back into it via the effect below.
+export const currentDurationsText = signal('')
+let wasRunningBeforeEdit = false
+// True only while applyCurrentDurations is writing — lets the write-back effect
+// skip editor-originated changes so typing isn't reformatted under the cursor.
+let editorIsApplying = false
+
+const beginEditCurrentDurations = () => {
+    wasRunningBeforeEdit = Schedule.isRunning.value
+    if (Schedule.isRunning.value) {
+        Schedule.pause()
+        stopTick()
+    }
+    // Freeze the current period's elapsed into state so serialization is exact.
+    updateCurrentPeriod()
+    currentDurationsText.value = serializeCurrentDurations(timerState.value.periods)
+    editingCurrentDurations.value = true
+}
+
+const endEditCurrentDurations = () => {
+    editingCurrentDurations.value = false
+    if (wasRunningBeforeEdit && Schedule.isPaused.value) {
+        Schedule.resume()
+        updateCurrentPeriod()
+        startTick()
+    }
+    wasRunningBeforeEdit = false
+}
+
+// Apply edited "current durations" text to the live timeline. Past/future
+// periods take their elapsed straight from state; the current period's elapsed
+// is reconciled by shifting the schedule's start timestamp.
+export const applyCurrentDurations = text => {
+    const parsed = parseCurrentDurationsText(text)
+    if (!parsed.length) return // ignore empty / all-invalid input
+
+    const periods = parsed.map(({ type, elapsedMs, durationMs, note }) => {
+        const elapsed = Math.max(0, elapsedMs)
+        const userIntendedDuration = Math.max(MIN_PERIOD_MS, durationMs)
+        const duration = Math.max(userIntendedDuration, elapsed)
+        return {
+            config: { type, note, userIntendedDuration },
+            state: { duration, elapsed, remaining: Math.max(0, duration - elapsed) },
+        }
+    })
+
+    const clampedIndex = Math.min(Schedule.currentPeriodIndex.value ?? 0, periods.length - 1)
+
+    editorIsApplying = true
+    batch(() => {
+        timerState.value = { ...timerState.value, periods }
+        Schedule.setIndex(clampedIndex)
+
+        // Reconcile the current period: timestampStarted = reference - desiredElapsed
+        const oldStart = Schedule.timestampStarted.value
+        if (oldStart !== null) {
+            const reference = Schedule.timestampPaused.value ?? Date.now()
+            const desiredElapsed = periods[clampedIndex].state.elapsed
+            Schedule.shiftStartedAt(reference - desiredElapsed - oldStart)
+        }
+    })
+    editorIsApplying = false
+}
+
+// While the live editor is open, mirror external edits (period-control buttons,
+// keyboard shortcuts) back into the textarea. Editor-originated applies are
+// skipped so the user's raw typing is never reformatted under the cursor.
+effect(() => {
+    const periods = timerState.value.periods
+    if (!editingCurrentDurations.value || editorIsApplying) return
+    currentDurationsText.value = serializeCurrentDurations(periods)
+})
+
+// ----------------------------------------------------------------------------
+// Durations panel open/close orchestration (shared by both modes). In the
+// "current durations" mode opening pauses the timer and closing resumes it.
+// ----------------------------------------------------------------------------
+
+export const openDurationsPanel = () => {
+    if (!canConfigureDurations.value) beginEditCurrentDurations()
+    configPanelOpen.value = true
+}
+
+export const closeDurationsPanel = () => {
+    if (editingCurrentDurations.value) endEditCurrentDurations()
+    configPanelOpen.value = false
+}
+
+export const toggleDurationsPanel = () => {
+    if (configPanelOpen.value) closeDurationsPanel()
+    else openDurationsPanel()
 }
 
 // adjusts the duration of period (user-driven manual edit)

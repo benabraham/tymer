@@ -18,6 +18,8 @@ import {
     canMoveToPreviousPeriod,
     canFinishTimer,
     canConfigureDurations,
+    editingCurrentDurations,
+    toggleDurationsPanel,
     handleTimerCompletion,
     pauseTimer,
     resumeTimer,
@@ -28,7 +30,7 @@ import {
 } from '../../../lib/timer'
 import { Schedule } from '../../../lib/schedule'
 import { unlockAudio } from '../../../lib/sounds'
-import { activeConfig, configPanelOpen, toggleConfigPanel } from '../../../lib/period-configs'
+import { activeConfig, configPanelOpen } from '../../../lib/period-configs'
 import { SoundWrapper } from '../../common/sound-wrapper'
 
 export const TimerControls = () => {
@@ -45,11 +47,13 @@ export const TimerControls = () => {
         <>
             <section class="controls">
                 <SoundWrapper
-                    onClick={toggleConfigPanel}
-                    disabled={!canConfigureDurations.value}
+                    onClick={toggleDurationsPanel}
                     class={`config-toggle ${configPanelOpen.value ? 'config-toggle--open' : ''}`}
                 >
-                    <FontAwesomeIcon icon={faSliders} className="icon--navigate" /> Durations config
+                    <FontAwesomeIcon icon={faSliders} className="icon--navigate" />{' '}
+                    {canConfigureDurations.value && !editingCurrentDurations.value
+                        ? 'Durations config'
+                        : 'Edit current durations'}
                 </SoundWrapper>
                 <SoundWrapper
                     onClick={resetTimer}
@@ -59,7 +63,10 @@ export const TimerControls = () => {
                     <FontAwesomeIcon icon={faArrowRotateLeft} className="icon--danger" />{' '}
                     {activeConfig.value.readonly ? 'Reset' : `Reset to ${activeConfig.value.name}`}
                 </SoundWrapper>
-                <SoundWrapper onClick={handleStartPause} disabled={!canStartPause.value}>
+                <SoundWrapper
+                    onClick={handleStartPause}
+                    disabled={!canStartPause.value || configPanelOpen.value}
+                >
                     {Schedule.isRunning.value ? (
                         <FontAwesomeIcon icon={faPause} className="icon--warning" />
                     ) : Schedule.isPaused.value ? (

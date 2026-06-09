@@ -24,7 +24,10 @@ import {
     canAddPeriod,
     canRemovePeriod,
     canMoveElapsedToPrevious,
+    openDurationsPanel,
+    closeDurationsPanel,
 } from '../../lib/timer'
+import { configPanelOpen } from '../../lib/period-configs'
 import { Schedule } from '../../lib/schedule'
 
 // Local helper: compute the delta needed to snap currentMs to the next multiple-of-3 minute boundary.
@@ -42,6 +45,16 @@ import { unlockAudio } from '../../lib/sounds'
 export function KeyboardShortcuts() {
     useEffect(() => {
         const handleKeyDown = async event => {
+            // Escape closes the durations panel — handled before the isEditing
+            // guard so it works while the live-editor textarea is focused.
+            if (event.key === 'Escape') {
+                if (configPanelOpen.value) {
+                    event.preventDefault()
+                    closeDurationsPanel()
+                }
+                return
+            }
+
             // Ignore if user is editing or focused on interactive element
             const activeElement = document.activeElement
             const isEditing =
@@ -357,6 +370,20 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canAddPeriod.value) {
                     addPeriod()
+                    handled = true
+                }
+            }
+
+            // E - open the durations panel (Edit current durations)
+            else if (
+                (event.key === 'e' || event.key === 'E')
+                && !event.ctrlKey
+                && !event.altKey
+                && !event.shiftKey
+            ) {
+                event.preventDefault()
+                if (!configPanelOpen.value) {
+                    openDurationsPanel()
                     handled = true
                 }
             }

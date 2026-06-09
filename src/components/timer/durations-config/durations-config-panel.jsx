@@ -12,18 +12,35 @@ import {
     updateConfigText,
     updateConfigName,
 } from '../../../lib/period-configs'
-import { canConfigureDurations, selectAndApplyConfig, applyActiveConfig } from '../../../lib/timer'
+import {
+    canConfigureDurations,
+    editingCurrentDurations,
+    selectAndApplyConfig,
+    applyActiveConfig,
+    closeDurationsPanel,
+} from '../../../lib/timer'
 import { AutoTextarea } from './auto-textarea'
+import { CurrentDurationsEditor } from './current-durations-editor'
 import './durations-config.scss'
 
-// Panel shown below the top button row: pick a config (applies it immediately)
-// and edit the selected config's period definition. There is no save button —
-// edits persist and re-apply to the timeline as you type. The textarea stays
-// hidden behind an Edit toggle until the user wants to change the definition.
+// Below the top button row. Two modes share this area:
+//  - config mode (timer idle / no meaningful elapsed): pick & edit named configs
+//  - current-durations mode (timer running/paused): edit the live timeline
 export const DurationsConfigPanel = () => {
-    const [showEditor, setShowEditor] = useState(false)
+    if (!configPanelOpen.value) return null
+    // Once a live edit session is underway, stay in that mode even if the edited
+    // elapsed dips below the 1-minute threshold (which would otherwise flip
+    // canConfigureDurations and unmount the editor mid-edit).
+    if (editingCurrentDurations.value) return <CurrentDurationsEditor />
+    if (canConfigureDurations.value) return <ConfigEditor />
+    return null
+}
 
-    if (!configPanelOpen.value || !canConfigureDurations.value) return null
+// Pick a config (applies it immediately) and edit its period definition. There
+// is no save button — edits persist and re-apply to the timeline as you type.
+// The textarea stays hidden behind an Edit toggle until the user wants it.
+const ConfigEditor = () => {
+    const [showEditor, setShowEditor] = useState(false)
 
     const active = activeConfig.value
     const isBuiltin = active.readonly
@@ -78,9 +95,7 @@ export const DurationsConfigPanel = () => {
                     class="durations-config__chip durations-config__close"
                     aria-label="Close"
                     title="Close"
-                    onClick={() => {
-                        configPanelOpen.value = false
-                    }}
+                    onClick={closeDurationsPanel}
                 >
                     <FontAwesomeIcon icon={faXmark} />
                 </button>

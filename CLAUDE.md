@@ -90,6 +90,12 @@ Users can also create unlimited named period configurations via the durations-co
 - Configs and the last-selected config are persisted to localStorage (`periodConfigs` / `activeConfigId`). The Reset button restores the active config (`activeConfigPeriods` in `timer.js`).
 - Editing is only allowed while no meaningful time has elapsed (`canConfigureDurations` — i.e. when Finish is disabled). Edits save and re-apply to the timeline immediately (no save button).
 
+Once the timer is running with ≥ 1 min elapsed (config editing disabled), the same button becomes **Edit current durations** — a live text editor for the running timeline (`src/lib/durations-format.js`, `current-durations-editor.jsx`):
+
+- Format per line: `<Type> <elapsed>/<total> <Note>`. Each time value is integer minutes (no `:`), `h:m`/`h:mm` (one `:`), or `h:mm:ss` (two `:`). `elapsed` is omitted when 0; on render `elapsed` shows `h:mm:ss` and `total` shows minutes/`h:mm`. See `parseCurrentDurationsText` / `serializeCurrentDurations`.
+- Opening **pauses** the timer; closing resumes it only if it had been running (`applyCurrentDurations` reconciles the current period's start timestamp so no time is lost). Edits apply live; external period-control/keyboard changes mirror back into the textarea via the `currentDurationsText` signal.
+- Keyboard: `E` opens the durations panel, `Esc` closes it (works while the textarea is focused). The Start/Pause button is disabled while the panel is open.
+
 ### Sound System
 
 Audio files in `public/` directory:
