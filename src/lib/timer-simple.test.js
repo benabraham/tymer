@@ -186,6 +186,16 @@ describe('Timer Logic - Simple Tests', () => {
             const originalTimestamp = Date.now()
             vi.spyOn(Date, 'now').mockReturnValue(originalTimestamp)
 
+            // Re-anchor timestampStarted to the frozen clock — the beforeEach
+            // snapshot used the real clock, and any ms elapsed between its
+            // Date.now() and originalTimestamp would leak into the remainder.
+            Schedule.setSnapshot({
+                phase: 'running',
+                currentPeriodIndex: 0,
+                timestampStarted: originalTimestamp - 61000, // 1:01 elapsed
+                timestampPaused: null,
+            })
+
             // Current period has 1:01 elapsed (61000ms)
             expect(timerState.value.periods[0].state.elapsed).toBe(61000)
 
