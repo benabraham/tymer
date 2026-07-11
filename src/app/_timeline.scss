@@ -104,6 +104,19 @@
 
 .timeline__start-time {
   left: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.timeline__start-time--pinned {
+  opacity: 90%;
+  color: var(--color-current-time);
+}
+
+.timeline__pin-icon {
+  font-size: 0.6rem;
 }
 
 .timeline__end-time {

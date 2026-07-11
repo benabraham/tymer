@@ -17,14 +17,15 @@ const state = signal({
     currentPeriodIndex: null,
     timestampStarted: null,
     timestampPaused: null,
+    timestampAnchor: null, // epoch ms | null — set when the session is pinned to a wall-clock time
 })
 
 // ---------------------------------------------------------------------------
 // Verbs — the only writers of `state`
 // ---------------------------------------------------------------------------
 
-// idle → running. Sets currentPeriodIndex=0, timestampStarted=now, clears
-// timestampPaused. No-op if not idle.
+// idle → running. Sets currentPeriodIndex=0, timestampStarted=now (or the
+// anchor, when pinned), clears timestampPaused. No-op if not idle.
 const start = () => {
     if (state.value.phase !== 'idle') return
 
@@ -32,9 +33,20 @@ const start = () => {
         ...state.value,
         phase: 'running',
         currentPeriodIndex: 0,
-        timestampStarted: Date.now(),
+        timestampStarted: state.value.timestampAnchor ?? Date.now(),
         timestampPaused: null,
     }
+}
+
+// Pins the session to a wall-clock timestamp. No phase restrictions — callers
+// guard as needed.
+const pin = timestampMs => {
+    state.value = { ...state.value, timestampAnchor: timestampMs }
+}
+
+// Clears the anchor.
+const unpin = () => {
+    state.value = { ...state.value, timestampAnchor: null }
 }
 
 // running → paused. Records timestampPaused=now. No-op if not running.
@@ -63,19 +75,21 @@ const resume = () => {
     }
 }
 
-// any → idle. Clears all four fields to initial values.
+// any → idle. Clears all fields to initial values (including the anchor).
 const reset = () => {
     state.value = {
         phase: 'idle',
         currentPeriodIndex: null,
         timestampStarted: null,
         timestampPaused: null,
+        timestampAnchor: null,
     }
 }
 
-// running | paused → completed. Clears timestampStarted and timestampPaused.
-// currentPeriodIndex is kept — the caller (Timer composer) decides what index
-// to preserve since Schedule cannot see periods.length.
+// running | paused → completed. Clears timestampStarted, timestampPaused, and
+// timestampAnchor (a finished timer has no anchor). currentPeriodIndex is kept
+// — the caller (Timer composer) decides what index to preserve since Schedule
+// cannot see periods.length.
 const complete = () => {
     const { phase } = state.value
     if (phase !== 'running' && phase !== 'paused') return
@@ -85,6 +99,7 @@ const complete = () => {
         phase: 'completed',
         timestampStarted: null,
         timestampPaused: null,
+        timestampAnchor: null,
     }
 }
 
@@ -161,11 +176,18 @@ const setIndex = index => {
     }
 }
 
-// Hydration / test-fixture escape hatch: set all four fields at once.
+// Hydration / test-fixture escape hatch: set all fields at once.
 // Used by storage hydration at boot (loadState path) and by timer-simple.test.js
 // fixture setup to replace direct timerState.value mutations.
-const setSnapshot = ({ phase, currentPeriodIndex, timestampStarted, timestampPaused }) => {
-    state.value = { phase, currentPeriodIndex, timestampStarted, timestampPaused }
+// timestampAnchor defaults to null so existing 4-key callers keep working.
+const setSnapshot = ({
+    phase,
+    currentPeriodIndex,
+    timestampStarted,
+    timestampPaused,
+    timestampAnchor = null,
+}) => {
+    state.value = { phase, currentPeriodIndex, timestampStarted, timestampPaused, timestampAnchor }
 }
 
 // Reset timestampStarted to (timestampPaused ?? Date.now()).
@@ -188,6 +210,7 @@ const phase = computed(() => state.value.phase)
 const currentPeriodIndex = computed(() => state.value.currentPeriodIndex)
 const timestampStarted = computed(() => state.value.timestampStarted)
 const timestampPaused = computed(() => state.value.timestampPaused)
+const timestampAnchor = computed(() => state.value.timestampAnchor)
 
 // ---------------------------------------------------------------------------
 // Predicate computeds
@@ -197,6 +220,7 @@ const isRunning = computed(() => state.value.phase === 'running')
 const isPaused = computed(() => state.value.phase === 'paused')
 const isIdle = computed(() => state.value.phase === 'idle')
 const isCompleted = computed(() => state.value.phase === 'completed')
+const isAnchored = computed(() => state.value.timestampAnchor != null)
 
 // ---------------------------------------------------------------------------
 // Snapshot computed — four-field object for storage effect() subscriptions
@@ -207,6 +231,7 @@ const snapshot = computed(() => ({
     currentPeriodIndex: state.value.currentPeriodIndex,
     timestampStarted: state.value.timestampStarted,
     timestampPaused: state.value.timestampPaused,
+    timestampAnchor: state.value.timestampAnchor,
 }))
 
 // ---------------------------------------------------------------------------
@@ -226,16 +251,20 @@ export const Schedule = {
     setIndex,
     setSnapshot,
     restartCurrentPeriod,
+    pin,
+    unpin,
     // field computeds
     phase,
     currentPeriodIndex,
     timestampStarted,
     timestampPaused,
+    timestampAnchor,
     // predicate computeds
     isRunning,
     isPaused,
     isIdle,
     isCompleted,
+    isAnchored,
     // snapshot
     snapshot,
 }

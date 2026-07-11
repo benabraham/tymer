@@ -58,6 +58,22 @@ const parseLine = line => {
 
 export const parseConfigText = text => text.split('\n').map(parseLine).filter(Boolean)
 
+// --- anchor header line (@h:mm — pins session start to a wall-clock time) --
+
+const ANCHOR_RE = /^@\s*(\d{1,2}):(\d{1,2})$/
+
+export const parseConfigAnchor = text => {
+    for (const line of text.split('\n')) {
+        const match = line.trim().match(ANCHOR_RE)
+        if (!match) continue
+        const hours = parseInt(match[1], 10)
+        const minutes = parseInt(match[2], 10)
+        if (hours > 23 || minutes > 59) continue
+        return hours * 60 + minutes
+    }
+    return null
+}
+
 // --- built-in config -------------------------------------------------------
 
 const BUILTIN_TEXT = PERIOD_CONFIG.map(periodConfigToLine).join('\n')

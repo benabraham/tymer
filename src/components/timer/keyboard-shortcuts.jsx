@@ -26,6 +26,8 @@ import {
     canMoveElapsedToPrevious,
     openDurationsPanel,
     closeDurationsPanel,
+    canTogglePin,
+    togglePinTimer,
 } from '../../lib/timer'
 import { configPanelOpen } from '../../lib/period-configs'
 import { Schedule } from '../../lib/schedule'
@@ -370,6 +372,20 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canAddPeriod.value) {
                     addPeriod()
+                    handled = true
+                }
+            }
+
+            // P - toggle pin (anchored start)
+            else if (
+                (event.key === 'p' || event.key === 'P')
+                && !event.ctrlKey
+                && !event.altKey
+                && !event.shiftKey
+            ) {
+                event.preventDefault()
+                if (canTogglePin.value) {
+                    togglePinTimer()
                     handled = true
                 }
             }

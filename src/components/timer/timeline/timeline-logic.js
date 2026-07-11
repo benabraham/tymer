@@ -46,10 +46,14 @@ export const calculateEndTimes = ({ periods, currentPeriodIndex }) => {
  * Calculate formatted start time for the timeline.
  * @param {Object} params
  * @param {Array} params.periods - List of timer periods
+ * @param {number|null} [params.anchorMs] - When set (session is pinned), the
+ *   start time is formatted from this stable timestamp instead of
+ *   `now - totalElapsed`, avoiding per-second recompute jitter.
  * @returns {string} Formatted start time
  */
-export const calculateStartTime = ({ periods }) => {
+export const calculateStartTime = ({ periods, anchorMs = null }) => {
     if (!Array.isArray(periods) || !periods.length) return ''
+    if (anchorMs != null) return format(new Date(anchorMs), "HH'<br>'mm")
     const now = Date.now()
     const totalElapsed = periods.reduce((acc, p) => acc + (p.state.elapsed || 0), 0)
     return format(new Date(now - totalElapsed), "HH'<br>'mm")
@@ -62,11 +66,11 @@ export const calculateStartTime = ({ periods }) => {
  * @param {number|null} params.currentPeriodIndex
  * @returns {Array<Object>} Array of props for TimelinePeriod
  */
-export const getTimelineData = ({ periods, currentPeriodIndex }) => {
+export const getTimelineData = ({ periods, currentPeriodIndex, anchorMs = null }) => {
     if (!Array.isArray(periods) || !periods.length) return []
 
     const endTimes = calculateEndTimes({ periods, currentPeriodIndex })
-    const startTime = calculateStartTime({ periods })
+    const startTime = calculateStartTime({ periods, anchorMs })
 
     const createPeriodProps = (period, index) => ({
         key: index,

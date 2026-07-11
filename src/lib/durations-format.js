@@ -65,6 +65,24 @@ const parseLine = line => {
 
 export const parseCurrentDurationsText = text => text.split('\n').map(parseLine).filter(Boolean)
 
+// Anchor header line: "@h:mm" or "@h:m" — pins session start to a wall-clock
+// time. Only the first valid anchor line in the text counts.
+const ANCHOR_RE = /^@\s*(\d{1,2}):(\d{1,2})$/
+
+export const parseDurationsAnchor = text => {
+    for (const line of text.split('\n')) {
+        const match = line.trim().match(ANCHOR_RE)
+        if (!match) continue
+        const hours = parseInt(match[1], 10)
+        const minutes = parseInt(match[2], 10)
+        if (hours > 23 || minutes > 59) continue
+        return hours * 60 + minutes
+    }
+    return null
+}
+
+export const formatAnchorToken = minutes => `@${Math.floor(minutes / 60)}:${pad(minutes % 60)}`
+
 // total/duration token: whole minutes, or h:mm when >= 1 hour
 export const formatDurationToken = ms => {
     const totalMinutes = Math.round(ms / 60000)
@@ -81,9 +99,10 @@ export const formatElapsedToken = ms => {
     return `${h}:${pad(m)}:${pad(s)}`
 }
 
-// Live periods → editable text. Elapsed is shown only when > 0.
-export const serializeCurrentDurations = periods =>
-    periods
+// Live periods → editable text. Elapsed is shown only when > 0. When
+// anchorMinutes is given (not null), an "@h:mm" header line is prepended.
+export const serializeCurrentDurations = (periods, { anchorMinutes = null } = {}) => {
+    const lines = periods
         .map(period => {
             const char = TYPE_TO_CHAR[period.config.type]
             const total = formatDurationToken(period.state.duration)
@@ -95,3 +114,5 @@ export const serializeCurrentDurations = periods =>
             return `${char} ${field}${note}`
         })
         .join('\n')
+    return anchorMinutes != null ? `${formatAnchorToken(anchorMinutes)}\n${lines}` : lines
+}

@@ -671,6 +671,7 @@ describe('Schedule.snapshot', () => {
             currentPeriodIndex: null,
             timestampStarted: null,
             timestampPaused: null,
+            timestampAnchor: null,
         })
     })
 
@@ -684,6 +685,7 @@ describe('Schedule.snapshot', () => {
             currentPeriodIndex: 0,
             timestampStarted: 1_234_567,
             timestampPaused: null,
+            timestampAnchor: null,
         })
     })
 
@@ -833,6 +835,7 @@ describe('Schedule.setSnapshot()', () => {
             currentPeriodIndex: null,
             timestampStarted: null,
             timestampPaused: null,
+            timestampAnchor: null,
         }
         Schedule.setSnapshot(input)
         expect(Schedule.snapshot.value).toEqual(input)
@@ -910,6 +913,108 @@ describe('Schedule.restartCurrentPeriod()', () => {
 
         expect(Schedule.phase.value).toBe(beforePhase)
         expect(Schedule.currentPeriodIndex.value).toBe(beforeIndex)
+    })
+})
+
+// ---------------------------------------------------------------------------
+// Anchor lifecycle: pin() / unpin() / isAnchored / timestampAnchor
+// ---------------------------------------------------------------------------
+
+describe('Schedule.pin() / unpin()', () => {
+    it('timestampAnchor is null initially', () => {
+        expect(Schedule.timestampAnchor.value).toBeNull()
+    })
+
+    it('isAnchored is false initially', () => {
+        expect(Schedule.isAnchored.value).toBe(false)
+    })
+
+    it('pin(ms) sets timestampAnchor to the given value', () => {
+        Schedule.pin(5_000_000)
+        expect(Schedule.timestampAnchor.value).toBe(5_000_000)
+    })
+
+    it('pin(ms) makes isAnchored true', () => {
+        Schedule.pin(5_000_000)
+        expect(Schedule.isAnchored.value).toBe(true)
+    })
+
+    it('pin() has no phase restrictions — works while idle', () => {
+        expect(Schedule.phase.value).toBe('idle')
+        Schedule.pin(1_000)
+        expect(Schedule.timestampAnchor.value).toBe(1_000)
+    })
+
+    it('pin() has no phase restrictions — works while running', () => {
+        Schedule.start()
+        Schedule.pin(1_000)
+        expect(Schedule.timestampAnchor.value).toBe(1_000)
+    })
+
+    it('unpin() clears timestampAnchor', () => {
+        Schedule.pin(5_000_000)
+        Schedule.unpin()
+        expect(Schedule.timestampAnchor.value).toBeNull()
+    })
+
+    it('unpin() makes isAnchored false', () => {
+        Schedule.pin(5_000_000)
+        Schedule.unpin()
+        expect(Schedule.isAnchored.value).toBe(false)
+    })
+
+    it('pin() does not affect other fields', () => {
+        Schedule.start()
+        const beforePhase = Schedule.phase.value
+        const beforeIndex = Schedule.currentPeriodIndex.value
+        const beforeStarted = Schedule.timestampStarted.value
+
+        Schedule.pin(9_000_000)
+
+        expect(Schedule.phase.value).toBe(beforePhase)
+        expect(Schedule.currentPeriodIndex.value).toBe(beforeIndex)
+        expect(Schedule.timestampStarted.value).toBe(beforeStarted)
+    })
+})
+
+describe('Schedule.start() honoring the anchor', () => {
+    it('when anchored, timestampStarted = timestampAnchor (not Date.now())', () => {
+        vi.useFakeTimers()
+        vi.setSystemTime(1_000_000)
+        Schedule.pin(500_000)
+
+        Schedule.start()
+
+        expect(Schedule.timestampStarted.value).toBe(500_000)
+    })
+
+    it('when not anchored, timestampStarted = Date.now() as before', () => {
+        vi.useFakeTimers()
+        vi.setSystemTime(1_000_000)
+        Schedule.start()
+        expect(Schedule.timestampStarted.value).toBe(1_000_000)
+    })
+
+    it('anchor value survives start() (still readable via timestampAnchor)', () => {
+        Schedule.pin(500_000)
+        Schedule.start()
+        expect(Schedule.timestampAnchor.value).toBe(500_000)
+    })
+})
+
+describe('anchor cleared by reset() and complete()', () => {
+    it('reset() clears timestampAnchor', () => {
+        Schedule.pin(5_000_000)
+        Schedule.start()
+        Schedule.reset()
+        expect(Schedule.timestampAnchor.value).toBeNull()
+    })
+
+    it('complete() clears timestampAnchor', () => {
+        Schedule.pin(5_000_000)
+        Schedule.start()
+        Schedule.complete()
+        expect(Schedule.timestampAnchor.value).toBeNull()
     })
 })
 

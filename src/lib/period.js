@@ -77,6 +77,20 @@ const complete = period => {
     return { period: completed, remainder }
 }
 
+// Completes a period at its planned duration exactly — no minute rounding.
+// Sets state.elapsed = state.duration (clamping any wall-clock overshoot),
+// state.remaining = 0. state.duration and config.userIntendedDuration are
+// UNCHANGED (unlike `complete`, which records actual elapsed with rounding).
+// Used by anchored auto-advance, where the schedule (not elapsed) owns truth.
+const completeAtDuration = period => ({
+    ...period,
+    state: {
+        ...period.state,
+        elapsed: period.state.duration,
+        remaining: 0,
+    },
+})
+
 // Extends BOTH duration AND elapsed of a Past period by extraMs.
 // Used when the user moves elapsed time backwards across a period boundary —
 // the previous (Past) period absorbs the time transferred from the current one.
@@ -213,6 +227,7 @@ export const Period = {
     applyElapsed,
     autoExtendDuration,
     complete,
+    completeAtDuration,
     absorbAsCompleted,
     extendDuration,
     setPlannedDuration,

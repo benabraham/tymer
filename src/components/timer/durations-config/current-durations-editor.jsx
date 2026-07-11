@@ -5,6 +5,7 @@ import {
     applyCurrentDurations,
     closeDurationsPanel,
 } from '../../../lib/timer'
+import { Schedule } from '../../../lib/schedule'
 import { AutoTextarea } from './auto-textarea'
 
 // Live editor for the running timeline (timer is paused while this is open).
@@ -23,7 +24,9 @@ export const CurrentDurationsEditor = () => {
         <section class="durations-config">
             <div class="durations-config__list">
                 <span class="durations-config__label">
-                    Editing current durations — timer paused
+                    {Schedule.isAnchored.value
+                        ? 'Editing current durations — anchored, clock keeps running'
+                        : 'Editing current durations — timer paused'}
                 </span>
                 <button
                     class="durations-config__chip durations-config__close"

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseConfigText, BUILTIN_CONFIG } from './period-configs'
+import { parseConfigText, parseConfigAnchor, BUILTIN_CONFIG } from './period-configs'
 
 const MIN = 60000
 
@@ -45,5 +45,50 @@ describe('parseConfigText', () => {
         expect(parsed.length).toBeGreaterThan(0)
         expect(parsed[0]).toEqual({ type: 'work', durationMs: 24 * MIN, note: '' })
         expect(parsed[1]).toEqual({ type: 'break', durationMs: 6 * MIN, note: '' })
+    })
+
+    it('ignores an anchor line mixed among period lines, leaving surrounding periods intact', () => {
+        const text = ['W 20', '@9:00', 'B 6'].join('\n')
+        expect(parseConfigText(text)).toEqual([
+            { type: 'work', durationMs: 20 * MIN, note: '' },
+            { type: 'break', durationMs: 6 * MIN, note: '' },
+        ])
+    })
+})
+
+describe('parseConfigAnchor', () => {
+    it('parses a valid @h:mm anchor line to minutes-since-midnight', () => {
+        expect(parseConfigAnchor('@9:00')).toBe(540)
+    })
+
+    it('allows a leading space after @ and unpadded/padded minutes', () => {
+        expect(parseConfigAnchor('@ 9:00')).toBe(540)
+        expect(parseConfigAnchor('@09:5')).toBe(545)
+        expect(parseConfigAnchor('@0:00')).toBe(0)
+        expect(parseConfigAnchor('@23:59')).toBe(1439)
+    })
+
+    it('returns null for invalid anchor forms and absent anchors', () => {
+        expect(parseConfigAnchor('@')).toBeNull()
+        expect(parseConfigAnchor('@9')).toBeNull()
+        expect(parseConfigAnchor('@9:')).toBeNull()
+        expect(parseConfigAnchor('@24:00')).toBeNull()
+        expect(parseConfigAnchor('@9:60')).toBeNull()
+        expect(parseConfigAnchor('@9:00 extra')).toBeNull()
+        expect(parseConfigAnchor('x@9:00')).toBeNull()
+        expect(parseConfigAnchor('W 20\nB 6')).toBeNull()
+    })
+
+    it('uses the first valid anchor line when multiple are present', () => {
+        expect(parseConfigAnchor(['@9:00', '@10:00'].join('\n'))).toBe(540)
+    })
+
+    it('skips an invalid-shaped anchor line and uses the next valid one', () => {
+        expect(parseConfigAnchor(['@24:00', '@9:00'].join('\n'))).toBe(540)
+    })
+
+    it('parses out an anchor line mixed in among period lines', () => {
+        const text = ['W 20', '@9:00', 'B 6'].join('\n')
+        expect(parseConfigAnchor(text)).toBe(540)
     })
 })

@@ -96,6 +96,15 @@ Once the timer is running with ≥ 1 min elapsed (config editing disabled), the 
 - Opening **pauses** the timer; closing resumes it only if it had been running (`applyCurrentDurations` reconciles the current period's start timestamp so no time is lost). Edits apply live; external period-control/keyboard changes mirror back into the textarea via the `currentDurationsText` signal.
 - Keyboard: `E` opens the durations panel, `Esc` closes it (works while the textarea is focused). The Start/Pause button is disabled while the panel is open.
 
+#### Anchored start mode
+
+A session can be pinned to a wall-clock time (`Schedule.pin`/`unpin`/`isAnchored`/`timestampAnchor` in `src/lib/schedule.js`; `pinTimer`/`unpinTimer`/`togglePinTimer`/`canTogglePin` in `timer.js`):
+
+- Configs and the live "current durations" editor both accept an optional `@h:mm` first line — parsed by `parseConfigAnchor` / `parseDurationsAnchor`, serialized back by `formatAnchorToken`. Applying a config with an `@` header arms the anchor; a future time auto-starts at that moment (armed), a past time just sits until Start is pressed (which fast-forwards). In the live editor, a future `@` time is invalid and silently ignored (keeps the prior anchored/unanchored state); the current period's typed elapsed is ignored while anchored — it's derived from the anchor instead (`reconcileToAnchor`).
+- Affordances: the timeline's start-time label doubles as the pin toggle (click, or `P` key) — shows a thumbtack when pinned. `TimerControls` shows an `ArmedIndicator` when idle + anchored ("Starts at H:MM · in Xm" for a future anchor, "Start from H:MM" for a past one); the Start button reads "Start now" when armed-future.
+- Any user-facing pause (`pauseTimer`) unpins; `pauseForEditing`/`resumeAfterEditing` (used by the live editor and the timeline period-edit form) do not.
+- While anchored, elapsed can't be manually adjusted (`canAdjustElapsed*` guards) and periods never auto-extend at a boundary — `advanceOverduePeriods` auto-advances (or catches up through multiple overdue boundaries, or self-finishes) each tick instead.
+
 ### Sound System
 
 Audio files in `public/` directory:

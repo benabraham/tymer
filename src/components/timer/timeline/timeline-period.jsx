@@ -1,15 +1,17 @@
 import { useState, useRef, useEffect, useCallback } from 'preact/hooks'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCircleMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
+import { faCircleMinus, faPlus, faThumbtack } from '@fortawesome/free-solid-svg-icons'
 import { msToMinutes, formatTime } from '../../../lib/format'
 import {
     applyToPeriod,
-    pauseTimer,
-    resumeTimer,
+    pauseForEditing,
+    resumeAfterEditing,
     timerState,
     removePeriodByIndex,
     addPeriodAtIndex,
     autoEditIndex,
+    canTogglePin,
+    togglePinTimer,
 } from '../../../lib/timer'
 import { Schedule } from '../../../lib/schedule'
 import { Period } from '../../../lib/period'
@@ -44,7 +46,7 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
         setWasTimerRunning(isTimerRunning)
 
         if (isTimerRunning) {
-            pauseTimer()
+            pauseForEditing()
         }
 
         // Store original period for potential cancellation
@@ -60,7 +62,7 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
 
         // Resume timer if it was running before edit
         if (wasTimerRunning) {
-            resumeTimer()
+            resumeAfterEditing()
         }
     }, [wasTimerRunning])
 
@@ -75,7 +77,7 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
 
         // Resume timer if it was running before edit
         if (wasTimerRunning) {
-            resumeTimer()
+            resumeAfterEditing()
         }
     }, [originalPeriod, index, wasTimerRunning])
 
@@ -110,7 +112,7 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
 
         // Resume timer if it was running before edit
         if (wasTimerRunning) {
-            resumeTimer()
+            resumeAfterEditing()
         }
     }
 
@@ -343,9 +345,23 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
 
                 {clocksVisible.value && index === 0 && startTime && (
                     <div
-                        className="timeline__start-time"
-                        dangerouslySetInnerHTML={{ __html: startTime }}
-                    />
+                        className={`timeline__start-time ${Schedule.isAnchored.value ? 'timeline__start-time--pinned' : ''}`}
+                        title={
+                            Schedule.isAnchored.value
+                                ? 'Unpin start time (P)'
+                                : 'Pin start time (P)'
+                        }
+                        onClick={event => {
+                            event.stopPropagation()
+                            if (!canTogglePin.value) return
+                            togglePinTimer()
+                        }}
+                    >
+                        <span dangerouslySetInnerHTML={{ __html: startTime }} />
+                        {Schedule.isAnchored.value && (
+                            <FontAwesomeIcon icon={faThumbtack} className="timeline__pin-icon" />
+                        )}
+                    </div>
                 )}
                 {clocksVisible.value && (
                     <div

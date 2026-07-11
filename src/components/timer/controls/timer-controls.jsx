@@ -32,6 +32,7 @@ import { Schedule } from '../../../lib/schedule'
 import { unlockAudio } from '../../../lib/sounds'
 import { activeConfig, configPanelOpen } from '../../../lib/period-configs'
 import { SoundWrapper } from '../../common/sound-wrapper'
+import { ArmedIndicator } from './armed-indicator'
 
 export const TimerControls = () => {
     const handleStartPause = async () => {
@@ -42,6 +43,12 @@ export const TimerControls = () => {
         else if (Schedule.isPaused.value) resumeTimer()
         else startTimer()
     }
+
+    // Armed = idle + anchored. A future anchor auto-starts (lib effect handles
+    // it); pressing Start re-pins to now ("Start now"). A past anchor just
+    // fast-forwards on Start — label stays plain.
+    const isArmed = Schedule.isIdle.value && Schedule.isAnchored.value
+    const isArmedFuture = isArmed && Schedule.timestampAnchor.value > Date.now()
 
     return (
         <>
@@ -55,6 +62,7 @@ export const TimerControls = () => {
                         ? 'Durations config'
                         : 'Edit current durations'}
                 </SoundWrapper>
+                {isArmed && <ArmedIndicator />}
                 <SoundWrapper
                     onClick={resetTimer}
                     disabled={!canReset.value}
@@ -73,7 +81,8 @@ export const TimerControls = () => {
                         <FontAwesomeIcon icon={faPlay} className="icon--success" />
                     ) : (
                         <>
-                            <FontAwesomeIcon icon={faPlay} className="icon--success" /> Start
+                            <FontAwesomeIcon icon={faPlay} className="icon--success" />{' '}
+                            {isArmedFuture ? 'Start now' : 'Start'}
                         </>
                     )}
                 </SoundWrapper>

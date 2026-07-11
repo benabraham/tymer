@@ -13,8 +13,31 @@ import { AVAILABLE_SOUNDS } from './sound-discovery'
 import { Period } from './period'
 import { Periods } from './periods'
 import { Schedule } from './schedule'
-import { parseConfigText, activeConfig, selectConfig, configPanelOpen } from './period-configs'
-import { parseCurrentDurationsText, serializeCurrentDurations } from './durations-format'
+import {
+    parseConfigText,
+    parseConfigAnchor,
+    activeConfig,
+    selectConfig,
+    configPanelOpen,
+} from './period-configs'
+import {
+    parseCurrentDurationsText,
+    parseDurationsAnchor,
+    serializeCurrentDurations,
+} from './durations-format'
+
+// Local helpers: convert between epoch ms and "minutes since local midnight".
+// Used by the `@h:mm` anchor line (live editor + configs).
+const todayAtMinutes = minutes => {
+    const date = new Date()
+    date.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0)
+    return date.getTime()
+}
+
+const msToMinutesSinceMidnight = ms => {
+    const date = new Date(ms)
+    return date.getHours() * 60 + date.getMinutes()
+}
 
 // default timer configuration — periods and types only; Schedule owns phase/timestamps/index
 export const initialState = {
@@ -29,6 +52,7 @@ const initialScheduleSnapshot = {
     currentPeriodIndex: null,
     timestampStarted: null,
     timestampPaused: null,
+    timestampAnchor: null,
 }
 
 // Boot: load persisted state (or fall back to defaults), hydrate both signals
@@ -154,10 +178,15 @@ export const canFinishTimer = computed(
 // elapsed — i.e. while the Finish button is disabled.
 export const canConfigureDurations = computed(() => !canFinishTimer.value)
 
-export const canAdjustElapsedForward = computed(() => Schedule.currentPeriodIndex.value !== null)
+export const canAdjustElapsedForward = computed(
+    () => Schedule.currentPeriodIndex.value !== null && !Schedule.isAnchored.value,
+)
 
 export const canAdjustElapsedBackward = computed(
-    () => Schedule.currentPeriodIndex.value !== null && timerDurationElapsed.value > 0,
+    () =>
+        Schedule.currentPeriodIndex.value !== null
+        && timerDurationElapsed.value > 0
+        && !Schedule.isAnchored.value,
 )
 
 export const canAdjustDurationForward = computed(
@@ -182,6 +211,7 @@ export const canMoveElapsedToPrevious = computed(
 // Validation functions for parameterized checks
 export const canAdjustElapsed = amount => {
     if (Schedule.currentPeriodIndex.value === null) return false
+    if (Schedule.isAnchored.value) return false
     if (amount < 0 && timerDurationElapsed.value === 0) return false
     return true
 }
@@ -255,11 +285,23 @@ export const startTimer = () => {
     // hide the durations-config panel once the timer is underway
     configPanelOpen.value = false
 
+    // A future anchor means the user pressed Start before the scheduled time —
+    // "start now" re-anchors to the present instead of waiting.
+    if (Schedule.isAnchored.value && Schedule.timestampAnchor.value > Date.now()) {
+        Schedule.pin(Date.now())
+    }
+
     Schedule.start()
 
     updateCurrentPeriod()
 
     startTick()
+
+    // A past anchor fast-forwards through any already-overdue periods
+    // immediately and silently (no per-boundary sounds — only tick's own
+    // scheduler check, which runs after this, may play a sound for the
+    // period we land on).
+    advanceOverduePeriods()
 
     log('started timer', logSnapshot(), 3)
 }
@@ -279,13 +321,14 @@ export const resumeTimer = () => {
     log('resumed timer', logSnapshot(), 13)
 }
 
-// pauses the timer
+// pauses the timer (user-facing — breaks the anchor, if any)
 export const pauseTimer = () => {
     if (timerHasFinished.value) return // do nothing if timer has finished (needs reset)
 
     playSound('button')
 
     Schedule.pause()
+    Schedule.unpin()
 
     stopTick()
 
@@ -294,12 +337,144 @@ export const pauseTimer = () => {
     log('timer paused', logSnapshot(), 8)
 }
 
+// Pause/resume WITHOUT unpinning — for internal edit sessions (the "current
+// durations" live editor). While anchored, resumeAfterEditing reconciles the
+// schedule to the anchor and fast-forwards through any boundaries crossed
+// while the editor was open, so elapsed reflects the wall clock; the anchor
+// keeps "ticking" through the edit pause. When not anchored these are plain
+// pause/resume — behavior stays byte-identical to before this feature.
+export const pauseForEditing = () => {
+    Schedule.pause()
+    stopTick()
+}
+
+export const resumeAfterEditing = () => {
+    Schedule.resume()
+    if (Schedule.isAnchored.value) {
+        reconcileToAnchor()
+        advanceOverduePeriods()
+        // The catch-up may have self-finished the timer (remaining time ran
+        // out while the editor was open) — completion already stopped the
+        // tick and played its sound; restarting the tick would replay the
+        // finished sound every second.
+        if (Schedule.isCompleted.value) return
+    }
+    updateCurrentPeriod()
+    startTick()
+}
+
+// ============================================================================
+// Anchored start — pin the session to a wall-clock timestamp.
+// ============================================================================
+
+export const canTogglePin = computed(() => !Schedule.isCompleted.value && !Schedule.isPaused.value)
+
+// Pins the timer to a wall-clock timestamp.
+// - completed or paused: no-op.
+// - running: freezes the CURRENT derived start (anchorMs param ignored — v1
+//   only supports pinning to "now, minus however much has already elapsed").
+// - idle: pins to anchorMs (defaults to now).
+export const pinTimer = (anchorMs = null) => {
+    if (Schedule.isCompleted.value || Schedule.isPaused.value) return
+
+    if (Schedule.isRunning.value) {
+        updateCurrentPeriod()
+        const totalElapsed = timerDurationElapsed.value
+        const reference = Schedule.timestampPaused.value ?? Date.now()
+        Schedule.pin(reference - totalElapsed)
+        return
+    }
+
+    // idle
+    Schedule.pin(anchorMs ?? Date.now())
+}
+
+export const unpinTimer = () => {
+    Schedule.unpin()
+}
+
+export const togglePinTimer = () => {
+    playSound('button')
+    if (Schedule.isAnchored.value) unpinTimer()
+    else pinTimer()
+}
+
+// Realigns timestampStarted so the current period's elapsed matches what the
+// anchor dictates: timestampAnchor + Σ elapsed of all periods except current.
+// No-op when not anchored, or when there's no current period.
+export const reconcileToAnchor = () => {
+    if (!Schedule.isAnchored.value || Schedule.currentPeriodIndex.value === null) return
+
+    const currentIndex = Schedule.currentPeriodIndex.value
+    const elapsedExceptCurrent = timerState.value.periods.reduce(
+        (sum, period, i) => (i === currentIndex ? sum : sum + period.state.elapsed),
+        0,
+    )
+    const desiredTS = Schedule.timestampAnchor.value + elapsedExceptCurrent
+    Schedule.shiftStartedAt(desiredTS - Schedule.timestampStarted.value)
+}
+
+// Anchored auto-advance / catch-up. While anchored, elapsed is clock-owned and
+// boundaries never auto-extend — instead the timeline auto-advances through
+// every period the clock has already overrun, in one call. Covers: a single
+// boundary crossed during normal ticking, multiple boundaries crossed after
+// e.g. a device sleep/reload, and self-finishing once the last period is overrun.
+export const advanceOverduePeriods = () => {
+    if (
+        !Schedule.isAnchored.value
+        || Schedule.currentPeriodIndex.value === null
+        || Schedule.isCompleted.value
+    )
+        return
+
+    updateCurrentPeriod()
+
+    while (
+        currentPeriod.value.state.elapsed >= currentPeriod.value.state.duration
+        && !timerOnLastPeriod.value
+    ) {
+        const overshoot = currentPeriod.value.state.elapsed - currentPeriod.value.state.duration
+        const currentIndex = Schedule.currentPeriodIndex.value
+        const nextPeriod = timerState.value.periods[currentIndex + 1]
+
+        batch(() => {
+            applyToPeriod(currentIndex, Period.completeAtDuration)
+            Schedule.advance({
+                remainderMs: overshoot,
+                nextPeriodElapsedMs: nextPeriod.state.elapsed,
+            })
+        })
+
+        soundScheduler.onPeriodChange()
+        updateCurrentPeriod()
+    }
+
+    if (
+        timerOnLastPeriod.value
+        && currentPeriod.value.state.elapsed >= currentPeriod.value.state.duration
+    ) {
+        const overshoot = currentPeriod.value.state.elapsed - currentPeriod.value.state.duration
+        // Correct the timestamp so the recomputed elapsed lands exactly on
+        // duration — handleTimerCompletion calls updateCurrentPeriod internally,
+        // so the wall-clock overshoot must not be recorded.
+        Schedule.shiftStartedAt(overshoot)
+        handleTimerCompletion()
+    }
+}
+
 // Replace the timeline's periods with a fresh build and reset the schedule.
+// setPeriodsFromConfig always resets Schedule (clearing any prior anchor); if
+// the active config's text has an `@h:mm` header, re-arm the anchor for the
+// fresh timeline (a future anchor arms auto-start, a past one just sits until
+// Start is pressed). Never runs at boot — only from explicit apply/reset calls.
 const setPeriodsFromConfig = periods => {
     stopTick()
     batch(() => {
         Schedule.reset()
         timerState.value = { ...timerState.value, periods }
+
+        const anchorMinutes = parseConfigAnchor(activeConfig.value.text)
+        if (anchorMinutes != null) Schedule.pin(todayAtMinutes(anchorMinutes))
     })
 }
 
@@ -338,24 +513,26 @@ let wasRunningBeforeEdit = false
 // skip editor-originated changes so typing isn't reformatted under the cursor.
 let editorIsApplying = false
 
+const anchorMinutesForSerialization = () =>
+    Schedule.isAnchored.value ? msToMinutesSinceMidnight(Schedule.timestampAnchor.value) : null
+
 const beginEditCurrentDurations = () => {
     wasRunningBeforeEdit = Schedule.isRunning.value
     if (Schedule.isRunning.value) {
-        Schedule.pause()
-        stopTick()
+        pauseForEditing()
     }
     // Freeze the current period's elapsed into state so serialization is exact.
     updateCurrentPeriod()
-    currentDurationsText.value = serializeCurrentDurations(timerState.value.periods)
+    currentDurationsText.value = serializeCurrentDurations(timerState.value.periods, {
+        anchorMinutes: anchorMinutesForSerialization(),
+    })
     editingCurrentDurations.value = true
 }
 
 const endEditCurrentDurations = () => {
     editingCurrentDurations.value = false
     if (wasRunningBeforeEdit && Schedule.isPaused.value) {
-        Schedule.resume()
-        updateCurrentPeriod()
-        startTick()
+        resumeAfterEditing()
     }
     wasRunningBeforeEdit = false
 }
@@ -379,17 +556,39 @@ export const applyCurrentDurations = text => {
 
     const clampedIndex = Math.min(Schedule.currentPeriodIndex.value ?? 0, periods.length - 1)
 
+    // An anchor typed while the session is underway is invalid — and ignored,
+    // keeping the previous anchored/unanchored state — when it is in the
+    // future, or so far in the past that the whole typed timeline would
+    // already be over (adopting it would instantly self-finish the timer).
+    const anchorMinutes = parseDurationsAnchor(text)
+    const reference = Schedule.timestampPaused.value ?? Date.now()
+    const anchorMs = anchorMinutes != null ? todayAtMinutes(anchorMinutes) : null
+    const totalDuration = periods.reduce((sum, period) => sum + period.state.duration, 0)
+    const anchorIsValid =
+        anchorMs != null && anchorMs <= reference && reference - anchorMs < totalDuration
+
     editorIsApplying = true
     batch(() => {
         timerState.value = { ...timerState.value, periods }
         Schedule.setIndex(clampedIndex)
 
-        // Reconcile the current period: timestampStarted = reference - desiredElapsed
-        const oldStart = Schedule.timestampStarted.value
-        if (oldStart !== null) {
-            const reference = Schedule.timestampPaused.value ?? Date.now()
-            const desiredElapsed = periods[clampedIndex].state.elapsed
-            Schedule.shiftStartedAt(reference - desiredElapsed - oldStart)
+        if (anchorIsValid) {
+            Schedule.pin(anchorMs)
+        } else if (anchorMinutes == null && Schedule.isAnchored.value) {
+            unpinTimer()
+        }
+
+        if (Schedule.isAnchored.value) {
+            // Anchored: the typed elapsed of the CURRENT period is ignored —
+            // it's derived from the anchor instead.
+            reconcileToAnchor()
+        } else {
+            // Reconcile the current period: timestampStarted = reference - desiredElapsed
+            const oldStart = Schedule.timestampStarted.value
+            if (oldStart !== null) {
+                const desiredElapsed = periods[clampedIndex].state.elapsed
+                Schedule.shiftStartedAt(reference - desiredElapsed - oldStart)
+            }
         }
     })
     editorIsApplying = false
@@ -400,8 +599,9 @@ export const applyCurrentDurations = text => {
 // skipped so the user's raw typing is never reformatted under the cursor.
 effect(() => {
     const periods = timerState.value.periods
+    const anchorMinutes = anchorMinutesForSerialization()
     if (!editingCurrentDurations.value || editorIsApplying) return
-    currentDurationsText.value = serializeCurrentDurations(periods)
+    currentDurationsText.value = serializeCurrentDurations(periods, { anchorMinutes })
 })
 
 // ----------------------------------------------------------------------------
@@ -512,7 +712,12 @@ const updateCurrentPeriod = () => {
         Period.applyElapsed(p, periodDurationElapsed),
     )
 
-    if (hasPeriodReachedCompletion(periodDurationElapsed, currentPeriod.value.state.duration))
+    // Anchored mode never auto-extends — boundaries are handled by
+    // advanceOverduePeriods (auto-advance), called from tick().
+    if (
+        !Schedule.isAnchored.value
+        && hasPeriodReachedCompletion(periodDurationElapsed, currentPeriod.value.state.duration)
+    )
         handlePeriodElapsed()
 }
 
@@ -797,6 +1002,11 @@ export const applyToPeriod = (index, op) => {
 const tick = () => {
     updateCurrentPeriod()
 
+    // Anchored mode never auto-extends at a boundary — auto-advance instead.
+    // Covers a single boundary crossed this tick, and multi-boundary catch-up
+    // (e.g. after the tab was backgrounded and several boundaries elapsed).
+    if (Schedule.isAnchored.value) advanceOverduePeriods()
+
     // Check for period-based sounds
     if (currentPeriod.value) {
         const elapsedMs = currentPeriod.value.state.elapsed
@@ -835,6 +1045,28 @@ const tick = () => {
 // persist timer state to localStorage on every state change
 effect(() => {
     saveState({ ...timerState.value, ...Schedule.snapshot.value })
+})
+
+// Auto-start when armed: idle + a future anchor pinned. Fires startTimer at
+// the scheduled moment. A past anchor (e.g. an armed state persisted and
+// reloaded after the moment already passed) does NOT auto-start — the user
+// must press Start explicitly, which then fast-forwards (see startTimer).
+let armedStartTimeoutId = null
+effect(() => {
+    const idle = Schedule.isIdle.value
+    const anchor = Schedule.timestampAnchor.value
+
+    if (armedStartTimeoutId !== null) {
+        clearTimeout(armedStartTimeoutId)
+        armedStartTimeoutId = null
+    }
+
+    if (idle && anchor != null && anchor > Date.now()) {
+        armedStartTimeoutId = setTimeout(() => {
+            armedStartTimeoutId = null
+            startTimer()
+        }, anchor - Date.now())
+    }
 })
 
 // Export timer state globally for sounds module to access

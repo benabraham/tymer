@@ -33,8 +33,14 @@ export const Timeline = () => {
             getTimelineData({
                 periods: timerState.value.periods,
                 currentPeriodIndex: Schedule.currentPeriodIndex.value,
+                anchorMs: Schedule.timestampAnchor.value,
             }),
-        [timerState.value.periods, Schedule.currentPeriodIndex.value, timerState.value.elapsed],
+        [
+            timerState.value.periods,
+            Schedule.currentPeriodIndex.value,
+            timerState.value.elapsed,
+            Schedule.timestampAnchor.value,
+        ],
     )
 
     if (!timelinePeriods.length) return null
