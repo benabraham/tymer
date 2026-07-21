@@ -4,6 +4,7 @@ import { faSun, faSnowflake, faBug, faClock } from '@fortawesome/free-solid-svg-
 import { getTheme, cycleTheme } from '../../lib/theme'
 import { debugVisible, toggleDebug } from '../../lib/debug'
 import { clocksVisible, toggleClocks } from '../../lib/clocks'
+import { SoundToggle } from './sound-toggle'
 import './theme-switcher.scss'
 
 export const ThemeSwitcher = () => {
@@ -18,6 +19,7 @@ export const ThemeSwitcher = () => {
 
     return (
         <div class="top-controls">
+            <SoundToggle />
             <button
                 class="top-controls__button"
                 onClick={handleThemeClick}

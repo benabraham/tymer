@@ -1,9 +1,35 @@
 import { Howl, Howler } from 'howler'
+import { signal } from '@preact/signals'
 import { AVAILABLE_SOUNDS } from './sound-discovery'
 import { log } from './log.js'
 
-// Audio context unlock state
-let audioUnlocked = false
+// Audio context unlock state — a signal so the UI can flag "audio not activated
+// yet" (browsers block playback until the first user gesture).
+export const audioUnlocked = signal(false)
+
+// User mute toggle, persisted. Default: sound on.
+const SOUND_ENABLED_KEY = 'soundEnabled'
+
+const loadSoundEnabled = () => {
+    try {
+        return localStorage.getItem(SOUND_ENABLED_KEY) !== 'false'
+    } catch {
+        return true
+    }
+}
+
+export const soundEnabled = signal(loadSoundEnabled())
+
+export const toggleSound = () => {
+    soundEnabled.value = !soundEnabled.value
+    try {
+        localStorage.setItem(SOUND_ENABLED_KEY, String(soundEnabled.value))
+    } catch {
+        // Ignore storage failures — the in-memory toggle still applies.
+    }
+    // Silence anything already playing when muting.
+    if (!soundEnabled.value) Howler.stop()
+}
 
 // Sound playback tracking for debug table
 export const soundPlaybackLog = []
@@ -33,7 +59,7 @@ const addSoundLog = (
 
 // Function to unlock audio context on user interaction
 export const unlockAudio = async () => {
-    if (audioUnlocked) return true
+    if (audioUnlocked.value) return true
 
     try {
         // Try to unlock by creating and playing a silent sound
@@ -50,7 +76,7 @@ export const unlockAudio = async () => {
             await playPromise
         }
 
-        audioUnlocked = true
+        audioUnlocked.value = true
         log('🔊 Audio context', 'unlocked successfully', 3)
 
         return true
@@ -195,6 +221,8 @@ const getPeriodContext = () => {
 
 // Play any sound by its key
 const playByKey = async soundKey => {
+    if (!soundEnabled.value) return false
+
     const sound = sounds[soundKey]
     const periodContext = getPeriodContext()
 
@@ -206,7 +234,7 @@ const playByKey = async soundKey => {
 
     try {
         // Try to unlock audio if not already unlocked
-        if (!audioUnlocked) {
+        if (!audioUnlocked.value) {
             const unlocked = await unlockAudio()
             if (!unlocked) {
                 log('🔊 Audio unlock failed for', soundKey, 2)
@@ -241,6 +269,8 @@ const playByKey = async soundKey => {
 
 // Play a random notification sound (1-63)
 const playRandomNotification = async () => {
+    if (!soundEnabled.value) return false
+
     const randomNum = Math.floor(Math.random() * 63) + 1 // 1-63
     const notificationKey = `notification_${randomNum}`
 
@@ -253,7 +283,7 @@ const playRandomNotification = async () => {
     }
 
     try {
-        if (!audioUnlocked) await unlockAudio()
+        if (!audioUnlocked.value) await unlockAudio()
 
         // Play notification and wait for it to complete
         return new Promise(resolve => {

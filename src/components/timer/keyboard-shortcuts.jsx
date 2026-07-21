@@ -42,7 +42,7 @@ const getNextMultipleOf3Delta = (currentMs, direction) => {
             : Math.floor((currentMinutes - 1) / 3) * 3
     return target * 60 * 1000 - currentMs
 }
-import { unlockAudio } from '../../lib/sounds'
+import { unlockAudio, toggleSound } from '../../lib/sounds'
 
 export function KeyboardShortcuts() {
     useEffect(() => {
@@ -388,6 +388,18 @@ export function KeyboardShortcuts() {
                     togglePinTimer()
                     handled = true
                 }
+            }
+
+            // M - mute/unmute
+            else if (
+                (event.key === 'm' || event.key === 'M')
+                && !event.ctrlKey
+                && !event.altKey
+                && !event.shiftKey
+            ) {
+                event.preventDefault()
+                toggleSound()
+                handled = true
             }
 
             // E - open the durations panel (Edit current durations)

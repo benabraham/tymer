@@ -34,4 +34,11 @@
     opacity: 1;
     background: var(--color-accent);
   }
+
+  // Toggled on, but something is off — e.g. sound enabled while the browser
+  // still blocks audio playback.
+  &--warning {
+    opacity: 1;
+    background: var(--color-warning);
+  }
 }
