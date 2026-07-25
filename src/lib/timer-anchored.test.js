@@ -851,7 +851,22 @@ describe('Timer anchor lifecycle', () => {
             expect(Schedule.timestampAnchor.value).toBe(new Date(2024, 0, 1, 23, 50).getTime())
         })
 
-        it('re-applying the same @h:mm keeps the exact anchor of a session anchored days ago', () => {
+        it('an explicit @yesterday h:mm resolves to yesterday even when the time would fit today', () => {
+            Schedule.setSnapshot({
+                phase: 'paused',
+                currentPeriodIndex: 0,
+                timestampStarted: NOW - 60_000,
+                timestampPaused: NOW,
+                timestampAnchor: null,
+            })
+
+            // 9:00 already passed today (now is 10:30) — the qualifier forces yesterday
+            applyCurrentDurations('@yesterday 9:00\nW 5/24 note')
+
+            expect(Schedule.timestampAnchor.value).toBe(new Date(2023, 11, 31, 9, 0).getTime())
+        })
+
+        it('a day-qualified anchor (as the mirror serializes it) keeps a days-old session on its exact day', () => {
             const oldAnchor = new Date(2023, 11, 30, 9, 0).getTime() // 2 days before NOW
             Schedule.setSnapshot({
                 phase: 'paused',
@@ -861,11 +876,60 @@ describe('Timer anchor lifecycle', () => {
                 timestampAnchor: oldAnchor,
             })
 
-            // "@9:00" matches the anchor's wall-clock time — editing other
-            // lines must NOT re-resolve the start to a more recent 9:00
-            applyCurrentDurations('@9:00\nW 5/24 note')
+            // The mirror writes "@30 Dec 9:00" for this anchor — editing other
+            // lines re-applies the same text and must not move the start
+            applyCurrentDurations('@30 Dec 9:00\nW 5/24 note')
 
             expect(Schedule.timestampAnchor.value).toBe(oldAnchor)
+        })
+
+        it('removing the day qualifier deliberately re-resolves to the most recent occurrence', () => {
+            const oldAnchor = new Date(2023, 11, 30, 9, 0).getTime()
+            Schedule.setSnapshot({
+                phase: 'paused',
+                currentPeriodIndex: 0,
+                timestampStarted: oldAnchor,
+                timestampPaused: NOW,
+                timestampAnchor: oldAnchor,
+            })
+
+            applyCurrentDurations('@9:00\nW 5/24 note')
+
+            // plain 9:00 = today 9:00 (it already passed by 10:30)
+            expect(Schedule.timestampAnchor.value).toBe(new Date(2024, 0, 1, 9, 0).getTime())
+        })
+
+        it('a typed anchor resolving into the same minute keeps the exact timestamp (seconds preserved)', () => {
+            const anchorWithSeconds = NOW - 30 * 60 * 1000 + 25_000 // 10:00:25
+            Schedule.setSnapshot({
+                phase: 'paused',
+                currentPeriodIndex: 0,
+                timestampStarted: anchorWithSeconds,
+                timestampPaused: NOW,
+                timestampAnchor: anchorWithSeconds,
+            })
+
+            applyCurrentDurations('@10:00\nW 5/60 note')
+
+            expect(Schedule.timestampAnchor.value).toBe(anchorWithSeconds)
+        })
+
+        it('the mirror serializes a yesterday anchor with its day qualifier', () => {
+            const yesterdayAnchor = new Date(2023, 11, 31, 23, 50).getTime()
+            Schedule.setSnapshot({
+                phase: 'paused',
+                currentPeriodIndex: 0,
+                timestampStarted: yesterdayAnchor,
+                timestampPaused: NOW,
+                timestampAnchor: yesterdayAnchor,
+            })
+
+            editingCurrentDurations.value = true
+            timerState.value = { ...timerState.value } // re-trigger the write-back effect
+
+            expect(currentDurationsText.value.split('\n')[0]).toBe('@yesterday 23:50')
+
+            editingCurrentDurations.value = false
         })
 
         it('an @h:mm line older than the total timeline duration is adopted — the last period will absorb the overrun', () => {

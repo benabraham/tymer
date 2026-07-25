@@ -65,23 +65,44 @@ const parseLine = line => {
 
 export const parseCurrentDurationsText = text => text.split('\n').map(parseLine).filter(Boolean)
 
-// Anchor header line: "@h:mm" or "@h:m" — pins session start to a wall-clock
-// time. Only the first valid anchor line in the text counts.
-const ANCHOR_RE = /^@\s*(\d{1,2}):(\d{1,2})$/
+// Anchor header line — pins session start to a wall-clock time. Only the first
+// valid anchor line in the text counts. Forms (day qualifier optional):
+//
+//   @h:mm              today, or yesterday when the time is later than now
+//   @yesterday h:mm    explicitly yesterday
+//   @30 Dec h:mm       explicit day+month (most recent occurrence)
+//
+// The day qualifier makes serialized anchors from before today deterministic:
+// re-parsing the mirrored text always resolves to the same day.
+const ANCHOR_RE = /^@\s*(?:(yesterday)\s+|(\d{1,2})\s+([a-z]{3})\s+)?(\d{1,2}):(\d{1,2})$/i
 
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+
+// → { minutes, day } | null, where day is null (plain time), 'yesterday', or
+// { day, monthIndex }. Resolving day+minutes to a timestamp is the caller's
+// job (it needs a reference "now").
 export const parseDurationsAnchor = text => {
     for (const line of text.split('\n')) {
         const match = line.trim().match(ANCHOR_RE)
         if (!match) continue
-        const hours = parseInt(match[1], 10)
-        const minutes = parseInt(match[2], 10)
+        const hours = parseInt(match[4], 10)
+        const minutes = parseInt(match[5], 10)
         if (hours > 23 || minutes > 59) continue
-        return hours * 60 + minutes
+
+        if (match[1]) return { minutes: hours * 60 + minutes, day: 'yesterday' }
+        if (match[2]) {
+            const day = parseInt(match[2], 10)
+            const monthIndex = MONTHS.indexOf(match[3].toLowerCase())
+            if (monthIndex === -1 || day < 1 || day > 31) continue
+            return { minutes: hours * 60 + minutes, day: { day, monthIndex } }
+        }
+        return { minutes: hours * 60 + minutes, day: null }
     }
     return null
 }
 
-export const formatAnchorToken = minutes => `@${Math.floor(minutes / 60)}:${pad(minutes % 60)}`
+export const formatAnchorToken = (minutes, dayMarker = '') =>
+    `@${dayMarker ? `${dayMarker} ` : ''}${Math.floor(minutes / 60)}:${pad(minutes % 60)}`
 
 // total/duration token: whole minutes, or h:mm when >= 1 hour
 export const formatDurationToken = ms => {
@@ -100,8 +121,13 @@ export const formatElapsedToken = ms => {
 }
 
 // Live periods → editable text. Elapsed is shown only when > 0. When
-// anchorMinutes is given (not null), an "@h:mm" header line is prepended.
-export const serializeCurrentDurations = (periods, { anchorMinutes = null } = {}) => {
+// anchorMinutes is given (not null), an "@h:mm" header line is prepended —
+// with the day qualifier (e.g. "yesterday", "30 Dec") when anchorDayMarker is
+// non-empty, so anchors from before today survive the round-trip exactly.
+export const serializeCurrentDurations = (
+    periods,
+    { anchorMinutes = null, anchorDayMarker = '' } = {},
+) => {
     const lines = periods
         .map(period => {
             const char = TYPE_TO_CHAR[period.config.type]
@@ -114,5 +140,7 @@ export const serializeCurrentDurations = (periods, { anchorMinutes = null } = {}
             return `${char} ${field}${note}`
         })
         .join('\n')
-    return anchorMinutes != null ? `${formatAnchorToken(anchorMinutes)}\n${lines}` : lines
+    return anchorMinutes != null
+        ? `${formatAnchorToken(anchorMinutes, anchorDayMarker)}\n${lines}`
+        : lines
 }

@@ -25,6 +25,7 @@ import {
     parseDurationsAnchor,
     serializeCurrentDurations,
 } from './durations-format'
+import { formatDayMarker } from './format'
 
 // Local helpers: convert between epoch ms and "minutes since local midnight".
 // Used by the `@h:mm` anchor line (live editor + configs).
@@ -48,6 +49,29 @@ const mostRecentAtMinutes = (minutes, reference) => {
     date.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0)
     if (date.getTime() > reference) date.setDate(date.getDate() - 1)
     return date.getTime()
+}
+
+// Resolve a parsed anchor ({ minutes, day }) from the live editor to a
+// concrete timestamp at or before `reference`. A plain time means its most
+// recent occurrence (today, or yesterday when later than now); 'yesterday' is
+// explicit; an explicit day+month means its most recent occurrence within the
+// past year. setMonth(m, d) sets both fields atomically, avoiding
+// intermediate month-length overflow.
+const resolveTypedAnchor = ({ minutes, day }, reference) => {
+    if (day === 'yesterday') {
+        const date = new Date(reference)
+        date.setDate(date.getDate() - 1)
+        date.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0)
+        return date.getTime()
+    }
+    if (day) {
+        const date = new Date(reference)
+        date.setMonth(day.monthIndex, day.day)
+        date.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0)
+        if (date.getTime() > reference) date.setFullYear(date.getFullYear() - 1)
+        return date.getTime()
+    }
+    return mostRecentAtMinutes(minutes, reference)
 }
 
 // default timer configuration — periods and types only; Schedule owns phase/timestamps/index
@@ -524,8 +548,17 @@ let wasRunningBeforeEdit = false
 // skip editor-originated changes so typing isn't reformatted under the cursor.
 let editorIsApplying = false
 
-const anchorMinutesForSerialization = () =>
-    Schedule.isAnchored.value ? msToMinutesSinceMidnight(Schedule.timestampAnchor.value) : null
+// Anchor fields for serializeCurrentDurations: minutes since midnight plus the
+// day qualifier ('' when the anchor is from today) — anchors from before today
+// serialize with their day (e.g. "@yesterday 23:50") so re-parsing the
+// mirrored text resolves to the exact same day.
+const anchorForSerialization = () =>
+    Schedule.isAnchored.value
+        ? {
+              anchorMinutes: msToMinutesSinceMidnight(Schedule.timestampAnchor.value),
+              anchorDayMarker: formatDayMarker(Schedule.timestampAnchor.value),
+          }
+        : { anchorMinutes: null, anchorDayMarker: '' }
 
 const beginEditCurrentDurations = () => {
     wasRunningBeforeEdit = Schedule.isRunning.value
@@ -534,9 +567,10 @@ const beginEditCurrentDurations = () => {
     }
     // Freeze the current period's elapsed into state so serialization is exact.
     updateCurrentPeriod()
-    currentDurationsText.value = serializeCurrentDurations(timerState.value.periods, {
-        anchorMinutes: anchorMinutesForSerialization(),
-    })
+    currentDurationsText.value = serializeCurrentDurations(
+        timerState.value.periods,
+        anchorForSerialization(),
+    )
     editingCurrentDurations.value = true
 }
 
@@ -567,30 +601,30 @@ export const applyCurrentDurations = text => {
 
     const clampedIndex = Math.min(Schedule.currentPeriodIndex.value ?? 0, periods.length - 1)
 
-    // Resolve the typed @h:mm against the wall clock. A session underway must
-    // have started in the past, so the time means its most recent occurrence
-    // at or before "now" — a time later than now therefore means yesterday
-    // (a session crossing midnight). Even an anchor older than the whole typed
-    // timeline is honored: the catch-up on editor close advances through the
-    // overrun periods and extends the last one, so no time is lost. Exception:
-    // when the typed h:mm matches the current anchor's own wall-clock time,
-    // the anchor keeps its exact timestamp — editing other lines of a session
-    // anchored days ago must not silently re-resolve its start to a newer day.
-    const anchorMinutes = parseDurationsAnchor(text)
+    // Resolve the typed anchor against the wall clock (see resolveTypedAnchor
+    // for the day-resolution rules — a session underway always started in the
+    // past). Even an anchor older than the whole typed timeline is honored:
+    // the catch-up on editor close advances through the overrun periods and
+    // extends the last one, so no time is lost. When the typed anchor resolves
+    // to the same minute the current anchor already lies in, the anchor keeps
+    // its exact timestamp (including seconds) — editing other lines never
+    // nudges the recorded start.
+    const anchor = parseDurationsAnchor(text)
     const reference = Schedule.timestampPaused.value ?? Date.now()
+    const typedAnchorMs = anchor != null ? resolveTypedAnchor(anchor, reference) : null
     const keepExistingAnchor =
-        anchorMinutes != null
+        typedAnchorMs != null
         && Schedule.isAnchored.value
-        && msToMinutesSinceMidnight(Schedule.timestampAnchor.value) === anchorMinutes
+        && Math.floor(Schedule.timestampAnchor.value / 60000) === Math.floor(typedAnchorMs / 60000)
 
     editorIsApplying = true
     batch(() => {
         timerState.value = { ...timerState.value, periods }
         Schedule.setIndex(clampedIndex)
 
-        if (anchorMinutes != null && !keepExistingAnchor) {
-            Schedule.pin(mostRecentAtMinutes(anchorMinutes, reference))
-        } else if (anchorMinutes == null && Schedule.isAnchored.value) {
+        if (typedAnchorMs != null && !keepExistingAnchor) {
+            Schedule.pin(typedAnchorMs)
+        } else if (anchor == null && Schedule.isAnchored.value) {
             unpinTimer()
         }
 
@@ -615,9 +649,9 @@ export const applyCurrentDurations = text => {
 // skipped so the user's raw typing is never reformatted under the cursor.
 effect(() => {
     const periods = timerState.value.periods
-    const anchorMinutes = anchorMinutesForSerialization()
+    const anchor = anchorForSerialization()
     if (!editingCurrentDurations.value || editorIsApplying) return
-    currentDurationsText.value = serializeCurrentDurations(periods, { anchorMinutes })
+    currentDurationsText.value = serializeCurrentDurations(periods, anchor)
 })
 
 // ----------------------------------------------------------------------------
