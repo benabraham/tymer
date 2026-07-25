@@ -31,17 +31,7 @@ import {
 } from '../../lib/timer'
 import { configPanelOpen } from '../../lib/period-configs'
 import { Schedule } from '../../lib/schedule'
-
-// Local helper: compute the delta needed to snap currentMs to the next multiple-of-3 minute boundary.
-// This is UI input math (keyboard shortcuts only) — not timer logic — so it lives here.
-const getNextMultipleOf3Delta = (currentMs, direction) => {
-    const currentMinutes = Math.floor(currentMs / (60 * 1000))
-    const target =
-        direction === 'up'
-            ? Math.ceil((currentMinutes + 1) / 3) * 3
-            : Math.floor((currentMinutes - 1) / 3) * 3
-    return target * 60 * 1000 - currentMs
-}
+import { getNextMultipleOf3Delta } from '../../lib/snap'
 import { unlockAudio, toggleSound } from '../../lib/sounds'
 
 export function KeyboardShortcuts() {
@@ -113,7 +103,10 @@ export function KeyboardShortcuts() {
                 && !event.shiftKey
             ) {
                 event.preventDefault()
-                const delta = getNextMultipleOf3Delta(timerDurationElapsed.value, 'up')
+                const delta = getNextMultipleOf3Delta({
+                    currentMs: timerDurationElapsed.value,
+                    direction: 'up',
+                })
                 if (canAdjustElapsed(delta)) {
                     adjustElapsed(delta)
                     handled = true
@@ -125,7 +118,10 @@ export function KeyboardShortcuts() {
                 && !event.shiftKey
             ) {
                 event.preventDefault()
-                const delta = getNextMultipleOf3Delta(timerDurationElapsed.value, 'down')
+                const delta = getNextMultipleOf3Delta({
+                    currentMs: timerDurationElapsed.value,
+                    direction: 'down',
+                })
                 if (canAdjustElapsed(delta)) {
                     adjustElapsed(delta)
                     handled = true
@@ -234,7 +230,10 @@ export function KeyboardShortcuts() {
             ) {
                 event.preventDefault()
                 const currentDuration = currentPeriod.value?.state.duration || 0
-                const delta = getNextMultipleOf3Delta(currentDuration, 'up')
+                const delta = getNextMultipleOf3Delta({
+                    currentMs: currentDuration,
+                    direction: 'up',
+                })
                 if (canAdjustDuration(delta)) {
                     adjustDuration(delta)
                     handled = true
@@ -242,7 +241,10 @@ export function KeyboardShortcuts() {
             } else if (event.key === '-' && !event.ctrlKey && !event.altKey && !event.shiftKey) {
                 event.preventDefault()
                 const currentDuration = currentPeriod.value?.state.duration || 0
-                const delta = getNextMultipleOf3Delta(currentDuration, 'down')
+                const delta = getNextMultipleOf3Delta({
+                    currentMs: currentDuration,
+                    direction: 'down',
+                })
                 if (canAdjustDuration(delta)) {
                     adjustDuration(delta)
                     handled = true
