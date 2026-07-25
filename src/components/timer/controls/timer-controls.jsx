@@ -45,8 +45,8 @@ export const TimerControls = () => {
     }
 
     // Armed = idle + anchored. A future anchor auto-starts (lib effect handles
-    // it); pressing Start re-pins to now ("Start now"). A past anchor just
-    // fast-forwards on Start — label stays plain.
+    // it); pressing Start re-pins to now ("Start now"). A past anchor starts
+    // with the gap already elapsed on the first period — label stays plain.
     const isArmed = Schedule.isIdle.value && Schedule.isAnchored.value
     const isArmedFuture = isArmed && Schedule.timestampAnchor.value > Date.now()
 

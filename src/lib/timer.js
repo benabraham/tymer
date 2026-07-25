@@ -328,12 +328,6 @@ export const startTimer = () => {
 
     startTick()
 
-    // A past anchor fast-forwards through any already-overdue periods
-    // immediately and silently (no per-boundary sounds — only tick's own
-    // scheduler check, which runs after this, may play a sound for the
-    // period we land on).
-    advanceOverduePeriods()
-
     log('started timer', logSnapshot(), 3)
 }
 
@@ -347,15 +341,10 @@ export const resumeTimer = () => {
 
     // A paused session can still be anchored (an @h:mm line typed in the live
     // editor while paused). Anchored elapsed is clock-owned: snap it to the
-    // wall clock and catch up through any boundaries crossed while paused.
-    // advanceOverduePeriods leaves the current period freshly updated (see
-    // resumeAfterEditing), so the plain refresh only runs when not anchored.
-    if (Schedule.isAnchored.value) {
-        reconcileToAnchor()
-        advanceOverduePeriods()
-    } else {
-        updateCurrentPeriod()
-    }
+    // wall clock first — the current period absorbs the time that passed while
+    // paused, auto-extending if it overran (updateCurrentPeriod).
+    if (Schedule.isAnchored.value) reconcileToAnchor()
+    updateCurrentPeriod()
 
     startTick()
 
@@ -380,10 +369,10 @@ export const pauseTimer = () => {
 
 // Pause/resume WITHOUT unpinning — for internal edit sessions (the "current
 // durations" live editor). While anchored, resumeAfterEditing reconciles the
-// schedule to the anchor and fast-forwards through any boundaries crossed
-// while the editor was open, so elapsed reflects the wall clock; the anchor
-// keeps "ticking" through the edit pause. When not anchored these are plain
-// pause/resume — behavior stays byte-identical to before this feature.
+// schedule to the anchor so elapsed reflects the wall clock — the current
+// period absorbs the time the editor was open, auto-extending if it overran;
+// the anchor keeps "ticking" through the edit pause. When not anchored these
+// are plain pause/resume — behavior stays byte-identical to before this feature.
 export const pauseForEditing = () => {
     Schedule.pause()
     stopTick()
@@ -391,15 +380,8 @@ export const pauseForEditing = () => {
 
 export const resumeAfterEditing = () => {
     Schedule.resume()
-    if (Schedule.isAnchored.value) {
-        reconcileToAnchor()
-        // advanceOverduePeriods leaves the current period freshly updated — a
-        // second updateCurrentPeriod here would auto-extend it once more when
-        // the catch-up landed exactly on the boundary (elapsed == duration).
-        advanceOverduePeriods()
-    } else {
-        updateCurrentPeriod()
-    }
+    if (Schedule.isAnchored.value) reconcileToAnchor()
+    updateCurrentPeriod()
     startTick()
 }
 
@@ -452,45 +434,6 @@ export const reconcileToAnchor = () => {
     )
     const desiredTS = Schedule.timestampAnchor.value + elapsedExceptCurrent
     Schedule.shiftStartedAt(desiredTS - Schedule.timestampStarted.value)
-}
-
-// Anchored auto-advance / catch-up. While anchored, elapsed is clock-owned and
-// boundaries with a successor never auto-extend — instead the timeline
-// auto-advances through every period the clock has already overrun, in one
-// call. Covers: a single boundary crossed during normal ticking, and multiple
-// boundaries crossed after e.g. a device sleep/reload. The LAST period never
-// advances — once the clock overruns it, updateCurrentPeriod auto-extends it
-// (in the top call or the loop-bottom call below), so the timer keeps running
-// until the user finishes it and no wall-clock time is lost.
-export const advanceOverduePeriods = () => {
-    if (
-        !Schedule.isAnchored.value
-        || Schedule.currentPeriodIndex.value === null
-        || Schedule.isCompleted.value
-    )
-        return
-
-    updateCurrentPeriod()
-
-    while (
-        currentPeriod.value.state.elapsed >= currentPeriod.value.state.duration
-        && !timerOnLastPeriod.value
-    ) {
-        const overshoot = currentPeriod.value.state.elapsed - currentPeriod.value.state.duration
-        const currentIndex = Schedule.currentPeriodIndex.value
-        const nextPeriod = timerState.value.periods[currentIndex + 1]
-
-        batch(() => {
-            applyToPeriod(currentIndex, Period.completeAtDuration)
-            Schedule.advance({
-                remainderMs: overshoot,
-                nextPeriodElapsedMs: nextPeriod.state.elapsed,
-            })
-        })
-
-        soundScheduler.onPeriodChange()
-        updateCurrentPeriod()
-    }
 }
 
 // Replace the timeline's periods with a fresh build and reset the schedule.
@@ -604,8 +547,8 @@ export const applyCurrentDurations = text => {
     // type @yesterday for that) or when it is newer than the past periods'
     // typed elapsed allows (the current period's derived elapsed would go
     // negative, contradicting the record). An anchor older than the whole
-    // typed timeline IS honored: the catch-up on editor close advances through
-    // the overrun periods and extends the last one, so no time is lost. When
+    // typed timeline IS honored: on editor close the current period absorbs
+    // the overrun (auto-extending), so no time is lost. When
     // the typed anchor resolves to the same minute the current anchor already
     // lies in, the anchor keeps its exact timestamp (including seconds) —
     // editing other lines never nudges the recorded start. Unpinning requires
@@ -769,16 +712,12 @@ const updateCurrentPeriod = () => {
         Period.applyElapsed(p, periodDurationElapsed),
     )
 
-    // Anchored mode auto-advances at boundaries (advanceOverduePeriods) instead
-    // of auto-extending. The LAST period is the exception — there is nothing to
-    // advance into, so it auto-extends like normal and the timer keeps running
-    // (and recording) until the user finishes it: an anchored session never
-    // self-finishes, so no wall-clock time is ever dropped from the record.
-    const anchoredBeforeLastPeriod = Schedule.isAnchored.value && !timerOnLastPeriod.value
-    if (
-        !anchoredBeforeLastPeriod
-        && hasPeriodReachedCompletion(periodDurationElapsed, currentPeriod.value.state.duration)
-    )
+    // Anchored or not, an overrun period auto-extends and later periods just
+    // shift — the anchor only fixes the session start and the completed
+    // periods' record, so an anchored session never self-finishes and any
+    // clock gap (late start, sleep/reload, editor open) lands on the current
+    // period.
+    if (hasPeriodReachedCompletion(periodDurationElapsed, currentPeriod.value.state.duration))
         handlePeriodElapsed()
 }
 
@@ -1063,12 +1002,6 @@ export const applyToPeriod = (index, op) => {
 const tick = () => {
     updateCurrentPeriod()
 
-    // Anchored mode auto-advances at boundaries instead of auto-extending
-    // (except on the last period, which extends — see updateCurrentPeriod).
-    // Covers a single boundary crossed this tick, and multi-boundary catch-up
-    // (e.g. after the tab was backgrounded and several boundaries elapsed).
-    if (Schedule.isAnchored.value) advanceOverduePeriods()
-
     // Check for period-based sounds
     if (currentPeriod.value) {
         const elapsedMs = currentPeriod.value.state.elapsed
@@ -1112,7 +1045,8 @@ effect(() => {
 // Auto-start when armed: idle + a future anchor pinned. Fires startTimer at
 // the scheduled moment. A past anchor (e.g. an armed state persisted and
 // reloaded after the moment already passed) does NOT auto-start — the user
-// must press Start explicitly, which then fast-forwards (see startTimer).
+// must press Start explicitly; the first period then absorbs the whole gap
+// since the anchor (see startTimer).
 let armedStartTimeoutId = null
 effect(() => {
     const idle = Schedule.isIdle.value
