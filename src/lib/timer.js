@@ -314,7 +314,17 @@ export const resumeTimer = () => {
 
     Schedule.resume()
 
-    updateCurrentPeriod()
+    // A paused session can still be anchored (an @h:mm line typed in the live
+    // editor while paused). Anchored elapsed is clock-owned: snap it to the
+    // wall clock and catch up through any boundaries crossed while paused.
+    // advanceOverduePeriods leaves the current period freshly updated (see
+    // resumeAfterEditing), so the plain refresh only runs when not anchored.
+    if (Schedule.isAnchored.value) {
+        reconcileToAnchor()
+        advanceOverduePeriods()
+    } else {
+        updateCurrentPeriod()
+    }
 
     startTick()
 
@@ -352,14 +362,13 @@ export const resumeAfterEditing = () => {
     Schedule.resume()
     if (Schedule.isAnchored.value) {
         reconcileToAnchor()
+        // advanceOverduePeriods leaves the current period freshly updated — a
+        // second updateCurrentPeriod here would auto-extend it once more when
+        // the catch-up landed exactly on the boundary (elapsed == duration).
         advanceOverduePeriods()
-        // The catch-up may have self-finished the timer (remaining time ran
-        // out while the editor was open) — completion already stopped the
-        // tick and played its sound; restarting the tick would replay the
-        // finished sound every second.
-        if (Schedule.isCompleted.value) return
+    } else {
+        updateCurrentPeriod()
     }
-    updateCurrentPeriod()
     startTick()
 }
 
@@ -415,10 +424,13 @@ export const reconcileToAnchor = () => {
 }
 
 // Anchored auto-advance / catch-up. While anchored, elapsed is clock-owned and
-// boundaries never auto-extend — instead the timeline auto-advances through
-// every period the clock has already overrun, in one call. Covers: a single
-// boundary crossed during normal ticking, multiple boundaries crossed after
-// e.g. a device sleep/reload, and self-finishing once the last period is overrun.
+// boundaries with a successor never auto-extend — instead the timeline
+// auto-advances through every period the clock has already overrun, in one
+// call. Covers: a single boundary crossed during normal ticking, and multiple
+// boundaries crossed after e.g. a device sleep/reload. The LAST period never
+// advances — once the clock overruns it, updateCurrentPeriod auto-extends it
+// (in the top call or the loop-bottom call below), so the timer keeps running
+// until the user finishes it and no wall-clock time is lost.
 export const advanceOverduePeriods = () => {
     if (
         !Schedule.isAnchored.value
@@ -447,18 +459,6 @@ export const advanceOverduePeriods = () => {
 
         soundScheduler.onPeriodChange()
         updateCurrentPeriod()
-    }
-
-    if (
-        timerOnLastPeriod.value
-        && currentPeriod.value.state.elapsed >= currentPeriod.value.state.duration
-    ) {
-        const overshoot = currentPeriod.value.state.elapsed - currentPeriod.value.state.duration
-        // Correct the timestamp so the recomputed elapsed lands exactly on
-        // duration — handleTimerCompletion calls updateCurrentPeriod internally,
-        // so the wall-clock overshoot must not be recorded.
-        Schedule.shiftStartedAt(overshoot)
-        handleTimerCompletion()
     }
 }
 
@@ -556,16 +556,16 @@ export const applyCurrentDurations = text => {
 
     const clampedIndex = Math.min(Schedule.currentPeriodIndex.value ?? 0, periods.length - 1)
 
-    // An anchor typed while the session is underway is invalid — and ignored,
-    // keeping the previous anchored/unanchored state — when it is in the
-    // future, or so far in the past that the whole typed timeline would
-    // already be over (adopting it would instantly self-finish the timer).
+    // A FUTURE anchor typed while the session is underway is invalid — and
+    // ignored, keeping the previous anchored/unanchored state (a running
+    // session cannot have started in the future). Any past anchor is honored:
+    // even one older than the whole typed timeline — the catch-up on editor
+    // close advances through the overrun periods and extends the last one, so
+    // all the wall-clock time since the typed start gets recorded.
     const anchorMinutes = parseDurationsAnchor(text)
     const reference = Schedule.timestampPaused.value ?? Date.now()
     const anchorMs = anchorMinutes != null ? todayAtMinutes(anchorMinutes) : null
-    const totalDuration = periods.reduce((sum, period) => sum + period.state.duration, 0)
-    const anchorIsValid =
-        anchorMs != null && anchorMs <= reference && reference - anchorMs < totalDuration
+    const anchorIsValid = anchorMs != null && anchorMs <= reference
 
     editorIsApplying = true
     batch(() => {
@@ -712,10 +712,14 @@ const updateCurrentPeriod = () => {
         Period.applyElapsed(p, periodDurationElapsed),
     )
 
-    // Anchored mode never auto-extends — boundaries are handled by
-    // advanceOverduePeriods (auto-advance), called from tick().
+    // Anchored mode auto-advances at boundaries (advanceOverduePeriods) instead
+    // of auto-extending. The LAST period is the exception — there is nothing to
+    // advance into, so it auto-extends like normal and the timer keeps running
+    // (and recording) until the user finishes it: an anchored session never
+    // self-finishes, so no wall-clock time is ever dropped from the record.
+    const anchoredBeforeLastPeriod = Schedule.isAnchored.value && !timerOnLastPeriod.value
     if (
-        !Schedule.isAnchored.value
+        !anchoredBeforeLastPeriod
         && hasPeriodReachedCompletion(periodDurationElapsed, currentPeriod.value.state.duration)
     )
         handlePeriodElapsed()
@@ -1002,7 +1006,8 @@ export const applyToPeriod = (index, op) => {
 const tick = () => {
     updateCurrentPeriod()
 
-    // Anchored mode never auto-extends at a boundary — auto-advance instead.
+    // Anchored mode auto-advances at boundaries instead of auto-extending
+    // (except on the last period, which extends — see updateCurrentPeriod).
     // Covers a single boundary crossed this tick, and multi-boundary catch-up
     // (e.g. after the tab was backgrounded and several boundaries elapsed).
     if (Schedule.isAnchored.value) advanceOverduePeriods()

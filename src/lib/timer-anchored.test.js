@@ -12,6 +12,7 @@ import {
     currentPeriod,
     moveToPreviousPeriod,
     pauseTimer,
+    resumeTimer,
     pauseForEditing,
     resumeAfterEditing,
     canAdjustElapsed,
@@ -360,7 +361,7 @@ describe('Timer anchor lifecycle', () => {
             expect(timerDurationElapsed.value).toBe(Date.now() - anchor)
         })
 
-        it('last-period overrun self-finishes with elapsed == planned duration (no wall-clock overshoot recorded)', () => {
+        it('last-period overrun extends the last period instead of self-finishing — no wall-clock time is lost', () => {
             // Small fixed timeline: 2 periods, 5 min each, so it's easy to overrun the last one.
             timerState.value = {
                 ...timerState.value,
@@ -389,10 +390,47 @@ describe('Timer anchor lifecycle', () => {
 
             advanceOverduePeriods()
 
-            expect(Schedule.isCompleted.value).toBe(true)
-            const lastPeriod = timerState.value.periods[timerState.value.periods.length - 1]
-            expect(lastPeriod.state.elapsed).toBe(lastPeriod.state.duration)
-            expect(lastPeriod.state.elapsed).toBe(5 * 60 * 1000)
+            // the timer must NOT end on its own — the last period absorbs the overrun
+            expect(Schedule.isCompleted.value).toBe(false)
+            expect(Schedule.isRunning.value).toBe(true)
+            expect(Schedule.currentPeriodIndex.value).toBe(1)
+            const lastPeriod = timerState.value.periods[1]
+            // 12 min wall-clock - 5 min period 0 = 7 min on the last period
+            expect(lastPeriod.state.elapsed).toBe(7 * 60 * 1000)
+            expect(lastPeriod.state.duration).toBe(7 * 60 * 1000)
+            // auto-extension leaves the user's intent untouched
+            expect(lastPeriod.config.userIntendedDuration).toBe(5 * 60 * 1000)
+            // invariant: every wall-clock minute since the anchor is recorded
+            expect(timerDurationElapsed.value).toBe(Date.now() - anchor)
+        })
+
+        it('a single-period timeline extends on overrun (no boundary to advance over)', () => {
+            timerState.value = {
+                ...timerState.value,
+                periods: [
+                    {
+                        config: { type: 'work', note: '', userIntendedDuration: 5 * 60 * 1000 },
+                        state: { duration: 5 * 60 * 1000, elapsed: 0, remaining: 5 * 60 * 1000 },
+                    },
+                ],
+            }
+            vi.useFakeTimers()
+            vi.setSystemTime(1_000_000)
+            const anchor = 1_000_000 - 9 * 60 * 1000
+            Schedule.setSnapshot({
+                phase: 'running',
+                currentPeriodIndex: 0,
+                timestampStarted: anchor,
+                timestampPaused: null,
+                timestampAnchor: anchor,
+            })
+
+            advanceOverduePeriods()
+
+            expect(Schedule.isCompleted.value).toBe(false)
+            expect(currentPeriod.value.state.elapsed).toBe(9 * 60 * 1000)
+            expect(currentPeriod.value.state.duration).toBe(9 * 60 * 1000)
+            expect(timerDurationElapsed.value).toBe(Date.now() - anchor)
         })
 
         it('invariant holds after a subsequent moveToPreviousPeriod while still anchored', () => {
@@ -476,7 +514,7 @@ describe('Timer anchor lifecycle', () => {
             expect(currentPeriod.value.state.elapsed).toBe(6 * 60 * 1000)
         })
 
-        it('resumeAfterEditing self-finishes WITHOUT restarting the tick when remaining time ran out while editing', () => {
+        it('resumeAfterEditing extends the last period and keeps running when remaining time ran out while editing', () => {
             vi.useFakeTimers()
             vi.setSystemTime(1_000_000)
             const anchor = 1_000_000 - 20 * 60 * 1000 // 20 of 24 min elapsed
@@ -509,12 +547,13 @@ describe('Timer anchor lifecycle', () => {
             const postMessage = vi.spyOn(FakeWorker.prototype, 'postMessage')
             resumeAfterEditing()
 
-            expect(Schedule.isCompleted.value).toBe(true)
-            // recorded elapsed is the planned duration — no wall-clock overshoot
-            expect(timerState.value.periods[0].state.elapsed).toBe(24 * 60 * 1000)
-            // the tick must NOT be restarted after completion (a restarted tick
-            // replays the finished sound every second)
-            expect(postMessage).not.toHaveBeenCalledWith('start')
+            // no self-finish — the last period stretches to cover the wall clock
+            expect(Schedule.isCompleted.value).toBe(false)
+            expect(Schedule.isRunning.value).toBe(true)
+            expect(timerState.value.periods[0].state.elapsed).toBe(30 * 60 * 1000)
+            expect(timerState.value.periods[0].state.duration).toBe(30 * 60 * 1000)
+            // and the tick resumes normally
+            expect(postMessage).toHaveBeenCalledWith('start')
             postMessage.mockRestore()
         })
 
@@ -607,6 +646,75 @@ describe('Timer anchor lifecycle', () => {
             // period 0 (24 min work) is overdue by 1 min → auto-advanced
             expect(Schedule.currentPeriodIndex.value).toBe(1)
             expect(currentPeriod.value.state.elapsed).toBe(1 * 60 * 1000)
+        })
+
+        it('an anchor older than the whole timeline lands running on the last period with all wall-clock time recorded', () => {
+            timerState.value = {
+                ...timerState.value,
+                periods: [
+                    {
+                        config: { type: 'work', note: '', userIntendedDuration: 5 * 60 * 1000 },
+                        state: { duration: 5 * 60 * 1000, elapsed: 0, remaining: 5 * 60 * 1000 },
+                    },
+                    {
+                        config: { type: 'break', note: '', userIntendedDuration: 5 * 60 * 1000 },
+                        state: { duration: 5 * 60 * 1000, elapsed: 0, remaining: 5 * 60 * 1000 },
+                    },
+                ],
+            }
+            vi.useFakeTimers()
+            vi.setSystemTime(1_000_000)
+            Schedule.reset()
+            const anchor = 1_000_000 - 60 * 60 * 1000 // 1 h ago, timeline is 10 min
+            Schedule.pin(anchor)
+
+            startTimer()
+
+            // no instant self-finish — the timer is running on the last period,
+            // extended to hold everything past the first period's 5 minutes
+            expect(Schedule.isCompleted.value).toBe(false)
+            expect(Schedule.isRunning.value).toBe(true)
+            expect(Schedule.currentPeriodIndex.value).toBe(1)
+            expect(currentPeriod.value.state.elapsed).toBe(55 * 60 * 1000)
+            expect(timerDurationElapsed.value).toBe(60 * 60 * 1000)
+        })
+    })
+
+    describe('resumeTimer with a paused + anchored session', () => {
+        it('reconciles elapsed to the wall clock since the anchor on resume', () => {
+            // paused + anchored is reachable by typing an @h:mm line in the
+            // live editor while the timer is paused
+            timerState.value = {
+                ...timerState.value,
+                periods: [
+                    {
+                        config: { type: 'work', note: '', userIntendedDuration: 60 * 60 * 1000 },
+                        state: {
+                            duration: 60 * 60 * 1000,
+                            elapsed: 20 * 60 * 1000,
+                            remaining: 40 * 60 * 1000,
+                        },
+                    },
+                ],
+            }
+            vi.useFakeTimers()
+            vi.setSystemTime(1_000_000)
+            const anchor = 1_000_000 - 30 * 60 * 1000
+            Schedule.setSnapshot({
+                phase: 'paused',
+                currentPeriodIndex: 0,
+                timestampStarted: anchor,
+                timestampPaused: 1_000_000 - 10 * 60 * 1000, // paused 10 min ago
+                timestampAnchor: anchor,
+            })
+
+            resumeTimer()
+
+            expect(Schedule.isRunning.value).toBe(true)
+            expect(Schedule.isAnchored.value).toBe(true)
+            // anchored elapsed is clock-owned: 30 min since the anchor, the
+            // 10-minute pause is NOT subtracted
+            expect(currentPeriod.value.state.elapsed).toBe(30 * 60 * 1000)
         })
     })
 
@@ -726,7 +834,7 @@ describe('Timer anchor lifecycle', () => {
             expect(Schedule.timestampStarted.value).toBe(NOW - 5 * 60 * 1000)
         })
 
-        it('an @h:mm line older than the total timeline duration is ignored (would instantly self-finish)', () => {
+        it('an @h:mm line older than the total timeline duration is adopted — the last period will absorb the overrun', () => {
             Schedule.setSnapshot({
                 phase: 'paused',
                 currentPeriodIndex: 0,
@@ -735,16 +843,17 @@ describe('Timer anchor lifecycle', () => {
                 timestampAnchor: null,
             })
 
-            // 10:00 is 30 min before "now" but the typed timeline is only 24 min
-            // long — adopting the anchor would finish the whole timer at once.
+            // 10:00 is 30 min before "now" and the typed timeline is only 24 min
+            // long — the anchor is honored anyway; the catch-up on editor close
+            // extends the last period so no time since 10:00 is lost.
             applyCurrentDurations('@10:00\nW 5/24 note')
 
-            expect(Schedule.isAnchored.value).toBe(false)
-            // Falls back to the non-anchored shift: timestampStarted = reference - typedElapsed
-            expect(Schedule.timestampStarted.value).toBe(NOW - 5 * 60 * 1000)
+            expect(Schedule.isAnchored.value).toBe(true)
+            expect(msToMinutesSinceMidnight(Schedule.timestampAnchor.value)).toBe(10 * 60)
+            expect(Schedule.timestampStarted.value).toBe(Schedule.timestampAnchor.value)
         })
 
-        it('a too-old @h:mm line keeps the previous anchor when already anchored', () => {
+        it('a too-old @h:mm line replaces the previous anchor when already anchored', () => {
             const previousAnchor = NOW - 10 * 60 * 1000 // 10:20
             Schedule.setSnapshot({
                 phase: 'paused',
@@ -754,10 +863,11 @@ describe('Timer anchor lifecycle', () => {
                 timestampAnchor: previousAnchor,
             })
 
-            // 9:00 is 90 min before "now"; the 24 min timeline would be long over.
+            // 9:00 is 90 min before "now" — older than the 24 min timeline, but
+            // still a valid (past) start time and therefore adopted.
             applyCurrentDurations('@9:00\nW 5/24 note')
 
-            expect(Schedule.timestampAnchor.value).toBe(previousAnchor)
+            expect(msToMinutesSinceMidnight(Schedule.timestampAnchor.value)).toBe(9 * 60)
         })
 
         it('the live-editor mirror includes the @h:mm line while anchored', () => {
