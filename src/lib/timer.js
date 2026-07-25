@@ -39,6 +39,17 @@ const msToMinutesSinceMidnight = ms => {
     return date.getHours() * 60 + date.getMinutes()
 }
 
+// Most recent occurrence of "minutes since local midnight" at or before
+// `reference` — today if that time has already passed, otherwise yesterday
+// (a session that crossed midnight). Day-stepping via setDate keeps the
+// wall-clock time exact across DST changes.
+const mostRecentAtMinutes = (minutes, reference) => {
+    const date = new Date(reference)
+    date.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0)
+    if (date.getTime() > reference) date.setDate(date.getDate() - 1)
+    return date.getTime()
+}
+
 // default timer configuration — periods and types only; Schedule owns phase/timestamps/index
 export const initialState = {
     types: ['work', 'break', 'fun'],
@@ -556,24 +567,29 @@ export const applyCurrentDurations = text => {
 
     const clampedIndex = Math.min(Schedule.currentPeriodIndex.value ?? 0, periods.length - 1)
 
-    // A FUTURE anchor typed while the session is underway is invalid — and
-    // ignored, keeping the previous anchored/unanchored state (a running
-    // session cannot have started in the future). Any past anchor is honored:
-    // even one older than the whole typed timeline — the catch-up on editor
-    // close advances through the overrun periods and extends the last one, so
-    // all the wall-clock time since the typed start gets recorded.
+    // Resolve the typed @h:mm against the wall clock. A session underway must
+    // have started in the past, so the time means its most recent occurrence
+    // at or before "now" — a time later than now therefore means yesterday
+    // (a session crossing midnight). Even an anchor older than the whole typed
+    // timeline is honored: the catch-up on editor close advances through the
+    // overrun periods and extends the last one, so no time is lost. Exception:
+    // when the typed h:mm matches the current anchor's own wall-clock time,
+    // the anchor keeps its exact timestamp — editing other lines of a session
+    // anchored days ago must not silently re-resolve its start to a newer day.
     const anchorMinutes = parseDurationsAnchor(text)
     const reference = Schedule.timestampPaused.value ?? Date.now()
-    const anchorMs = anchorMinutes != null ? todayAtMinutes(anchorMinutes) : null
-    const anchorIsValid = anchorMs != null && anchorMs <= reference
+    const keepExistingAnchor =
+        anchorMinutes != null
+        && Schedule.isAnchored.value
+        && msToMinutesSinceMidnight(Schedule.timestampAnchor.value) === anchorMinutes
 
     editorIsApplying = true
     batch(() => {
         timerState.value = { ...timerState.value, periods }
         Schedule.setIndex(clampedIndex)
 
-        if (anchorIsValid) {
-            Schedule.pin(anchorMs)
+        if (anchorMinutes != null && !keepExistingAnchor) {
+            Schedule.pin(mostRecentAtMinutes(anchorMinutes, reference))
         } else if (anchorMinutes == null && Schedule.isAnchored.value) {
             unpinTimer()
         }

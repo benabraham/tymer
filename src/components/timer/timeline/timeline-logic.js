@@ -5,6 +5,7 @@
  * Modern JS, Baseline 2023 compatible.
  */
 import { format } from 'date-fns'
+import { formatDayMarker } from '../../../lib/format'
 
 /**
  * Calculate formatted end times for all periods.
@@ -21,7 +22,11 @@ export const calculateEndTimes = ({ periods, currentPeriodIndex }) => {
     let prevEnd = null
     return periods.map((period, idx) => {
         if (currentPeriodIndex == null) {
-            prevEnd = (prevEnd ?? now) + period.state.duration
+            // No active period: idle (nothing elapsed) projects the schedule
+            // forward from now; completed (everything elapsed) counts BACK from
+            // now, so a finished session keeps showing its historical times
+            // instead of suddenly jumping to a future projection.
+            prevEnd = (prevEnd ?? now - totalElapsed) + period.state.duration
             return format(new Date(prevEnd), "HH'<br>'mm")
         }
         if (idx < currentPeriodIndex) {
@@ -53,10 +58,14 @@ export const calculateEndTimes = ({ periods, currentPeriodIndex }) => {
  */
 export const calculateStartTime = ({ periods, anchorMs = null }) => {
     if (!Array.isArray(periods) || !periods.length) return ''
-    if (anchorMs != null) return format(new Date(anchorMs), "HH'<br>'mm")
     const now = Date.now()
     const totalElapsed = periods.reduce((acc, p) => acc + (p.state.elapsed || 0), 0)
-    return format(new Date(now - totalElapsed), "HH'<br>'mm")
+    const startMs = anchorMs ?? now - totalElapsed
+    const time = format(new Date(startMs), "HH'<br>'mm")
+    // Sessions crossing midnight (or reloaded days later) qualify the start
+    // time with the day it belongs to.
+    const dayMarker = formatDayMarker(startMs, now)
+    return dayMarker ? `${dayMarker}<br>${time}` : time
 }
 
 /**

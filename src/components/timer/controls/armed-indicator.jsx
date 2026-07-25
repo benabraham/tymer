@@ -2,6 +2,7 @@ import { useSignal } from '@preact/signals'
 import { useEffect } from 'preact/hooks'
 import { format } from 'date-fns'
 import { Schedule } from '../../../lib/schedule'
+import { formatDayMarker } from '../../../lib/format'
 
 const pad = n => String(n).padStart(2, '0')
 
@@ -31,12 +32,14 @@ export const ArmedIndicator = () => {
 
     const label = format(new Date(anchor), 'HH:mm')
     const isFuture = anchor > now.value
+    // Past anchors can lie before today (midnight crossing, reloaded sessions)
+    const dayMarker = formatDayMarker(anchor, now.value)
 
     return (
         <span class="armed-indicator">
             {isFuture
                 ? `Starts at ${label} · in ${formatCountdown(anchor - now.value)}`
-                : `Start from ${label}`}
+                : `Start from ${dayMarker ? `${dayMarker} ` : ''}${label}`}
         </span>
     )
 }

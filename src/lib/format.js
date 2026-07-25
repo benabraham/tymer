@@ -1,3 +1,5 @@
+import { differenceInCalendarDays, format } from 'date-fns'
+
 // converts milliseconds to human-readable format
 export const formatTime = (ms, { mode, debug, compact, figureSpace } = {}) => {
     // handle null/undefined input
@@ -48,3 +50,14 @@ export const formatTime = (ms, { mode, debug, compact, figureSpace } = {}) => {
 
 // converts milliseconds to minutes (rounding down by milliseconds)
 export const msToMinutes = ms => Math.floor(ms / 60000)
+
+// Day qualifier for a wall-clock timestamp relative to now: '' when today,
+// 'yesterday' when one calendar day back, a short date ('30 Dec') when older.
+// Used wherever a session start time may lie before the current day
+// (sessions crossing midnight, sessions reloaded days later).
+export const formatDayMarker = (ms, now = Date.now()) => {
+    const daysAgo = differenceInCalendarDays(now, ms)
+    if (daysAgo <= 0) return ''
+    if (daysAgo === 1) return 'yesterday'
+    return format(ms, 'd MMM')
+}

@@ -817,7 +817,7 @@ describe('Timer anchor lifecycle', () => {
             expect(Schedule.isAnchored.value).toBe(false)
         })
 
-        it('a future @h:mm line is ignored — session stays unanchored and falls back to the normal reconcile', () => {
+        it('an @h:mm later than now resolves to YESTERDAY (session crossing midnight)', () => {
             Schedule.setSnapshot({
                 phase: 'paused',
                 currentPeriodIndex: 0,
@@ -826,12 +826,46 @@ describe('Timer anchor lifecycle', () => {
                 timestampAnchor: null,
             })
 
-            // 11:00 is after "now" (10:30) -> invalid, ignored entirely
+            // 11:00 is after "now" (10:30) — a running session cannot start in
+            // the future, so it means yesterday 11:00
             applyCurrentDurations('@11:00\nW 5/24 note')
 
-            expect(Schedule.isAnchored.value).toBe(false)
-            // Falls back to the non-anchored shift: timestampStarted = reference - typedElapsed
-            expect(Schedule.timestampStarted.value).toBe(NOW - 5 * 60 * 1000)
+            expect(Schedule.isAnchored.value).toBe(true)
+            expect(Schedule.timestampAnchor.value).toBe(new Date(2023, 11, 31, 11, 0).getTime())
+            expect(Schedule.timestampStarted.value).toBe(Schedule.timestampAnchor.value)
+        })
+
+        it('shortly after midnight, a pre-midnight @h:mm resolves to yesterday evening', () => {
+            const justPastMidnight = new Date(2024, 0, 2, 0, 30, 0).getTime()
+            vi.setSystemTime(justPastMidnight)
+            Schedule.setSnapshot({
+                phase: 'paused',
+                currentPeriodIndex: 0,
+                timestampStarted: justPastMidnight - 60_000,
+                timestampPaused: justPastMidnight,
+                timestampAnchor: null,
+            })
+
+            applyCurrentDurations('@23:50\nW 5/60 note')
+
+            expect(Schedule.timestampAnchor.value).toBe(new Date(2024, 0, 1, 23, 50).getTime())
+        })
+
+        it('re-applying the same @h:mm keeps the exact anchor of a session anchored days ago', () => {
+            const oldAnchor = new Date(2023, 11, 30, 9, 0).getTime() // 2 days before NOW
+            Schedule.setSnapshot({
+                phase: 'paused',
+                currentPeriodIndex: 0,
+                timestampStarted: oldAnchor,
+                timestampPaused: NOW,
+                timestampAnchor: oldAnchor,
+            })
+
+            // "@9:00" matches the anchor's wall-clock time — editing other
+            // lines must NOT re-resolve the start to a more recent 9:00
+            applyCurrentDurations('@9:00\nW 5/24 note')
+
+            expect(Schedule.timestampAnchor.value).toBe(oldAnchor)
         })
 
         it('an @h:mm line older than the total timeline duration is adopted — the last period will absorb the overrun', () => {
