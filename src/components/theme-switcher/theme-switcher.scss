@@ -24,10 +24,16 @@
   align-items: center;
   justify-content: center;
 
-  &:hover {
+  &:hover:not(:disabled) {
     opacity: 1;
     background: var(--color-bg-button-hover);
     border-color: var(--color-accent);
+  }
+
+  // e.g. the pin toggle while the timer is paused or finished
+  &:disabled {
+    opacity: 0.25;
+    cursor: default;
   }
 
   &--active {
