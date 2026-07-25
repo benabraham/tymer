@@ -817,7 +817,7 @@ describe('Timer anchor lifecycle', () => {
             expect(Schedule.isAnchored.value).toBe(false)
         })
 
-        it('an @h:mm later than now resolves to YESTERDAY (session crossing midnight)', () => {
+        it('a plain @h:mm later than now is INVALID — never silently yesterday (typo protection)', () => {
             Schedule.setSnapshot({
                 phase: 'paused',
                 currentPeriodIndex: 0,
@@ -826,16 +826,31 @@ describe('Timer anchor lifecycle', () => {
                 timestampAnchor: null,
             })
 
-            // 11:00 is after "now" (10:30) — a running session cannot start in
-            // the future, so it means yesterday 11:00
+            // 11:00 is after "now" (10:30). Adopting it as yesterday 11:00 would
+            // inject 23.5 hours from one typo — instead the anchor state is left
+            // unchanged and the typed elapsed is honored the normal way.
             applyCurrentDurations('@11:00\nW 5/24 note')
 
-            expect(Schedule.isAnchored.value).toBe(true)
-            expect(Schedule.timestampAnchor.value).toBe(new Date(2023, 11, 31, 11, 0).getTime())
-            expect(Schedule.timestampStarted.value).toBe(Schedule.timestampAnchor.value)
+            expect(Schedule.isAnchored.value).toBe(false)
+            expect(Schedule.timestampStarted.value).toBe(NOW - 5 * 60 * 1000)
         })
 
-        it('shortly after midnight, a pre-midnight @h:mm resolves to yesterday evening', () => {
+        it('a plain future @h:mm keeps the previous anchor when already anchored', () => {
+            const previousAnchor = NOW - 10 * 60 * 1000 // 10:20
+            Schedule.setSnapshot({
+                phase: 'paused',
+                currentPeriodIndex: 0,
+                timestampStarted: previousAnchor,
+                timestampPaused: NOW,
+                timestampAnchor: previousAnchor,
+            })
+
+            applyCurrentDurations('@11:00\nW 5/24 note')
+
+            expect(Schedule.timestampAnchor.value).toBe(previousAnchor)
+        })
+
+        it('shortly after midnight, crossing the day line requires the explicit @yesterday form', () => {
             const justPastMidnight = new Date(2024, 0, 2, 0, 30, 0).getTime()
             vi.setSystemTime(justPastMidnight)
             Schedule.setSnapshot({
@@ -846,8 +861,12 @@ describe('Timer anchor lifecycle', () => {
                 timestampAnchor: null,
             })
 
+            // plain 23:50 would be later than 00:30 → invalid, not adopted
             applyCurrentDurations('@23:50\nW 5/60 note')
+            expect(Schedule.isAnchored.value).toBe(false)
 
+            // the explicit qualifier crosses the day line deterministically
+            applyCurrentDurations('@yesterday 23:50\nW 5/60 note')
             expect(Schedule.timestampAnchor.value).toBe(new Date(2024, 0, 1, 23, 50).getTime())
         })
 
@@ -966,6 +985,60 @@ describe('Timer anchor lifecycle', () => {
             applyCurrentDurations('@9:00\nW 5/24 note')
 
             expect(msToMinutesSinceMidnight(Schedule.timestampAnchor.value)).toBe(9 * 60)
+        })
+
+        it('a half-edited anchor line keeps the anchor (only a deleted line unpins)', () => {
+            const previousAnchor = NOW - 30 * 60 * 1000 // 10:00
+            Schedule.setSnapshot({
+                phase: 'paused',
+                currentPeriodIndex: 0,
+                timestampStarted: previousAnchor,
+                timestampPaused: NOW,
+                timestampAnchor: previousAnchor,
+            })
+
+            // mid-keystroke states while editing the anchor line
+            applyCurrentDurations('@10:\nW 5/60 note')
+            expect(Schedule.timestampAnchor.value).toBe(previousAnchor)
+
+            applyCurrentDurations('@\nW 5/60 note')
+            expect(Schedule.timestampAnchor.value).toBe(previousAnchor)
+        })
+
+        it('an anchor newer than the past periods’ typed elapsed is invalid (record would contradict it)', () => {
+            const previousAnchor = NOW - 90 * 60 * 1000 // 9:00
+            Schedule.setSnapshot({
+                phase: 'paused',
+                currentPeriodIndex: 1,
+                timestampStarted: NOW - 10 * 60 * 1000,
+                timestampPaused: NOW,
+                timestampAnchor: previousAnchor,
+            })
+
+            // period 0 records a full hour, so the session must have started at
+            // 9:30 or earlier — @10:15 would drive the current period's derived
+            // elapsed negative. Keep the previous anchor.
+            applyCurrentDurations('@10:15\nW 1:00:00/60\nB 10/30')
+
+            expect(Schedule.timestampAnchor.value).toBe(previousAnchor)
+        })
+
+        it('an anchor exactly at (reference − past elapsed) is still valid', () => {
+            Schedule.setSnapshot({
+                phase: 'paused',
+                currentPeriodIndex: 1,
+                timestampStarted: NOW - 10 * 60 * 1000,
+                timestampPaused: NOW,
+                timestampAnchor: null,
+            })
+
+            // 9:30 + 60 min recorded on period 0 = 10:30 = "now" → current
+            // period's derived elapsed is exactly 0. Boundary case, valid.
+            applyCurrentDurations('@9:30\nW 1:00:00/60\nB 10/30')
+
+            expect(msToMinutesSinceMidnight(Schedule.timestampAnchor.value)).toBe(9 * 60 + 30)
+            // timestampStarted = anchor + elapsedExceptCurrent = 9:30 + 1h = NOW
+            expect(Schedule.timestampStarted.value).toBe(NOW)
         })
 
         it('the live-editor mirror includes the @h:mm line while anchored', () => {

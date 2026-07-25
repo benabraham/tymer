@@ -23,6 +23,7 @@ import {
 import {
     parseCurrentDurationsText,
     parseDurationsAnchor,
+    hasAnchorLine,
     serializeCurrentDurations,
 } from './durations-format'
 import { formatDayMarker } from './format'
@@ -40,23 +41,16 @@ const msToMinutesSinceMidnight = ms => {
     return date.getHours() * 60 + date.getMinutes()
 }
 
-// Most recent occurrence of "minutes since local midnight" at or before
-// `reference` — today if that time has already passed, otherwise yesterday
-// (a session that crossed midnight). Day-stepping via setDate keeps the
-// wall-clock time exact across DST changes.
-const mostRecentAtMinutes = (minutes, reference) => {
-    const date = new Date(reference)
-    date.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0)
-    if (date.getTime() > reference) date.setDate(date.getDate() - 1)
-    return date.getTime()
-}
-
 // Resolve a parsed anchor ({ minutes, day }) from the live editor to a
-// concrete timestamp at or before `reference`. A plain time means its most
-// recent occurrence (today, or yesterday when later than now); 'yesterday' is
-// explicit; an explicit day+month means its most recent occurrence within the
-// past year. setMonth(m, d) sets both fields atomically, avoiding
-// intermediate month-length overflow.
+// concrete timestamp. A plain time means that time on `reference`'s day —
+// NEVER yesterday: crossing midnight requires an explicit qualifier, so a
+// typo'd time resolves to the (invalid) future instead of silently injecting
+// hours from yesterday. 'yesterday' is explicit day-stepping (setDate keeps
+// the wall-clock time exact across DST changes); an explicit day+month means
+// its most recent occurrence within the past year — setMonth(m, d) sets both
+// fields atomically, avoiding intermediate month-length overflow. Whether the
+// result is actually usable (lies far enough in the past) is the caller's
+// validity check.
 const resolveTypedAnchor = ({ minutes, day }, reference) => {
     if (day === 'yesterday') {
         const date = new Date(reference)
@@ -71,7 +65,9 @@ const resolveTypedAnchor = ({ minutes, day }, reference) => {
         if (date.getTime() > reference) date.setFullYear(date.getFullYear() - 1)
         return date.getTime()
     }
-    return mostRecentAtMinutes(minutes, reference)
+    const date = new Date(reference)
+    date.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0)
+    return date.getTime()
 }
 
 // default timer configuration — periods and types only; Schedule owns phase/timestamps/index
@@ -602,18 +598,29 @@ export const applyCurrentDurations = text => {
     const clampedIndex = Math.min(Schedule.currentPeriodIndex.value ?? 0, periods.length - 1)
 
     // Resolve the typed anchor against the wall clock (see resolveTypedAnchor
-    // for the day-resolution rules — a session underway always started in the
-    // past). Even an anchor older than the whole typed timeline is honored:
-    // the catch-up on editor close advances through the overrun periods and
-    // extends the last one, so no time is lost. When the typed anchor resolves
-    // to the same minute the current anchor already lies in, the anchor keeps
-    // its exact timestamp (including seconds) — editing other lines never
-    // nudges the recorded start.
+    // for the day-resolution rules). A typed anchor is INVALID — leaving the
+    // anchor state unchanged, never silently rewriting the record — when it
+    // lies in the future (a plain @h:mm never crosses midnight implicitly;
+    // type @yesterday for that) or when it is newer than the past periods'
+    // typed elapsed allows (the current period's derived elapsed would go
+    // negative, contradicting the record). An anchor older than the whole
+    // typed timeline IS honored: the catch-up on editor close advances through
+    // the overrun periods and extends the last one, so no time is lost. When
+    // the typed anchor resolves to the same minute the current anchor already
+    // lies in, the anchor keeps its exact timestamp (including seconds) —
+    // editing other lines never nudges the recorded start. Unpinning requires
+    // fully deleting the anchor line: a half-edited '@' line keeps the anchor
+    // (see hasAnchorLine).
     const anchor = parseDurationsAnchor(text)
     const reference = Schedule.timestampPaused.value ?? Date.now()
     const typedAnchorMs = anchor != null ? resolveTypedAnchor(anchor, reference) : null
+    const elapsedExceptCurrent = periods.reduce(
+        (sum, period, i) => (i === clampedIndex ? sum : sum + period.state.elapsed),
+        0,
+    )
+    const anchorIsValid = typedAnchorMs != null && typedAnchorMs <= reference - elapsedExceptCurrent
     const keepExistingAnchor =
-        typedAnchorMs != null
+        anchorIsValid
         && Schedule.isAnchored.value
         && Math.floor(Schedule.timestampAnchor.value / 60000) === Math.floor(typedAnchorMs / 60000)
 
@@ -622,9 +629,9 @@ export const applyCurrentDurations = text => {
         timerState.value = { ...timerState.value, periods }
         Schedule.setIndex(clampedIndex)
 
-        if (typedAnchorMs != null && !keepExistingAnchor) {
+        if (anchorIsValid && !keepExistingAnchor) {
             Schedule.pin(typedAnchorMs)
-        } else if (anchor == null && Schedule.isAnchored.value) {
+        } else if (!hasAnchorLine(text) && Schedule.isAnchored.value) {
             unpinTimer()
         }
 

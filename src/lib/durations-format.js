@@ -68,7 +68,9 @@ export const parseCurrentDurationsText = text => text.split('\n').map(parseLine)
 // Anchor header line — pins session start to a wall-clock time. Only the first
 // valid anchor line in the text counts. Forms (day qualifier optional):
 //
-//   @h:mm              today, or yesterday when the time is later than now
+//   @h:mm              today (must already have passed — crossing midnight
+//                      requires an explicit qualifier, so a typo'd time can
+//                      never silently inject hours from yesterday)
 //   @yesterday h:mm    explicitly yesterday
 //   @30 Dec h:mm       explicit day+month (most recent occurrence)
 //
@@ -100,6 +102,11 @@ export const parseDurationsAnchor = text => {
     }
     return null
 }
+
+// True when any line declares anchor INTENT (starts with '@'), whether or not
+// it parses. A half-edited anchor line must read as "leave the anchor alone",
+// not as "no anchor" — only a fully absent line means unpin.
+export const hasAnchorLine = text => text.split('\n').some(line => line.trim().startsWith('@'))
 
 export const formatAnchorToken = (minutes, dayMarker = '') =>
     `@${dayMarker ? `${dayMarker} ` : ''}${Math.floor(minutes / 60)}:${pad(minutes % 60)}`

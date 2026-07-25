@@ -5,6 +5,7 @@ import {
     formatDurationToken,
     formatElapsedToken,
     parseDurationsAnchor,
+    hasAnchorLine,
     formatAnchorToken,
 } from './durations-format'
 
@@ -117,6 +118,25 @@ describe('parseDurationsAnchor', () => {
         const text = ['W 20', '@9:00', 'B 6'].join('\n')
         expect(parseDurationsAnchor(text)).toEqual({ minutes: 540, day: null })
         expect(parseCurrentDurationsText(text).map(p => p.type)).toEqual(['work', 'break'])
+    })
+})
+
+describe('hasAnchorLine', () => {
+    it('detects a parseable anchor line', () => {
+        expect(hasAnchorLine('@9:00\nW 20')).toBe(true)
+    })
+
+    it('detects anchor INTENT on half-edited, unparseable lines', () => {
+        expect(hasAnchorLine('@\nW 20')).toBe(true)
+        expect(hasAnchorLine('@9:\nW 20')).toBe(true)
+        expect(hasAnchorLine('@yester\nW 20')).toBe(true)
+        expect(hasAnchorLine('W 20\n @24:00')).toBe(true)
+    })
+
+    it('is false when no line starts with @', () => {
+        expect(hasAnchorLine('W 20\nB 6')).toBe(false)
+        expect(hasAnchorLine('')).toBe(false)
+        expect(hasAnchorLine('W 20 note with @9:00 inside')).toBe(false)
     })
 })
 
