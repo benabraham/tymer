@@ -23,9 +23,11 @@ import {
     applyActiveConfig,
     editingCurrentDurations,
     currentDurationsText,
+    adjustElapsed,
+    moveElapsedTimeToPreviousPeriod,
 } from './timer'
 import { Schedule } from './schedule'
-import { PERIOD_CONFIG } from './config'
+import { PERIOD_CONFIG, MIN_PERIOD_MS } from './config'
 import {
     addConfig,
     updateConfigText,
@@ -571,6 +573,197 @@ describe('Timer anchor lifecycle', () => {
         it('canAdjustElapsed is true again once unpinned', () => {
             Schedule.unpin()
             expect(canAdjustElapsed(60_000)).toBe(true)
+        })
+    })
+
+    describe('adjustElapsed while anchored — transfer with the previous period', () => {
+        // period 0 (prev, completed): 30 min recorded. period 1 (current): 0 min.
+        // anchor + total elapsed (30 min) === reference, so anchor = NOW - 30 min.
+        const NOW = 1_000_000
+        const setupTwoPeriods = () => {
+            vi.useFakeTimers()
+            vi.setSystemTime(NOW)
+            const anchor = NOW - 30 * 60 * 1000
+            timerState.value = {
+                ...timerState.value,
+                periods: [
+                    {
+                        config: { type: 'work', note: '', userIntendedDuration: 30 * 60 * 1000 },
+                        state: {
+                            duration: 30 * 60 * 1000,
+                            elapsed: 30 * 60 * 1000,
+                            remaining: 0,
+                        },
+                    },
+                    {
+                        config: { type: 'break', note: '', userIntendedDuration: 60 * 60 * 1000 },
+                        state: { duration: 60 * 60 * 1000, elapsed: 0, remaining: 60 * 60 * 1000 },
+                    },
+                ],
+            }
+            Schedule.setSnapshot({
+                phase: 'running',
+                currentPeriodIndex: 1,
+                timestampStarted: NOW, // anchor + elapsedExceptCurrent(30min) = NOW
+                timestampPaused: null,
+                timestampAnchor: anchor,
+            })
+            return anchor
+        }
+
+        it('forward +10m shrinks the previous period and grows the current one', () => {
+            const anchor = setupTwoPeriods()
+
+            adjustElapsed(10 * 60 * 1000)
+
+            expect(timerState.value.periods[0].state.duration).toBe(20 * 60 * 1000)
+            expect(timerState.value.periods[0].state.elapsed).toBe(20 * 60 * 1000)
+            expect(timerState.value.periods[0].config.userIntendedDuration).toBe(20 * 60 * 1000)
+            expect(currentPeriod.value.state.elapsed).toBe(10 * 60 * 1000)
+            expect(Schedule.timestampAnchor.value).toBe(anchor)
+            expect(timerDurationElapsed.value).toBe(30 * 60 * 1000)
+        })
+
+        it('forward clamps at MIN_PERIOD_MS on the previous period', () => {
+            const anchor = setupTwoPeriods()
+
+            adjustElapsed(40 * 60 * 1000)
+
+            expect(timerState.value.periods[0].state.duration).toBe(MIN_PERIOD_MS)
+            expect(timerState.value.periods[0].state.elapsed).toBe(MIN_PERIOD_MS)
+            expect(currentPeriod.value.state.elapsed).toBe(29 * 60 * 1000)
+            expect(Schedule.timestampAnchor.value).toBe(anchor)
+            expect(timerDurationElapsed.value).toBe(30 * 60 * 1000)
+        })
+
+        it('forward is a no-op when the previous period is already at MIN_PERIOD_MS', () => {
+            const anchor = setupTwoPeriods()
+            adjustElapsed(40 * 60 * 1000) // drive prev down to MIN first
+
+            adjustElapsed(5 * 60 * 1000)
+
+            expect(timerState.value.periods[0].state.elapsed).toBe(MIN_PERIOD_MS)
+            expect(currentPeriod.value.state.elapsed).toBe(29 * 60 * 1000)
+            expect(Schedule.timestampAnchor.value).toBe(anchor)
+        })
+
+        it('backward moves only what the current period has (clamped at 0)', () => {
+            const anchor = setupTwoPeriods()
+            adjustElapsed(10 * 60 * 1000) // prev 20m, current 10m
+
+            adjustElapsed(-15 * 60 * 1000)
+
+            expect(timerState.value.periods[0].state.duration).toBe(30 * 60 * 1000)
+            expect(timerState.value.periods[0].state.elapsed).toBe(30 * 60 * 1000)
+            expect(currentPeriod.value.state.elapsed).toBe(0)
+            expect(Schedule.timestampAnchor.value).toBe(anchor)
+            expect(timerDurationElapsed.value).toBe(30 * 60 * 1000)
+        })
+
+        it('anchored at index 0: both directions are a no-op and guards are false', () => {
+            vi.useFakeTimers()
+            vi.setSystemTime(NOW)
+            const anchor = NOW - 5 * 60 * 1000
+            Schedule.setSnapshot({
+                phase: 'running',
+                currentPeriodIndex: 0,
+                timestampStarted: anchor,
+                timestampPaused: null,
+                timestampAnchor: anchor,
+            })
+
+            adjustElapsed(5 * 60 * 1000)
+            expect(currentPeriod.value.state.elapsed).toBe(5 * 60 * 1000)
+            expect(Schedule.timestampAnchor.value).toBe(anchor)
+
+            adjustElapsed(-2 * 60 * 1000)
+            expect(currentPeriod.value.state.elapsed).toBe(5 * 60 * 1000)
+            expect(Schedule.timestampAnchor.value).toBe(anchor)
+
+            expect(canAdjustElapsedForward.value).toBe(false)
+            expect(canAdjustElapsedBackward.value).toBe(false)
+        })
+
+        it('forward transfer past current duration auto-extends the current period', () => {
+            setupTwoPeriods()
+            // shrink current period's own duration so the transfer overruns it
+            timerState.value = {
+                ...timerState.value,
+                periods: timerState.value.periods.map((p, i) =>
+                    i === 1
+                        ? {
+                              ...p,
+                              state: {
+                                  ...p.state,
+                                  duration: 5 * 60 * 1000,
+                                  remaining: 5 * 60 * 1000,
+                              },
+                          }
+                        : p,
+                ),
+            }
+
+            adjustElapsed(10 * 60 * 1000)
+
+            expect(currentPeriod.value.state.elapsed).toBe(10 * 60 * 1000)
+            expect(currentPeriod.value.state.duration).toBeGreaterThanOrEqual(
+                currentPeriod.value.state.elapsed,
+            )
+        })
+
+        it('guard signals reflect the transfer semantics while anchored', () => {
+            setupTwoPeriods()
+
+            expect(canAdjustElapsedForward.value).toBe(true)
+            expect(canAdjustElapsedBackward.value).toBe(false) // current elapsed is 0
+
+            adjustElapsed(10 * 60 * 1000)
+
+            expect(canAdjustElapsedBackward.value).toBe(true) // current elapsed > 0
+        })
+    })
+
+    describe('moveElapsedTimeToPreviousPeriod while anchored — no double-count', () => {
+        it('previous period grows by exactly the current elapsed, once', () => {
+            vi.useFakeTimers()
+            const NOW = 1_000_000
+            vi.setSystemTime(NOW)
+            const anchor = NOW - 40 * 60 * 1000
+            timerState.value = {
+                ...timerState.value,
+                periods: [
+                    {
+                        config: { type: 'work', note: '', userIntendedDuration: 30 * 60 * 1000 },
+                        state: {
+                            duration: 30 * 60 * 1000,
+                            elapsed: 30 * 60 * 1000,
+                            remaining: 0,
+                        },
+                    },
+                    {
+                        config: { type: 'break', note: '', userIntendedDuration: 60 * 60 * 1000 },
+                        state: {
+                            duration: 60 * 60 * 1000,
+                            elapsed: 10 * 60 * 1000,
+                            remaining: 50 * 60 * 1000,
+                        },
+                    },
+                ],
+            }
+            Schedule.setSnapshot({
+                phase: 'running',
+                currentPeriodIndex: 1,
+                timestampStarted: NOW - 10 * 60 * 1000,
+                timestampPaused: null,
+                timestampAnchor: anchor,
+            })
+
+            moveElapsedTimeToPreviousPeriod()
+
+            expect(timerState.value.periods[0].state.elapsed).toBe(40 * 60 * 1000)
+            expect(currentPeriod.value.state.elapsed).toBe(0)
+            expect(Schedule.timestampAnchor.value).toBe(anchor)
+            expect(timerDurationElapsed.value).toBe(40 * 60 * 1000)
         })
     })
 

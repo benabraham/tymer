@@ -209,16 +209,26 @@ export const canFinishTimer = computed(
 // elapsed — i.e. while the Finish button is disabled.
 export const canConfigureDurations = computed(() => !canFinishTimer.value)
 
-export const canAdjustElapsedForward = computed(
-    () => Schedule.currentPeriodIndex.value !== null && !Schedule.isAnchored.value,
-)
+export const canAdjustElapsedForward = computed(() => {
+    if (Schedule.currentPeriodIndex.value === null) return false
+    if (Schedule.isAnchored.value) {
+        const currentIndex = Schedule.currentPeriodIndex.value
+        if (currentIndex === 0) return false
+        const prev = timerState.value.periods[currentIndex - 1]
+        return prev.state.elapsed > MIN_PERIOD_MS
+    }
+    return true
+})
 
-export const canAdjustElapsedBackward = computed(
-    () =>
-        Schedule.currentPeriodIndex.value !== null
-        && timerDurationElapsed.value > 0
-        && !Schedule.isAnchored.value,
-)
+export const canAdjustElapsedBackward = computed(() => {
+    if (Schedule.currentPeriodIndex.value === null) return false
+    if (Schedule.isAnchored.value) {
+        const currentIndex = Schedule.currentPeriodIndex.value
+        if (currentIndex === 0) return false
+        return currentPeriod.value.state.elapsed > 0
+    }
+    return timerDurationElapsed.value > 0
+})
 
 export const canAdjustDurationForward = computed(
     () => !timerHasFinished.value && Schedule.currentPeriodIndex.value !== null,
@@ -242,7 +252,9 @@ export const canMoveElapsedToPrevious = computed(
 // Validation functions for parameterized checks
 export const canAdjustElapsed = amount => {
     if (Schedule.currentPeriodIndex.value === null) return false
-    if (Schedule.isAnchored.value) return false
+    if (Schedule.isAnchored.value) {
+        return amount < 0 ? canAdjustElapsedBackward.value : canAdjustElapsedForward.value
+    }
     if (amount < 0 && timerDurationElapsed.value === 0) return false
     return true
 }
@@ -647,6 +659,35 @@ export const adjustElapsed = elapsedDelta => {
 
     updateCurrentPeriod()
 
+    if (Schedule.isAnchored.value) {
+        const currentIndex = Schedule.currentPeriodIndex.value
+        if (currentIndex === 0) return
+
+        const prev = timerState.value.periods[currentIndex - 1]
+        const clamped =
+            elapsedDelta > 0
+                ? Math.min(elapsedDelta, prev.state.elapsed - MIN_PERIOD_MS)
+                : Math.max(elapsedDelta, -currentPeriod.value.state.elapsed)
+
+        if (clamped === 0 || (elapsedDelta > 0 && clamped < 0)) return
+
+        const oldElapsed = currentPeriod.value.state.elapsed
+
+        batch(() => {
+            applyToPeriod(currentIndex - 1, p =>
+                Period.amendRecordedDuration(p, p.state.elapsed - clamped),
+            )
+            reconcileToAnchor()
+        })
+        updateCurrentPeriod()
+
+        const newElapsed = currentPeriod.value.state.elapsed
+        soundScheduler.onElapsedAdjustment(newElapsed, oldElapsed)
+
+        log('time adjusted (anchored transfer)', logSnapshot(), 6)
+        return
+    }
+
     Schedule.shiftStartedAt(
         Math.min(
             // prevents elapsed to go negative
@@ -778,9 +819,14 @@ export const moveToPreviousPeriod = () => {
 export const moveElapsedTimeToPreviousPeriod = () => {
     log('move time back', logSnapshot(), 2)
     const elapsed = currentPeriod.value.state.elapsed
-    const previousPeriodIndex = Schedule.currentPeriodIndex.value - 1
 
-    applyToPeriod(previousPeriodIndex, p => Period.absorbAsCompleted(p, elapsed))
+    // While anchored, adjustElapsed's anchored branch already absorbs the
+    // transferred time into the previous period (via amendRecordedDuration) —
+    // absorbing it here too would double-count it.
+    if (!Schedule.isAnchored.value) {
+        const previousPeriodIndex = Schedule.currentPeriodIndex.value - 1
+        applyToPeriod(previousPeriodIndex, p => Period.absorbAsCompleted(p, elapsed))
+    }
 
     adjustElapsed(-elapsed)
 
