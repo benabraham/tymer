@@ -24,16 +24,6 @@ export const ThemeSwitcher = () => {
 
     return (
         <div class="top-controls">
-            <button
-                class={`top-controls__button ${isAnchored ? 'top-controls__button--active' : ''}`}
-                onClick={togglePinTimer}
-                disabled={!canTogglePin.value}
-                title={pinTitle}
-                aria-label={pinTitle}
-                aria-pressed={isAnchored}
-            >
-                <FontAwesomeIcon icon={faThumbtack} />
-            </button>
             <SoundToggle />
             <button
                 class="top-controls__button"
@@ -58,6 +48,16 @@ export const ThemeSwitcher = () => {
                 aria-label="Toggle debugging info"
             >
                 <FontAwesomeIcon icon={faBug} />
+            </button>
+            <button
+                class={`top-controls__button ${isAnchored ? 'top-controls__button--active' : ''}`}
+                onClick={togglePinTimer}
+                disabled={!canTogglePin.value}
+                title={pinTitle}
+                aria-label={pinTitle}
+                aria-pressed={isAnchored}
+            >
+                <FontAwesomeIcon icon={faThumbtack} />
             </button>
         </div>
     )
