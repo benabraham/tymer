@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process'
 import { defineConfig } from 'vite'
 import preact from '@preact/preset-vite'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -5,31 +6,50 @@ import autoprefixer from 'autoprefixer'
 import csso from 'postcss-csso'
 import { soundPreloadPlugin } from './build-tools/sound-preloader.js'
 
+// Build identity — shown in the build-info tooltip so the running build can be
+// told apart from a newer deploy without opening devtools.
+const buildCommit = (() => {
+  try {
+    return execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim()
+  } catch {
+    return 'nogit'
+  }
+})()
+// UTC — builds run on CI, so a local timezone would be misleading
+const buildTime = `${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC`
+
 // https://vitejs.dev/config/
 export default defineConfig({
   define: {
     __BUILD_AVATAR__: JSON.stringify(
-        String.fromCodePoint(
-            (() => {
-                const ranges = [
-                    [0x1F32A, 0x1F50D],
-                    [0x1F56F, 0x1F5FA],
-                    [0x1F687, 0x1F6F3],
-                    [0x1F300, 0x1F31F],
-                    [0x1F330, 0x1F393],
-                    [0x1F400, 0x1F4FF],
-                ]
-                const [start, end] = ranges[Math.floor(Math.random() * ranges.length)]
-                return Math.floor(Math.random() * (end - start + 1)) + start
-            })()
-        )
+      String.fromCodePoint(
+        (() => {
+          const ranges = [
+            [0x1f32a, 0x1f50d],
+            [0x1f56f, 0x1f5fa],
+            [0x1f687, 0x1f6f3],
+            [0x1f300, 0x1f31f],
+            [0x1f330, 0x1f393],
+            [0x1f400, 0x1f4ff],
+          ]
+          const [start, end] = ranges[Math.floor(Math.random() * ranges.length)]
+          return Math.floor(Math.random() * (end - start + 1)) + start
+        })(),
+      ),
     ),
+    __BUILD_COMMIT__: JSON.stringify(buildCommit),
+    __BUILD_TIME__: JSON.stringify(buildTime),
   },
   plugins: [
     preact(),
     soundPreloadPlugin(),
     VitePWA({
       registerType: 'autoUpdate',
+      // src/app/register-sw.js registers via `virtual:pwa-register` instead of
+      // the plugin's injected registerSW.js — the injected script never reloads
+      // the page after a new build activates, which left deployed changes
+      // invisible until a manual cache-disabled refresh.
+      injectRegister: null,
       includeAssets: [
         'favicon.ico',
         'apple-touch-icon.png',
@@ -66,9 +86,10 @@ export default defineConfig({
             },
           },
           {
-            // Cache images with CacheFirst (they rarely change)
+            // Images: served from cache, refreshed in the background. CacheFirst
+            // pinned unhashed icons for up to 30 days with no way to bust them.
             urlPattern: /\.(?:png|jpg|jpeg|svg|gif|ico|webp)$/i,
-            handler: 'CacheFirst',
+            handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'image-cache',
               expiration: {

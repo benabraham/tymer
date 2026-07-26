@@ -104,7 +104,11 @@ let timerWorker = null
 // Initialize worker
 const initWorker = () => {
     if (!timerWorker) {
-        timerWorker = new Worker('/tymer/timer-worker.js')
+        // Bundled through Vite so the worker gets a content hash — a copy in
+        // public/ kept its filename across builds and went stale in the cache.
+        timerWorker = new Worker(new URL('./timer-worker.js', import.meta.url), {
+            type: 'module',
+        })
         timerWorker.onmessage = event => {
             // Worker sends timestamp, trigger our tick function
             tick()

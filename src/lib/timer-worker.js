@@ -1,7 +1,7 @@
 // Ultra-simple timer worker that just sends timestamps every second
 let interval = null
 
-self.addEventListener('message', (event) => {
+self.addEventListener('message', event => {
     if (event.data === 'start') {
         // Start sending timestamps every second
         interval = setInterval(() => {

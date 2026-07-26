@@ -34,6 +34,11 @@ pnpm run build
 The app is deployed to GitHub Pages.
 https://benabraham.github.io/tymer/
 
+An open page picks up a new deploy on its own — the service worker checks for one every 15 minutes
+and when you return to the tab. It reloads as soon as that is safe: right away when the timer is
+idle or finished, otherwise the build avatar in the top-right starts pulsing and reloads on click
+(or by itself once the session ends). Its tooltip shows which build is running.
+
 ## Tests
 
 ```bash

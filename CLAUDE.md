@@ -13,7 +13,7 @@ This is a countdown timer web application built with Preact and Vite called "Tym
 
 ## Development Commands
 
-- `pnpm run dev` - Start development server (Vite) on port 3000
+- `pnpm run dev` - Start development server (Vite) on port 5050
 - `pnpm run build` - Build for production to `dist/` folder
 - `pnpm run preview` - Preview production build
 - `pnpm test` - Run tests with Vitest
@@ -61,6 +61,9 @@ This is a countdown timer web application built with Preact and Vite called "Tym
 - `src/lib/timer.js` - Core timer logic and state management (580+ lines)
 - `src/lib/period-configs.js` - Named period configurations: parsing, persistence, CRUD
 - `src/lib/storage.js` - localStorage persistence helpers
+- `src/lib/app-update.js` - new-deploy signal (`updateReady`) and the safe-reload policy
+- `src/lib/timer-worker.js` - 1 Hz tick worker, bundled by Vite (hashed, not in `public/`)
+- `src/app/register-sw.js` - service-worker registration + periodic update checks
 - `src/lib/sounds.js` - Audio playback using Howler
 - `src/lib/format.js` - Time formatting utilities
 - `vite.config.js` - Vite configuration with PWA plugin
@@ -79,6 +82,18 @@ The app is configured as a Progressive Web App with:
 - Service worker for offline functionality
 - Web app manifest for installability
 - Icons and assets in `public/` directory
+
+#### Cache busting / picking up a new deploy
+
+GitHub Pages serves `index.html` with a 10-minute `max-age` and no way to set headers, so freshness is the service worker's job. Every layer must therefore be either content-hashed or revisioned:
+
+- **Assets** — JS, CSS and the tick worker are bundled by Vite and content-hashed. Nothing that changes between builds may live in `public/` under a fixed name: `timer-worker.js` used to, and went stale in the HTTP cache. It is now `src/lib/timer-worker.js`, loaded via `new Worker(new URL('./timer-worker.js', import.meta.url), { type: 'module' })`.
+- **`index.html`** — precached by Workbox with a content revision, so a new build always produces a different `sw.js`.
+- **Registration** — `injectRegister: null` in `vite.config.js`; `src/app/register-sw.js` registers through `virtual:pwa-register` instead. The plugin's injected `registerSW.js` only calls `navigator.serviceWorker.register()` — the new worker activated but the open page kept running the old bundle, which is why deployed changes used to need a cache-disabled refresh. (`virtual:pwa-register` needs the `workbox-window` dependency.)
+- **Update checks** — the browser only re-checks `sw.js` on navigation, so `register-sw.js` also calls `registration.update()` every 15 min, on `visibilitychange` and on `online`. Those requests bypass the HTTP cache.
+- **Applying the update** — `src/lib/app-update.js` owns the policy. `registerType: 'autoUpdate'` would reload unconditionally; instead `onNeedReload` sets the `updateReady` signal and an `effect` reloads as soon as it is safe: idle or completed, and the durations panel closed. Reloading is lossless (the session is persisted and elapsed is clock-derived) but it would drop half-typed editor text. While a session is running the `BuildInfo` avatar becomes a pulsing button that reloads on click; otherwise the reload happens when the session ends.
+- **Build identity** — `__BUILD_COMMIT__` / `__BUILD_TIME__` (UTC) are injected in `vite.config.js` and shown in the `BuildInfo` tooltip, so the running build can be identified without devtools.
+- **Runtime caching** — images use `StaleWhileRevalidate`; `CacheFirst` pinned unhashed icons for up to 30 days.
 
 ### Period Configuration
 

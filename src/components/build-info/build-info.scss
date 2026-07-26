@@ -11,3 +11,33 @@
     z-index: 1000;
 
 }
+
+// Same avatar, now a reload button — pulses so a pending update is noticeable
+// without adding chrome to the timer.
+.build-info--update {
+    padding: 0;
+    border: none;
+    background: none;
+    line-height: 1;
+    cursor: pointer;
+    animation: build-info-pulse 2s ease-in-out infinite;
+}
+
+@keyframes build-info-pulse {
+    0%,
+    100% {
+        opacity: 0.45;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.15);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .build-info--update {
+        animation: none;
+        opacity: 1;
+    }
+}
