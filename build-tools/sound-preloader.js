@@ -8,8 +8,9 @@ export function generateSoundPreloads() {
     const soundPaths = []
     
     Object.values(soundConfig).forEach(setConfig => {
-        Object.values(setConfig).forEach(path => {
-            soundPaths.push(path)
+        Object.values(setConfig).forEach(variants => {
+            // Each leaf is an array of variant paths (one per interchangeable take).
+            variants.forEach(path => soundPaths.push(path))
         })
     })
     
