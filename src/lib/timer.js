@@ -683,7 +683,10 @@ export const adjustElapsed = elapsedDelta => {
             )
             reconcileToAnchor()
         })
-        updateCurrentPeriod()
+        // A backward transfer shrinks the current period's derived elapsed —
+        // hand back the auto-extension that elapsed had earned, so a
+        // forward/back round trip leaves the timeline exactly as it found it.
+        updateCurrentPeriod({ relax: clamped < 0 })
 
         const newElapsed = currentPeriod.value.state.elapsed
         soundScheduler.onElapsedAdjustment(newElapsed, oldElapsed)
@@ -700,7 +703,7 @@ export const adjustElapsed = elapsedDelta => {
         ),
     )
 
-    updateCurrentPeriod()
+    updateCurrentPeriod({ relax: elapsedDelta < 0 })
 
     // Notify sound scheduler of elapsed time change
     const newElapsed = currentPeriod.value.state.elapsed
@@ -738,8 +741,13 @@ const handlePeriodElapsed = () => {
     log('period automatically extended', logSnapshot(), 2)
 }
 
-// main update period function
-const updateCurrentPeriod = () => {
+// main update period function.
+// `relax` is for callers that may have SHRUNK elapsed (moving elapsed time back
+// to the previous period): auto-extension earned while overrunning would
+// otherwise outlive the elapsed that justified it, permanently inflating the
+// period's duration and pushing every projected clock time out. Off by default
+// so the 1 Hz tick keeps auto-extension's whole-minute grace.
+const updateCurrentPeriod = ({ relax = false } = {}) => {
     // guard clause for no current period
     if (!currentPeriod.value) return
 
@@ -756,6 +764,11 @@ const updateCurrentPeriod = () => {
     applyToPeriod(Schedule.currentPeriodIndex.value, p =>
         Period.applyElapsed(p, periodDurationElapsed),
     )
+
+    // Fresh elapsed is in the signal, so relaxing reads the value it must
+    // respect — and running before the completion check below lets a still
+    // overrunning period re-extend in the same pass.
+    if (relax) applyToPeriod(Schedule.currentPeriodIndex.value, p => Period.relaxAutoExtension(p))
 
     // Anchored or not, an overrun period auto-extends and later periods just
     // shift — the anchor only fixes the session start and the completed

@@ -39,6 +39,31 @@ const autoExtendDuration = (period, deltaMs) => {
     }
 }
 
+// Winds auto-extension back DOWN after elapsed shrinks (the user moved elapsed
+// time back to the previous period). Auto-extension is a consequence of
+// overrunning, not a user intent — so once the elapsed that earned it is gone,
+// state.duration returns to the user's plan (config.userIntendedDuration).
+// Never goes below elapsed (the elapsed bar would overflow the block) nor below
+// MIN_PERIOD_MS, and never GROWS duration — that stays autoExtendDuration's job.
+// config.userIntendedDuration is never touched.
+const relaxAutoExtension = period => {
+    const duration = Math.max(
+        MIN_PERIOD_MS,
+        period.config.userIntendedDuration,
+        period.state.elapsed,
+    )
+    if (duration >= period.state.duration) return period
+
+    return {
+        ...period,
+        state: {
+            ...period.state,
+            duration,
+            remaining: Math.max(0, duration - period.state.elapsed),
+        },
+    }
+}
+
 // Completes a period by snapping elapsed to a whole-minute boundary.
 // When elapsed >= MIN_PERIOD_MS: round DOWN to the nearest minute (remainder
 // is positive — caller backdates the next period's start so no time is lost).
@@ -212,6 +237,7 @@ const setNote = (period, note) => ({
 export const Period = {
     applyElapsed,
     autoExtendDuration,
+    relaxAutoExtension,
     complete,
     absorbAsCompleted,
     extendDuration,

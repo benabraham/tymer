@@ -711,6 +711,69 @@ describe('Timer anchor lifecycle', () => {
             )
         })
 
+        it('forward then back is lossless — the overrun auto-extension is handed back', () => {
+            // Regression: @9:00, W 30, F 30. At 10:16 the clock has driven the
+            // current period to 46 elapsed / 47 duration (16 min of overrun).
+            // Pushing +10 auto-extended it to 56; pulling -10 restored elapsed
+            // but left duration at 57, silently inflating the plan and pushing
+            // every projected clock time 10 min out.
+            vi.useFakeTimers()
+            const now = new Date(2026, 0, 1, 10, 16, 0).getTime()
+            vi.setSystemTime(now)
+            const anchor = new Date(2026, 0, 1, 9, 0, 0).getTime()
+            timerState.value = {
+                ...timerState.value,
+                periods: [
+                    {
+                        config: { type: 'work', note: '', userIntendedDuration: 30 * 60 * 1000 },
+                        state: { duration: 30 * 60 * 1000, elapsed: 30 * 60 * 1000, remaining: 0 },
+                    },
+                    {
+                        config: { type: 'fun', note: '', userIntendedDuration: 30 * 60 * 1000 },
+                        state: {
+                            duration: 47 * 60 * 1000,
+                            elapsed: 46 * 60 * 1000,
+                            remaining: 60 * 1000,
+                        },
+                    },
+                ],
+            }
+            Schedule.setSnapshot({
+                phase: 'running',
+                currentPeriodIndex: 1,
+                timestampStarted: anchor + 30 * 60 * 1000,
+                timestampPaused: null,
+                timestampAnchor: anchor,
+            })
+
+            adjustElapsed(10 * 60 * 1000)
+            adjustElapsed(-10 * 60 * 1000)
+
+            expect(timerState.value.periods[0].state.elapsed).toBe(30 * 60 * 1000)
+            expect(currentPeriod.value.state.elapsed).toBe(46 * 60 * 1000)
+            expect(currentPeriod.value.state.duration).toBe(47 * 60 * 1000)
+            expect(currentPeriod.value.config.userIntendedDuration).toBe(30 * 60 * 1000)
+            expect(timerDurationElapsed.value).toBe(now - anchor)
+        })
+
+        it('back below the plan drops the auto-extension entirely', () => {
+            setupTwoPeriods()
+            // current period: 60 min plan, driven to 70 elapsed by the clock
+            adjustElapsed(29 * 60 * 1000)
+            timerState.value = {
+                ...timerState.value,
+                periods: timerState.value.periods.map((p, i) =>
+                    i === 1 ? { ...p, state: { ...p.state, duration: 71 * 60 * 1000 } } : p,
+                ),
+            }
+
+            adjustElapsed(-29 * 60 * 1000)
+
+            expect(currentPeriod.value.state.elapsed).toBe(0)
+            expect(currentPeriod.value.state.duration).toBe(60 * 60 * 1000)
+            expect(currentPeriod.value.state.remaining).toBe(60 * 60 * 1000)
+        })
+
         it('guard signals reflect the transfer semantics while anchored', () => {
             setupTwoPeriods()
 

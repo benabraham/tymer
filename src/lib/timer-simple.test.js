@@ -8,6 +8,7 @@ import {
     timerHasFinished,
     moveToNextPeriod,
     handleTimerCompletion,
+    adjustElapsed,
 } from './timer'
 import { Schedule } from './schedule'
 import { PERIOD_CONFIG } from './config'
@@ -156,6 +157,45 @@ describe('Timer Logic - Simple Tests', () => {
                 timestampPaused: Date.now(),
             })
             expect(timerHasFinished.value).toBe(false)
+        })
+    })
+
+    describe('adjustElapsed backwards (unanchored)', () => {
+        it('hands back the auto-extension the removed elapsed had earned', () => {
+            const now = Date.now()
+            vi.spyOn(Date, 'now').mockReturnValue(now)
+            // 24 min plan (PERIOD_CONFIG[0]), driven to 60 elapsed / 61 duration by overrun
+            timerState.value = {
+                ...timerState.value,
+                periods: timerState.value.periods.map((period, index) =>
+                    index === 0
+                        ? {
+                              ...period,
+                              state: {
+                                  duration: 61 * 60 * 1000,
+                                  elapsed: 60 * 60 * 1000,
+                                  remaining: 60 * 1000,
+                              },
+                          }
+                        : period,
+                ),
+            }
+            Schedule.setSnapshot({
+                phase: 'running',
+                currentPeriodIndex: 0,
+                timestampStarted: now - 60 * 60 * 1000,
+                timestampPaused: null,
+            })
+
+            adjustElapsed(-40 * 60 * 1000)
+
+            expect(timerState.value.periods[0].state.elapsed).toBe(20 * 60 * 1000)
+            // back under the 24 min plan → duration returns to the plan
+            expect(timerState.value.periods[0].state.duration).toBe(24 * 60 * 1000)
+            expect(timerState.value.periods[0].state.remaining).toBe(4 * 60 * 1000)
+            expect(timerState.value.periods[0].config.userIntendedDuration).toBe(24 * 60 * 1000)
+
+            vi.restoreAllMocks()
         })
     })
 

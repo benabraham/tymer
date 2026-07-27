@@ -277,6 +277,84 @@ describe('Period.autoExtendDuration', () => {
     })
 })
 
+describe('Period.relaxAutoExtension', () => {
+    it('elapsed back below the plan → duration returns to userIntendedDuration', () => {
+        const period = makePeriod({
+            duration: 57 * 60 * 1000, // auto-extended while overrunning
+            elapsed: 20 * 60 * 1000, // ...then the user moved elapsed back
+            remaining: 37 * 60 * 1000,
+            userIntendedDuration: 30 * 60 * 1000,
+        })
+        const result = Period.relaxAutoExtension(period)
+
+        expect(result.state.duration).toBe(30 * 60 * 1000)
+        expect(result.state.remaining).toBe(10 * 60 * 1000)
+        expect(result.config.userIntendedDuration).toBe(30 * 60 * 1000)
+    })
+
+    it('still overrunning → duration floors at elapsed, never below it', () => {
+        const period = makePeriod({
+            duration: 57 * 60 * 1000,
+            elapsed: 46 * 60 * 1000,
+            remaining: 11 * 60 * 1000,
+            userIntendedDuration: 30 * 60 * 1000,
+        })
+        const result = Period.relaxAutoExtension(period)
+
+        expect(result.state.duration).toBe(46 * 60 * 1000)
+        expect(result.state.remaining).toBe(0)
+    })
+
+    it('duration already at the plan → period returned untouched', () => {
+        const period = makePeriod({
+            duration: 30 * 60 * 1000,
+            elapsed: 10 * 60 * 1000,
+            remaining: 20 * 60 * 1000,
+            userIntendedDuration: 30 * 60 * 1000,
+        })
+
+        expect(Period.relaxAutoExtension(period)).toBe(period)
+    })
+
+    it('never grows duration: a plan larger than duration is ignored', () => {
+        const period = makePeriod({
+            duration: 20 * 60 * 1000,
+            elapsed: 5 * 60 * 1000,
+            remaining: 15 * 60 * 1000,
+            userIntendedDuration: 60 * 60 * 1000,
+        })
+
+        expect(Period.relaxAutoExtension(period)).toBe(period)
+    })
+
+    it('plan below MIN_PERIOD_MS → floored at MIN_PERIOD_MS', () => {
+        const period = makePeriod({
+            duration: 10 * 60 * 1000,
+            elapsed: 0,
+            remaining: 10 * 60 * 1000,
+            userIntendedDuration: 10 * 1000,
+        })
+        const result = Period.relaxAutoExtension(period)
+
+        expect(result.state.duration).toBe(MIN_PERIOD_MS)
+        expect(result.state.remaining).toBe(MIN_PERIOD_MS)
+    })
+
+    it('input is not mutated', () => {
+        const period = makePeriod({
+            duration: 57 * 60 * 1000,
+            elapsed: 20 * 60 * 1000,
+            remaining: 37 * 60 * 1000,
+            userIntendedDuration: 30 * 60 * 1000,
+        })
+
+        Period.relaxAutoExtension(period)
+
+        expect(period.state.duration).toBe(57 * 60 * 1000)
+        expect(period.state.remaining).toBe(37 * 60 * 1000)
+    })
+})
+
 describe('Period.extendDuration', () => {
     it('positive delta → both duration and userIntendedDuration grow by delta; remaining recomputed', () => {
         const elapsed = 10 * 60 * 1000
