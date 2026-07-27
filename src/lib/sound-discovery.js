@@ -9,7 +9,7 @@ export const AVAILABLE_SOUNDS = {
     remaining: [6, 12, 24],
 
     // Overtime announcements (in minutes past intended duration)
-    overtime: [6, 12, 18, 24, 30, 36, 42, 48, 60],
+    overtime: [6, 12, 18, 24, 30, 36, 42, 48],
 
     // Break-specific overtime announcements
     overtimeBreak: [6, 12, 18, 24, 30, 36, 42, 48],
