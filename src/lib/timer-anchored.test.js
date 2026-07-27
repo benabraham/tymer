@@ -686,31 +686,79 @@ describe('Timer anchor lifecycle', () => {
             expect(canAdjustElapsedBackward.value).toBe(false)
         })
 
-        it('forward transfer past current duration auto-extends the current period', () => {
+        it("forward grows the current period's duration by the same amount — its end stays put", () => {
+            setupTwoPeriods() // current: 60 min plan/duration, 0 elapsed
+
+            adjustElapsed(10 * 60 * 1000)
+
+            expect(currentPeriod.value.state.elapsed).toBe(10 * 60 * 1000)
+            expect(currentPeriod.value.state.duration).toBe(70 * 60 * 1000)
+            expect(currentPeriod.value.config.userIntendedDuration).toBe(70 * 60 * 1000)
+            // remaining untouched — only the boundary moved, not the end
+            expect(currentPeriod.value.state.remaining).toBe(60 * 60 * 1000)
+        })
+
+        it('backward shrinks it by the same amount — its end stays put', () => {
             setupTwoPeriods()
-            // shrink current period's own duration so the transfer overruns it
+            adjustElapsed(20 * 60 * 1000) // current: 80 min duration, 20 elapsed
+
+            adjustElapsed(-15 * 60 * 1000)
+
+            expect(currentPeriod.value.state.elapsed).toBe(5 * 60 * 1000)
+            expect(currentPeriod.value.state.duration).toBe(65 * 60 * 1000)
+            expect(currentPeriod.value.config.userIntendedDuration).toBe(65 * 60 * 1000)
+            expect(currentPeriod.value.state.remaining).toBe(60 * 60 * 1000)
+        })
+
+        it('a forward/back round trip restores duration and plan exactly', () => {
+            setupTwoPeriods()
+            const duration = currentPeriod.value.state.duration
+            const plan = currentPeriod.value.config.userIntendedDuration
+
+            adjustElapsed(24 * 60 * 1000)
+            adjustElapsed(-24 * 60 * 1000)
+
+            expect(currentPeriod.value.state.duration).toBe(duration)
+            expect(currentPeriod.value.config.userIntendedDuration).toBe(plan)
+        })
+
+        it('the auto-extension gap between duration and plan survives the move', () => {
+            setupTwoPeriods()
+            // the clock overran the plan: duration auto-extended 5 min past it
+            timerState.value = {
+                ...timerState.value,
+                periods: timerState.value.periods.map((p, i) =>
+                    i === 1 ? { ...p, state: { ...p.state, duration: 65 * 60 * 1000 } } : p,
+                ),
+            }
+
+            adjustElapsed(10 * 60 * 1000)
+
+            expect(currentPeriod.value.state.duration).toBe(75 * 60 * 1000)
+            expect(currentPeriod.value.config.userIntendedDuration).toBe(70 * 60 * 1000)
+        })
+
+        it('duration floors at MIN_PERIOD_MS rather than following elapsed below it', () => {
+            setupTwoPeriods()
+            // current period is nearly over: 20 min elapsed of a 20 min duration
             timerState.value = {
                 ...timerState.value,
                 periods: timerState.value.periods.map((p, i) =>
                     i === 1
                         ? {
                               ...p,
-                              state: {
-                                  ...p.state,
-                                  duration: 5 * 60 * 1000,
-                                  remaining: 5 * 60 * 1000,
-                              },
+                              config: { ...p.config, userIntendedDuration: 20 * 60 * 1000 },
+                              state: { duration: 20 * 60 * 1000, elapsed: 0, remaining: 0 },
                           }
                         : p,
                 ),
             }
+            adjustElapsed(20 * 60 * 1000) // elapsed 20, duration 40
 
-            adjustElapsed(10 * 60 * 1000)
+            adjustElapsed(-20 * 60 * 1000) // would take duration to 20 - 20 = 0
 
-            expect(currentPeriod.value.state.elapsed).toBe(10 * 60 * 1000)
-            expect(currentPeriod.value.state.duration).toBeGreaterThanOrEqual(
-                currentPeriod.value.state.elapsed,
-            )
+            expect(currentPeriod.value.state.duration).toBe(20 * 60 * 1000)
+            expect(currentPeriod.value.state.duration).toBeGreaterThanOrEqual(MIN_PERIOD_MS)
         })
 
         it('forward then back is lossless — the overrun auto-extension is handed back', () => {
@@ -758,22 +806,17 @@ describe('Timer anchor lifecycle', () => {
             expect(timerDurationElapsed.value).toBe(now - anchor)
         })
 
-        it('back below the plan drops the auto-extension entirely', () => {
+        it('later periods keep their clock times — the whole tail is unaffected', () => {
             setupTwoPeriods()
-            // current period: 60 min plan, driven to 70 elapsed by the clock
-            adjustElapsed(29 * 60 * 1000)
-            timerState.value = {
-                ...timerState.value,
-                periods: timerState.value.periods.map((p, i) =>
-                    i === 1 ? { ...p, state: { ...p.state, duration: 71 * 60 * 1000 } } : p,
-                ),
-            }
+            const endOfCurrent = () =>
+                Date.now() + currentPeriod.value.state.duration - currentPeriod.value.state.elapsed
+            const before = endOfCurrent()
 
-            adjustElapsed(-29 * 60 * 1000)
+            adjustElapsed(10 * 60 * 1000)
+            expect(endOfCurrent()).toBe(before)
 
-            expect(currentPeriod.value.state.elapsed).toBe(0)
-            expect(currentPeriod.value.state.duration).toBe(60 * 60 * 1000)
-            expect(currentPeriod.value.state.remaining).toBe(60 * 60 * 1000)
+            adjustElapsed(-6 * 60 * 1000)
+            expect(endOfCurrent()).toBe(before)
         })
 
         it('guard signals reflect the transfer semantics while anchored', () => {
@@ -950,6 +993,12 @@ describe('Timer anchor lifecycle', () => {
 
             expect(timerState.value.periods[0].state.elapsed).toBe(40 * 60 * 1000)
             expect(currentPeriod.value.state.elapsed).toBe(0)
+            // Backspace keeps the current period's LENGTH (unlike the elapsed
+            // arrows, which keep its end) — it starts later and so ends later,
+            // exactly as it behaves unanchored.
+            expect(currentPeriod.value.state.duration).toBe(60 * 60 * 1000)
+            expect(currentPeriod.value.config.userIntendedDuration).toBe(60 * 60 * 1000)
+            expect(currentPeriod.value.state.remaining).toBe(60 * 60 * 1000)
             expect(Schedule.timestampAnchor.value).toBe(anchor)
             expect(timerDurationElapsed.value).toBe(40 * 60 * 1000)
         })

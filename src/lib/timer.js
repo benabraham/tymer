@@ -674,8 +674,15 @@ export const adjustDuration = durationDelta => {
     log('duration adjusted', logSnapshot(), 9)
 }
 
-// adjusts elapsed time
-export const adjustElapsed = elapsedDelta => {
+// Adjusts elapsed time.
+// `keepDuration` picks which end of the current period is pinned while anchored:
+//   false (default, the elapsed arrows/buttons) — keep its END, so its duration
+//     follows the moved boundary and every later clock time stays put.
+//   true ("move time to previous") — keep its LENGTH, so it simply starts, and
+//     therefore ends, later. This is what the same button does unanchored.
+// Ignored when not anchored: there the current period's duration is never
+// touched, only timestampStarted moves.
+export const adjustElapsed = (elapsedDelta, { keepDuration = false } = {}) => {
     // nothing to do if timer has finished or there is no current period
     if (Schedule.currentPeriodIndex.value === null) return
 
@@ -699,12 +706,20 @@ export const adjustElapsed = elapsedDelta => {
             applyToPeriod(currentIndex - 1, p =>
                 Period.amendRecordedDuration(p, p.state.elapsed - clamped),
             )
+            // The transfer slides the boundary between the two periods, not the
+            // current period's END: its duration follows its derived elapsed by
+            // the same amount, so `remaining` — and every clock time from here
+            // to the end of the session — is unchanged. Shifted BEFORE the
+            // elapsed refresh below so the grown duration is already in place
+            // and a forward transfer never reads as an overrun.
+            if (!keepDuration) applyToPeriod(currentIndex, p => Period.shiftDuration(p, clamped))
             reconcileToAnchor()
         })
-        // A backward transfer shrinks the current period's derived elapsed —
-        // hand back the auto-extension that elapsed had earned, so a
-        // forward/back round trip leaves the timeline exactly as it found it.
-        updateCurrentPeriod({ relax: clamped < 0 })
+        // `relax` only matters on the keepDuration path: there the duration is
+        // left alone while elapsed shrinks, so an auto-extension could outlive
+        // the elapsed that earned it. Otherwise duration is managed explicitly
+        // above, in both directions.
+        updateCurrentPeriod({ relax: keepDuration && clamped < 0 })
 
         const newElapsed = currentPeriod.value.state.elapsed
         soundScheduler.onElapsedAdjustment(newElapsed, oldElapsed)
@@ -863,7 +878,10 @@ export const moveElapsedTimeToPreviousPeriod = () => {
         applyToPeriod(previousPeriodIndex, p => Period.absorbAsCompleted(p, elapsed))
     }
 
-    adjustElapsed(-elapsed)
+    // keepDuration: the current period hands its time over and then runs its
+    // full planned length from the later start — it ends later. Same shape as
+    // the unanchored path above, where its duration is never touched either.
+    adjustElapsed(-elapsed, { keepDuration: true })
 
     // Notify sound scheduler of period change
     soundScheduler.onPeriodChange()

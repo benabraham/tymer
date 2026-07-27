@@ -117,6 +117,35 @@ const absorbAsCompleted = (period, extraMs) => ({
     },
 })
 
+// Shifts the period's length by deltaMs when its START moves — the boundary with
+// the previous period slid, so the duration must follow one-for-one to leave the
+// period's END where it was (state.remaining, and therefore the projected clock
+// time, is unchanged).
+// Unlike extendDuration this moves state.duration and config.userIntendedDuration
+// by the same delta INSTEAD of collapsing them to one value: any auto-extension
+// gap between them survives the move, which also makes the move exactly
+// reversible. Both are floored at MIN_PERIOD_MS.
+// No elapsed-floor — the caller shifts elapsed by the same delta, so the
+// duration >= elapsed invariant carries over on its own.
+const shiftDuration = (period, deltaMs) => {
+    const duration = Math.max(MIN_PERIOD_MS, period.state.duration + deltaMs)
+    return {
+        ...period,
+        config: {
+            ...period.config,
+            userIntendedDuration: Math.max(
+                MIN_PERIOD_MS,
+                period.config.userIntendedDuration + deltaMs,
+            ),
+        },
+        state: {
+            ...period.state,
+            duration,
+            remaining: Math.max(0, duration - period.state.elapsed),
+        },
+    }
+}
+
 // User-driven duration delta. Updates BOTH state.duration AND config.userIntendedDuration
 // to the same new value (manual edits realign the two; auto-extension is the only thing
 // that lets them diverge). Floors at state.elapsed so duration cannot shrink below time
@@ -240,6 +269,7 @@ export const Period = {
     relaxAutoExtension,
     complete,
     absorbAsCompleted,
+    shiftDuration,
     extendDuration,
     setPlannedDuration,
     amendRecordedDuration,

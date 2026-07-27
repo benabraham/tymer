@@ -355,6 +355,90 @@ describe('Period.relaxAutoExtension', () => {
     })
 })
 
+describe('Period.shiftDuration', () => {
+    it('positive delta: duration and plan both move by it, remaining recomputed', () => {
+        const period = makePeriod({
+            duration: 60 * 60 * 1000,
+            elapsed: 10 * 60 * 1000,
+            remaining: 50 * 60 * 1000,
+            userIntendedDuration: 60 * 60 * 1000,
+        })
+        const result = Period.shiftDuration(period, 10 * 60 * 1000)
+
+        expect(result.state.duration).toBe(70 * 60 * 1000)
+        expect(result.config.userIntendedDuration).toBe(70 * 60 * 1000)
+        expect(result.state.remaining).toBe(60 * 60 * 1000)
+    })
+
+    it('negative delta: both shrink by it', () => {
+        const period = makePeriod({
+            duration: 60 * 60 * 1000,
+            elapsed: 20 * 60 * 1000,
+            remaining: 40 * 60 * 1000,
+            userIntendedDuration: 60 * 60 * 1000,
+        })
+        const result = Period.shiftDuration(period, -15 * 60 * 1000)
+
+        expect(result.state.duration).toBe(45 * 60 * 1000)
+        expect(result.config.userIntendedDuration).toBe(45 * 60 * 1000)
+    })
+
+    it('preserves the auto-extension gap between duration and plan', () => {
+        const period = makePeriod({
+            duration: 65 * 60 * 1000, // auto-extended 5 min past the plan
+            elapsed: 64 * 60 * 1000,
+            remaining: 60 * 1000,
+            userIntendedDuration: 60 * 60 * 1000,
+        })
+        const result = Period.shiftDuration(period, -10 * 60 * 1000)
+
+        expect(result.state.duration).toBe(55 * 60 * 1000)
+        expect(result.config.userIntendedDuration).toBe(50 * 60 * 1000)
+    })
+
+    it('is exactly reversible', () => {
+        const period = makePeriod({
+            duration: 48 * 60 * 1000,
+            elapsed: 12 * 60 * 1000,
+            remaining: 36 * 60 * 1000,
+            userIntendedDuration: 45 * 60 * 1000,
+        })
+        const delta = 24 * 60 * 1000
+        const result = Period.shiftDuration(Period.shiftDuration(period, delta), -delta)
+
+        expect(result.state.duration).toBe(period.state.duration)
+        expect(result.config.userIntendedDuration).toBe(period.config.userIntendedDuration)
+        expect(result.state.remaining).toBe(period.state.remaining)
+    })
+
+    it('floors both at MIN_PERIOD_MS', () => {
+        const period = makePeriod({
+            duration: 5 * 60 * 1000,
+            elapsed: 0,
+            remaining: 5 * 60 * 1000,
+            userIntendedDuration: 5 * 60 * 1000,
+        })
+        const result = Period.shiftDuration(period, -10 * 60 * 1000)
+
+        expect(result.state.duration).toBe(MIN_PERIOD_MS)
+        expect(result.config.userIntendedDuration).toBe(MIN_PERIOD_MS)
+    })
+
+    it('does not touch elapsed, and does not mutate the input', () => {
+        const period = makePeriod({
+            duration: 60 * 60 * 1000,
+            elapsed: 10 * 60 * 1000,
+            remaining: 50 * 60 * 1000,
+            userIntendedDuration: 60 * 60 * 1000,
+        })
+        const result = Period.shiftDuration(period, 6 * 60 * 1000)
+
+        expect(result.state.elapsed).toBe(10 * 60 * 1000)
+        expect(period.state.duration).toBe(60 * 60 * 1000)
+        expect(period.config.userIntendedDuration).toBe(60 * 60 * 1000)
+    })
+})
+
 describe('Period.extendDuration', () => {
     it('positive delta → both duration and userIntendedDuration grow by delta; remaining recomputed', () => {
         const elapsed = 10 * 60 * 1000
