@@ -9,7 +9,9 @@ import {
     moveToNextPeriod,
     handleTimerCompletion,
     adjustElapsed,
+    adjustableElapsed,
 } from './timer'
+import { getNextMultipleOf3Delta } from './snap'
 import { Schedule } from './schedule'
 import { PERIOD_CONFIG } from './config'
 
@@ -157,6 +159,75 @@ describe('Timer Logic - Simple Tests', () => {
                 timestampPaused: Date.now(),
             })
             expect(timerHasFinished.value).toBe(false)
+        })
+    })
+
+    describe('plain arrow keys move elapsed on a running clock (unanchored)', () => {
+        // The plain ArrowLeft/ArrowRight handler in keyboard-shortcuts.jsx.
+        const pressArrow = direction =>
+            adjustElapsed(
+                getNextMultipleOf3Delta({ currentMs: adjustableElapsed.value, direction }),
+            )
+
+        // Period 0 running, 30 min elapsed plus 24s of clock — a running total
+        // essentially never sits on an exact 3-minute boundary.
+        const setupRunning = () => {
+            const now = Date.now()
+            vi.spyOn(Date, 'now').mockReturnValue(now)
+            Schedule.setSnapshot({
+                phase: 'running',
+                currentPeriodIndex: 0,
+                timestampStarted: now - (30 * 60 * 1000 + 24 * 1000),
+                timestampPaused: null,
+            })
+            timerState.value = {
+                ...timerState.value,
+                periods: timerState.value.periods.map((period, index) =>
+                    index === 0
+                        ? {
+                              ...period,
+                              config: { ...period.config, userIntendedDuration: 60 * 60 * 1000 },
+                              state: {
+                                  duration: 60 * 60 * 1000,
+                                  elapsed: 30 * 60 * 1000 + 24 * 1000,
+                                  remaining: 30 * 60 * 1000 - 24 * 1000,
+                              },
+                          }
+                        : period,
+                ),
+            }
+        }
+
+        it('stepping back moves a full 3 minutes, not just the clock seconds', () => {
+            setupRunning()
+
+            pressArrow('down')
+
+            // 30:24 -> 27:24, NOT 30:00 (which the next tick would undo)
+            expect(timerState.value.periods[0].state.elapsed).toBe(27 * 60 * 1000 + 24 * 1000)
+            vi.restoreAllMocks()
+        })
+
+        it('repeated presses keep stepping back', () => {
+            setupRunning()
+
+            pressArrow('down')
+            pressArrow('down')
+            pressArrow('down')
+
+            expect(timerState.value.periods[0].state.elapsed).toBe(21 * 60 * 1000 + 24 * 1000)
+            vi.restoreAllMocks()
+        })
+
+        it('back then forward returns to where it started', () => {
+            setupRunning()
+            const before = timerState.value.periods[0].state.elapsed
+
+            pressArrow('down')
+            pressArrow('up')
+
+            expect(timerState.value.periods[0].state.elapsed).toBe(before)
+            vi.restoreAllMocks()
         })
     })
 

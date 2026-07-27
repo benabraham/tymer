@@ -883,8 +883,10 @@ describe('Timer anchor lifecycle', () => {
 
             unpinTimer()
 
-            // unanchored: shifting the start moves the session total 1:1
-            expect(adjustableElapsed.value).toBe(timerDurationElapsed.value)
+            // unanchored: shifting the start moves the session total 1:1 — still
+            // floored, so a running clock's seconds cannot swallow the step
+            expect(timerDurationElapsed.value).toBe(90 * M + 24 * S)
+            expect(adjustableElapsed.value).toBe(90 * M)
         })
 
         it('back then forward returns the previous period to where it started', () => {
