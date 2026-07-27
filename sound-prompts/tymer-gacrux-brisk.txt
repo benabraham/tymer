@@ -1,0 +1,215 @@
+# Tymer voice set — Gacrux, BRISK delivery
+#
+# Same voice and same words as tymer-gacrux.txt, delivered fast. The measured
+# set turned out slower than the sounds it replaced; this one is deliberately
+# quicker than the originals. Both generate into the same event directories, so
+# they end up as interchangeable takes and Tymer picks between them at random.
+#
+# @name below labels every file in this set `brisk-N.wav`, which is what keeps
+# it from colliding with the measured set's text-derived filenames.
+#
+# Regenerate: see sound-prompts/README.md
+
+@voice Gacrux
+@name brisk
+@profile Tymer — the timekeeper
+@scene
+A quiet home workspace in the late afternoon. One person, deep in a focus
+session. The timekeeper is not in the room — it is a steady voice that only
+speaks when a moment has been reached, then stops.
+@style
+Empathetic. Genuinely on the listener's side — warm, understanding, never
+scolding. Says it once, kindly, and gets out of the way.
+@pace
+Rapid fire. No gap at all between sentences, no breath before the last word,
+no trailing off. Get in, say it, get out.
+@accent Transatlantic.
+@context
+The timekeeper marks the passage of a work or break period out loud. It
+interrupts someone who is concentrating, so it stays short and gets out of
+the way quickly.
+
+# ---------------------------------------------------------------------------
+# elapsed — quick, unobtrusive progress markers
+# ---------------------------------------------------------------------------
+
+[elapsed/006]
+@text [briskly] Six minutes have already passed.
+
+[elapsed/012]
+@text [briskly] Twelve minutes have now passed.
+
+[elapsed/024]
+@text [briskly] Twenty-four minutes have now passed.
+
+[elapsed/036]
+@text [briskly] Thirty-six minutes have now passed.
+
+[elapsed/048]
+@text [briskly] Forty-eight minutes have now passed.
+
+[elapsed/060]
+@style Warm, quickly pleased. A quick nod, not a ceremony.
+@text [warmly] One hour has now passed. [encouraging] You're doing great.
+
+[elapsed/072]
+@text [briskly] One hour and twelve minutes have passed.
+
+[elapsed/084]
+@text [briskly] One hour and twenty-four minutes have passed.
+
+[elapsed/096]
+@text [briskly] One hour and thirty-six minutes have passed.
+
+[elapsed/108]
+@text [briskly] One hour and forty-eight minutes have passed.
+
+# ---------------------------------------------------------------------------
+# remaining — quick forward lean
+# ---------------------------------------------------------------------------
+
+[remaining/024]
+@text [briskly] Twenty-four minutes remaining. [lightly] Time to start wrapping things up.
+
+[remaining/012]
+@text [briskly] Twelve minutes remaining. [encouraging] The final stretch.
+
+[remaining/006]
+@style Quiet and quick — a low aside, not a speech.
+@text [quietly] Only six minutes left now.
+
+# ---------------------------------------------------------------------------
+# overtime (work) — escalation carried by intensity, not by slowing down
+# ---------------------------------------------------------------------------
+
+[overtime/006]
+@style Light and friendly. Offering, not instructing.
+@pace Quick and easy.
+@text [lightly] Just a gentle reminder to bring your task to a close.
+
+[overtime/012]
+@style Matter-of-fact. The warmth is cooling.
+@pace Quick, even.
+@text [matter-of-fact] It's time to find a stopping point now.
+
+[overtime/018]
+@style Firmer. Polite, but done suggesting.
+@pace Quick, clipped.
+@text [firmly] Let's not extend this any further. Please bring it to completion.
+
+[overtime/024]
+@style Insistent. No longer a suggestion.
+@pace Fast and pressing. Push straight through to the end of the line.
+@text [insistent] You are now twenty-four minutes over the scheduled time. [pointedly] It is important to conclude now.
+
+[overtime/030]
+@style Stern. Addressing someone who was told twice.
+@pace Fast, hard-edged.
+@text [sternly] This task is now significantly overdue. [flat] Finalizing it is required.
+
+[overtime/036]
+@style Urgent, commanding. All warmth gone.
+@pace Rapid, forceful.
+@text [urgently] This is an urgent reminder. [commanding] Conclude your task immediately.
+
+[overtime/042]
+@style Sharp, absolute. Final-warning authority.
+@pace Rapid, staccato. Each sentence a snap.
+@text [sharply] Final warning. [commanding] Cease work on this task. It is significantly overdue.
+
+[overtime/048]
+@style
+Maximum urgency — the top of the ladder. Pressure, not ice: genuinely pushing
+the listener to act this second. Intensity rises across the line and does not
+release at the end.
+@pace Fast and driving. Press straight through, hard, no pauses.
+@text [urgently] The scheduled time concluded forty-eight minutes ago. [insistent] All work on this task must stop now.
+
+# ---------------------------------------------------------------------------
+# overtime/break — same ladder, break-flavoured
+# ---------------------------------------------------------------------------
+
+[overtime/break/006]
+@style Light and easy. No pressure.
+@pace Quick and easy.
+@text [lightly] Just a gentle reminder — whenever you're ready, it might be a good time to head back.
+
+[overtime/break/012]
+@style Matter-of-fact.
+@pace Quick, even.
+@text [matter-of-fact] It's probably time to wrap up your break and ease back into things now.
+
+[overtime/break/018]
+@style Firmer. Polite, patience thinning.
+@pace Quick, clipped.
+@text [firmly] Let's not let the break stretch any further. Please return to working.
+
+[overtime/break/024]
+@style Insistent. No longer a suggestion.
+@pace Fast and pressing.
+@text [insistent] You are now twenty-four minutes over your planned break. [pointedly] It's time to resume work.
+
+[overtime/break/030]
+@style Stern.
+@pace Fast, hard-edged.
+@text [sternly] This break has extended well beyond the scheduled time. [flat] Please return to doing your job immediately.
+
+[overtime/break/036]
+@style Urgent, commanding.
+@pace Rapid, forceful.
+@text [urgently] This is an urgent reminder. [commanding] Your break is over. Resume your work now.
+
+[overtime/break/042]
+@style Sharp, absolute.
+@pace Rapid, staccato.
+@text [sharply] Final warning. [commanding] End your break now. You are well past the planned time you had available.
+
+[overtime/break/048]
+@style
+Maximum urgency — the top of the ladder. Pressure, not ice: genuinely pushing
+the listener to move right now. Intensity rises and does not release.
+@pace Fast and driving. Press straight through, hard, no pauses.
+@text [urgently] The scheduled break ended forty-eight minutes ago. [insistent] Return to your work immediately.
+
+# ---------------------------------------------------------------------------
+# timesup — quick transitions
+# ---------------------------------------------------------------------------
+
+[timesup/work]
+@style Clear and rousing.
+@pace Snappy.
+@text [decisive] Time is up. [rousing] Let's start working.
+
+[timesup/break]
+@style Relieved, warm.
+@pace Quick and light.
+@text [decisive] Time is up. [warmly] Let's have a break.
+
+[timesup/fun]
+@style Bright and pleased.
+@pace Quick, bouncy.
+@text [decisive] Time is up. [brightly] Let's have some fun now.
+
+[timesup/finish]
+@style Settled and final, but not slow.
+@pace Unhurried only at the very end of the line.
+@text [contented] Nothing more to do. [warmly] Let's finish for today.
+
+# ---------------------------------------------------------------------------
+# alternatives — second takes of the same three transitions
+# ---------------------------------------------------------------------------
+
+[alternatives/work]
+@style Quieter, steadier — a nudge rather than a call.
+@pace Quick, level.
+@text [matter-of-fact] Time is up. [encouraging] Let's start working.
+
+[alternatives/break]
+@style Softer, an easy exhale.
+@pace Quick and light.
+@text [gently] Time is up. [warmly] Let's have a break.
+
+[alternatives/fun]
+@style Playful, conspiratorial.
+@pace Quick, bouncy.
+@text [playfully] Time is up. [delighted] Let's have some fun now.
