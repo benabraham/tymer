@@ -56,13 +56,12 @@ export default defineConfig({
         'masked-icon.svg',
         'icon-192x192.png',
         'icon-512x512.png',
-        'sounds/button.webm',
-        'sounds/timer-end.webm',
-        'sounds/alternatives/*.webm',
-        'sounds/elapsed/*.webm',
-        'sounds/overtime/*.webm',
-        'sounds/remaining/*.webm',
-        'sounds/timesup/*.webm',
+        // Recursive: sounds live one level deeper than they used to. Events are
+        // directories of interchangeable takes (sounds/elapsed/006/*.webm), and
+        // break overtime is nested (sounds/overtime/break/*.webm) — a single-*
+        // glob silently precached neither, so those sounds never worked offline.
+        'sounds/**/*.webm',
+        'sounds/**/*.ogg',
       ],
       workbox: {
         // Clean up old caches from previous versions
