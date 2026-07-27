@@ -24,8 +24,10 @@ import {
     editingCurrentDurations,
     currentDurationsText,
     adjustElapsed,
+    adjustableElapsed,
     moveElapsedTimeToPreviousPeriod,
 } from './timer'
+import { getNextMultipleOf3Delta } from './snap'
 import { Schedule } from './schedule'
 import { PERIOD_CONFIG, MIN_PERIOD_MS } from './config'
 import {
@@ -783,6 +785,129 @@ describe('Timer anchor lifecycle', () => {
             adjustElapsed(10 * 60 * 1000)
 
             expect(canAdjustElapsedBackward.value).toBe(true) // current elapsed > 0
+        })
+    })
+
+    describe('adjustElapsed reference while anchored (plain arrow keys)', () => {
+        // The plain ArrowLeft/ArrowRight handler in keyboard-shortcuts.jsx.
+        const pressArrow = direction =>
+            adjustElapsed(
+                getNextMultipleOf3Delta({ currentMs: adjustableElapsed.value, direction }),
+            )
+
+        const M = 60 * 1000
+        const S = 1000
+        const START = new Date(2026, 0, 1, 0, 0, 0).getTime()
+        const prevRecord = () => timerState.value.periods[0].state.elapsed
+
+        // Anchored at 0:00; first period 60m recorded; current period at 30m
+        // plus 24s of wall clock — anchored elapsed is clock-derived, so it
+        // never sits on a whole minute.
+        const setupWithClockSeconds = () => {
+            vi.useFakeTimers()
+            vi.setSystemTime(START + 90 * M + 24 * S)
+            timerState.value = {
+                ...timerState.value,
+                periods: [
+                    {
+                        config: { type: 'work', note: '', userIntendedDuration: 60 * M },
+                        state: { duration: 60 * M, elapsed: 60 * M, remaining: 0 },
+                    },
+                    {
+                        config: { type: 'fun', note: '', userIntendedDuration: 60 * M },
+                        state: {
+                            duration: 60 * M,
+                            elapsed: 30 * M + 24 * S,
+                            remaining: 30 * M - 24 * S,
+                        },
+                    },
+                ],
+            }
+            Schedule.setSnapshot({
+                phase: 'running',
+                currentPeriodIndex: 1,
+                timestampStarted: START + 60 * M,
+                timestampPaused: null,
+                timestampAnchor: START,
+            })
+        }
+
+        it('adjustableElapsed follows the current period while anchored, the total otherwise', () => {
+            setupWithClockSeconds()
+
+            // anchored: the current period's elapsed, floored to a whole minute
+            expect(adjustableElapsed.value).toBe(30 * M)
+
+            unpinTimer()
+
+            // unanchored: shifting the start moves the session total 1:1
+            expect(adjustableElapsed.value).toBe(timerDurationElapsed.value)
+        })
+
+        it('back then forward returns the previous period to where it started', () => {
+            setupWithClockSeconds()
+            const before = prevRecord()
+
+            pressArrow('down')
+            pressArrow('up')
+
+            expect(prevRecord()).toBe(before)
+        })
+
+        it('every press moves whole minutes — the previous record never goes fractional', () => {
+            setupWithClockSeconds()
+
+            for (let i = 0; i < 10; i++) {
+                pressArrow('down')
+                expect(prevRecord() % M).toBe(0)
+            }
+        })
+
+        it('pressing back repeatedly keeps stepping back, it does not re-trim the same seconds', () => {
+            setupWithClockSeconds()
+            const steps = []
+
+            for (let i = 0; i < 3; i++) {
+                const before = prevRecord()
+                pressArrow('down')
+                steps.push(prevRecord() - before)
+            }
+
+            expect(steps).toEqual([3 * M, 3 * M, 3 * M])
+            // the current period keeps its clock seconds, on the 3-minute grid
+            expect(currentPeriod.value.state.elapsed % (3 * M)).toBe(24 * S)
+        })
+
+        it('ten 1-minute steps back move exactly 10 minutes to the previous period', () => {
+            vi.useFakeTimers()
+            vi.setSystemTime(START + 90 * M)
+            timerState.value = {
+                ...timerState.value,
+                periods: [
+                    {
+                        config: { type: 'work', note: '', userIntendedDuration: 60 * M },
+                        state: { duration: 60 * M, elapsed: 60 * M, remaining: 0 },
+                    },
+                    {
+                        config: { type: 'fun', note: '', userIntendedDuration: 60 * M },
+                        state: { duration: 60 * M, elapsed: 30 * M, remaining: 30 * M },
+                    },
+                ],
+            }
+            Schedule.setSnapshot({
+                phase: 'running',
+                currentPeriodIndex: 1,
+                timestampStarted: START + 60 * M,
+                timestampPaused: null,
+                timestampAnchor: START,
+            })
+
+            for (let i = 0; i < 10; i++) adjustElapsed(-1 * M)
+
+            expect(Schedule.timestampAnchor.value).toBe(START) // start still 0:00
+            expect(timerDurationElapsed.value).toBe(90 * M) // elapsed still 1:30
+            expect(prevRecord()).toBe(70 * M) // 1:10 in the previous period
+            expect(currentPeriod.value.state.elapsed).toBe(20 * M) // 20m in the current
         })
     })
 

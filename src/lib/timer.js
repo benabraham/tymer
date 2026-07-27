@@ -144,6 +144,24 @@ export const timerDurationElapsed = computed(() =>
 export const timerDurationRemaining = computed(() =>
     timerState.value.periods.reduce((sum, period) => sum + period.state.remaining, 0),
 )
+// The elapsed value an `adjustElapsed` delta must be measured against — whatever
+// that adjustment actually moves.
+// - Unanchored: shifting timestampStarted moves the session total 1:1, so the
+//   total is the reference.
+// - Anchored: the total is nailed to the wall clock and CANNOT change; only the
+//   current period's elapsed moves (time is transferred with the previous
+//   period). Measuring against the total there gives a delta that never
+//   converges — the reference is unaffected by the adjustment, so every press
+//   repeats the same sub-minute step and bleeds fractional time out of the
+//   previous period's record. Anchored elapsed is clock-derived and so never
+//   sits on a whole minute; flooring keeps deltas (and therefore the previous
+//   period's record) on whole minutes.
+export const adjustableElapsed = computed(() => {
+    if (!Schedule.isAnchored.value) return timerDurationElapsed.value
+    const elapsed = currentPeriod.value?.state.elapsed ?? 0
+    return Math.floor(elapsed / (60 * 1000)) * 60 * 1000
+})
+
 export const shouldGoToNextPeriod = computed(
     () =>
         currentPeriod.value

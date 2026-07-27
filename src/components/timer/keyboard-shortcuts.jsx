@@ -8,6 +8,7 @@ import {
     adjustElapsed,
     adjustDuration,
     timerDurationElapsed,
+    adjustableElapsed,
     currentPeriod,
     changeType,
     setCurrentPeriodType,
@@ -104,7 +105,7 @@ export function KeyboardShortcuts() {
             ) {
                 event.preventDefault()
                 const delta = getNextMultipleOf3Delta({
-                    currentMs: timerDurationElapsed.value,
+                    currentMs: adjustableElapsed.value,
                     direction: 'up',
                 })
                 if (canAdjustElapsed(delta)) {
@@ -119,7 +120,7 @@ export function KeyboardShortcuts() {
             ) {
                 event.preventDefault()
                 const delta = getNextMultipleOf3Delta({
-                    currentMs: timerDurationElapsed.value,
+                    currentMs: adjustableElapsed.value,
                     direction: 'down',
                 })
                 if (canAdjustElapsed(delta)) {
@@ -212,8 +213,11 @@ export function KeyboardShortcuts() {
             // End - jump to end of current period
             else if (event.key === 'End') {
                 event.preventDefault()
+                // relative to the CURRENT period's elapsed — that is what
+                // adjustElapsed moves, in both modes. The session total only
+                // coincides with it on the first period.
                 const currentDuration = currentPeriod.value?.state.duration || 0
-                const delta = currentDuration - timerDurationElapsed.value
+                const delta = currentDuration - (currentPeriod.value?.state.elapsed || 0)
                 if (canAdjustElapsed(delta)) {
                     adjustElapsed(delta)
                     handled = true
