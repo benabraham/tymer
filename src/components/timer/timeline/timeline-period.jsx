@@ -17,7 +17,7 @@ import { Schedule } from '../../../lib/schedule'
 import { Period } from '../../../lib/period'
 import { clocksVisible } from '../../../lib/clocks'
 import { TimelineCurrentTime } from './timeline-current-time'
-import { SoundWrapper } from '../../common/sound-wrapper'
+import { ActionButton } from '../../common/action-button'
 import { playSound } from '../../../lib/sounds'
 
 export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) => {
@@ -289,7 +289,7 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                     <div class="timeline__edit-row">
                         <div class="button-group button-group--connected">
                             {availableTypes.map(type => (
-                                <SoundWrapper
+                                <ActionButton
                                     key={type}
                                     type="button"
                                     tabIndex={3}
@@ -297,7 +297,7 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                                     onClick={() => handleTypeChange(type)}
                                 >
                                     {type}
-                                </SoundWrapper>
+                                </ActionButton>
                             ))}
                         </div>
                         <input
@@ -310,14 +310,14 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                             class="timeline__edit-note"
                         />
                         <div class="button-group">
-                            <SoundWrapper
+                            <ActionButton
                                 onClick={handleDelete}
                                 tabIndex={6}
                                 title="Delete period"
                                 disabled={isActive && timerState.value.periods.length === 1}
                             >
                                 <FontAwesomeIcon icon={faCircleMinus} className="icon--danger" />
-                            </SoundWrapper>
+                            </ActionButton>
                         </div>
                     </div>
                 </div>
@@ -326,7 +326,7 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
     }
 
     return (
-        <SoundWrapper
+        <ActionButton
             as="div"
             class={`
                     timeline__period
@@ -382,14 +382,14 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                 <div class="timeline__userintended"></div>
             )}
 
-            <SoundWrapper
+            <ActionButton
                 class="button timeline__add-period"
                 onClick={handleAddPeriod}
                 title="Add period after this one"
                 tabIndex={-1}
             >
                 <FontAwesomeIcon icon={faPlus} className="icon--success" />
-            </SoundWrapper>
-        </SoundWrapper>
+            </ActionButton>
+        </ActionButton>
     )
 }

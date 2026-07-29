@@ -1,4 +1,9 @@
-import { playSound } from '../../lib/sounds'
+// A button that remembers itself. Clicking blurs the button (so it does not keep
+// a focus ring after acting) but records it, and a global Tab handler restores
+// focus to it — pressing Tab after a click resumes where you were.
+//
+// It plays no sound: button sounds were switched off deliberately in a76e832.
+// The remaining click sounds live in src/lib/timer.js (start/resume/pause/pin).
 
 // Track last clicked button globally
 let lastClickedButton = null
@@ -14,21 +19,10 @@ if (typeof window !== 'undefined') {
     })
 }
 
-export const SoundWrapper = ({
-    onClick,
-    onChange,
-    onBlur,
-    children,
-    as = 'button',
-    playOnClick = false,
-    playOnChange = false,
-    playOnBlur = false,
-    ...props
-}) => {
+export const ActionButton = ({ onClick, children, as = 'button', ...props }) => {
     const Component = as
 
-    const handleClick = async e => {
-        if (playOnClick) await playSound('button')
+    const handleClick = e => {
         if (onClick) onClick(e)
         if (as === 'button') {
             lastClickedButton = e.currentTarget
@@ -36,18 +30,8 @@ export const SoundWrapper = ({
         }
     }
 
-    const handleChange = async e => {
-        if (playOnChange) await playSound('button')
-        if (onChange) onChange(e)
-    }
-
-    const handleBlur = async e => {
-        if (playOnBlur) await playSound('button')
-        if (onBlur) onBlur(e)
-    }
-
     return (
-        <Component {...props} onClick={handleClick} onChange={handleChange} onBlur={handleBlur}>
+        <Component {...props} onClick={handleClick}>
             {children}
         </Component>
     )

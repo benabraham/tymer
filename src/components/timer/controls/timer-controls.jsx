@@ -31,7 +31,7 @@ import {
 import { Schedule } from '../../../lib/schedule'
 import { unlockAudio } from '../../../lib/sounds'
 import { activeConfig, configPanelOpen } from '../../../lib/period-configs'
-import { SoundWrapper } from '../../common/sound-wrapper'
+import { ActionButton } from '../../common/action-button'
 import { ArmedIndicator } from './armed-indicator'
 
 export const TimerControls = () => {
@@ -53,7 +53,7 @@ export const TimerControls = () => {
     return (
         <>
             <section class="controls">
-                <SoundWrapper
+                <ActionButton
                     onClick={toggleDurationsPanel}
                     class={`config-toggle ${configPanelOpen.value ? 'config-toggle--open' : ''}`}
                 >
@@ -61,17 +61,17 @@ export const TimerControls = () => {
                     {canConfigureDurations.value && !editingCurrentDurations.value
                         ? 'Durations config'
                         : 'Edit current durations'}
-                </SoundWrapper>
+                </ActionButton>
                 {isArmed && <ArmedIndicator />}
-                <SoundWrapper
+                <ActionButton
                     onClick={resetTimer}
                     disabled={!canReset.value}
                     class={timerHasFinished.value ? 'highlighted' : ''}
                 >
                     <FontAwesomeIcon icon={faArrowRotateLeft} className="icon--danger" />{' '}
                     {activeConfig.value.readonly ? 'Reset' : `Reset to ${activeConfig.value.name}`}
-                </SoundWrapper>
-                <SoundWrapper
+                </ActionButton>
+                <ActionButton
                     onClick={handleStartPause}
                     disabled={!canStartPause.value || configPanelOpen.value}
                 >
@@ -85,16 +85,16 @@ export const TimerControls = () => {
                             {isArmedFuture ? 'Start now' : 'Start'}
                         </>
                     )}
-                </SoundWrapper>
+                </ActionButton>
                 <div className="button-group">
-                    <SoundWrapper
+                    <ActionButton
                         onClick={moveToPreviousPeriod}
                         disabled={!canMoveToPreviousPeriod.value}
                     >
                         <FontAwesomeIcon icon={faBackwardStep} className="icon--navigate" />
-                    </SoundWrapper>
+                    </ActionButton>
 
-                    <SoundWrapper
+                    <ActionButton
                         onClick={moveToNextPeriod}
                         disabled={!canMoveToNextPeriod.value}
                         class={
@@ -104,9 +104,9 @@ export const TimerControls = () => {
                         }
                     >
                         <FontAwesomeIcon icon={faForwardStep} className="icon--navigate" />
-                    </SoundWrapper>
+                    </ActionButton>
                 </div>
-                <SoundWrapper
+                <ActionButton
                     onClick={handleTimerCompletion}
                     disabled={!canFinishTimer.value}
                     class={
@@ -114,7 +114,7 @@ export const TimerControls = () => {
                     }
                 >
                     <FontAwesomeIcon icon={faFlagCheckered} className="icon--danger" /> Finish
-                </SoundWrapper>
+                </ActionButton>
             </section>
         </>
     )
