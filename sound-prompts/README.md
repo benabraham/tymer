@@ -58,32 +58,35 @@ later without any code change.
 
 ## Regenerating
 
-The generator lives in a separate repo, `~/code/_private/generate-sounds-at-google-ai`
-(Google Gemini TTS, needs `GEMINI_API_KEY` in its `.env`).
+The generator lives in [`build-tools/tts/`](../build-tools/tts/) — see its README
+for setup and quota details. A bare set name resolves against this directory and
+output defaults to `src/assets/sounds/`.
 
 ```bash
-cd ~/code/_private/generate-sounds-at-google-ai
+cd build-tools/tts
 
-# preview every composed prompt, no API calls, no key needed
-uv run generate_audio.py ~/code/_private/tymer2/sound-prompts/tymer-gacrux.txt --dry-run
+# preview every composed prompt — no API calls, no key needed
+uv run generate_audio.py tymer-gacrux --dry-run
 
-# generate the whole set into Tymer's source assets
-uv run generate_audio.py ~/code/_private/tymer2/sound-prompts/tymer-gacrux.txt \
-    ~/code/_private/tymer2/src/assets/sounds
+# generate the whole set
+uv run generate_audio.py tymer-gacrux --overwrite
 
 # regenerate just one branch
-uv run generate_audio.py ~/code/_private/tymer2/sound-prompts/tymer-gacrux.txt \
-    ~/code/_private/tymer2/src/assets/sounds --only overtime/
+uv run generate_audio.py tymer-gacrux --overwrite --only overtime/
 ```
 
 Then normalize and convert to the `.webm` files the app actually loads:
 
 ```bash
-cd ~/code/_private/tymer2 && ./normalize_audio.sh
+cd ../.. && ./normalize_audio.sh
 ```
 
-Free-tier quota is limited (roughly 15 requests/day, 3/min); `--limit N` caps a
-run and `--delay` controls the spacing.
+That also regenerates `src/lib/sound-manifest.js`, so new takes become playable
+without a further step.
+
+Free-tier quota is roughly 15 requests/day per account against 36 clips per set,
+so add keys from other Google accounts to generate more in one day — the tool
+switches keys automatically when one runs dry.
 
 ## The escalation ladder
 

@@ -28,3 +28,11 @@ CLAUDE.TODO.md
 
 # Nix/direnv
 .direnv/
+
+# Python TTS generator (build-tools/tts)
+build-tools/tts/.venv/
+build-tools/tts/.env
+build-tools/tts/__pycache__/
+build-tools/tts/**/__pycache__/
+build-tools/tts/.pytest_cache/
+build-tools/tts/.staging/

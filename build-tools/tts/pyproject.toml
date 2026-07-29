@@ -1,0 +1,21 @@
+[project]
+name = "tymer-tts"
+version = "0.1.0"
+description = "Generates Tymer's spoken sounds from the prompt sets in sound-prompts/"
+requires-python = ">=3.9"
+dependencies = [
+    "google-genai",
+    "python-dotenv",
+    "rich",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+]
+
+[tool.pytest.ini_options]
+# generate_audio.py sits next to this file rather than in a package — put it on
+# the path so tests/ can import it.
+pythonpath = ["."]
+testpaths = ["tests"]

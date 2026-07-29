@@ -39,11 +39,28 @@ and when you return to the tab. It reloads as soon as that is safe: right away w
 idle or finished, otherwise the build avatar in the top-right starts pulsing and reloads on click
 (or by itself once the session ends). Its tooltip shows which build is running.
 
+## Sounds
+
+Tymer speaks: it announces elapsed time, time remaining, and — with rising
+impatience — how far past its period you are. Each event is a directory of
+interchangeable takes and one is picked at random per play. The words are
+generated rather than recorded, from prompt sets kept in the repo.
+
+- [`sound-prompts/README.md`](sound-prompts/README.md) — how a set is defined,
+  and the overtime escalation ladder
+- [`build-tools/tts/README.md`](build-tools/tts/README.md) — generating and
+  promoting a set
+
 ## Tests
 
 ```bash
-pnpm test           # Run tests with Vitest
+pnpm test               # Run tests with Vitest
 pnpm run test:coverage  # Run tests with coverage report
 ```
 
-There are a few tests but they are just a generated skeleton and not really working yet.
+## Formatting
+
+```bash
+pnpm run format         # Write
+pnpm run format:check   # Check only
+```
