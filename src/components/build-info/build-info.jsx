@@ -9,22 +9,28 @@ export function BuildInfo() {
     const buildLabel = `build ${buildCommit} · ${buildTime}`
 
     // A new build is precached but the session is busy — offer the reload
-    // instead of yanking the page out from under a running timer.
-    if (updateReady.value) {
-        return (
-            <button
-                class="build-info build-info--update"
-                title={`New version ready — click to reload (running ${buildLabel})`}
-                onClick={applyUpdate}
-            >
-                {buildAvatar}
-            </button>
-        )
-    }
+    // instead of yanking the page out from under a running timer. The avatar
+    // stays the same element with the same geometry (only its opacity pulses),
+    // so nothing on screen moves when an update lands.
+    const pending = updateReady.value
 
     return (
-        <div class="build-info" title={buildLabel}>
-            {buildAvatar}
+        <div class="build-info">
+            <div
+                class={`build-info__avatar${pending ? ' build-info__avatar--pending' : ''}`}
+                title={buildLabel}
+            >
+                {buildAvatar}
+            </div>
+
+            {pending && (
+                <div class="build-info__update" role="status">
+                    <span class="build-info__update-text">Update available</span>
+                    <button class="build-info__reload" onClick={applyUpdate}>
+                        Reload now
+                    </button>
+                </div>
+            )}
         </div>
     )
 }

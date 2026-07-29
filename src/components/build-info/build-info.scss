@@ -2,41 +2,83 @@
     position: absolute;
     top: 0.5rem;
     right: 0.5rem;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.4rem;
+    pointer-events: auto;
+}
+
+.build-info__avatar {
     color: var(--color-text-muted);
     font-size: 1.5rem;
     font-weight: bold;
+    line-height: 1;
     user-select: none;
-    pointer-events: auto;
     cursor: default;
-    z-index: 1000;
-
 }
 
-// Same avatar, now a reload button — pulses so a pending update is noticeable
-// without adding chrome to the timer.
-.build-info--update {
-    padding: 0;
-    border: none;
-    background: none;
-    line-height: 1;
-    cursor: pointer;
+// Pulses opacity only — never size or position, so a pending update cannot
+// nudge anything around it.
+.build-info__avatar--pending {
     animation: build-info-pulse 2s ease-in-out infinite;
 }
 
 @keyframes build-info-pulse {
     0%,
     100% {
-        opacity: 0.45;
-        transform: scale(1);
+        opacity: 0.35;
     }
     50% {
         opacity: 1;
-        transform: scale(1.15);
+    }
+}
+
+.build-info__update {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.35rem 0.35rem 0.6rem;
+    border-radius: 0.5rem;
+    background-color: var(--color-bg-button);
+    color: var(--color-text-primary);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 25%);
+}
+
+.build-info__update-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.build-info__reload {
+    min-width: 0;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+    background-color: var(--color-bg-button-focus);
+    color: var(--color-text-button-focus);
+}
+
+.build-info__reload:not(:disabled):hover {
+    filter: brightness(1.1);
+    background-color: var(--color-bg-button-focus);
+    color: var(--color-text-button-focus);
+}
+
+// Narrow screens: the top-right corner belongs to the controls row, so the
+// notice drops to a corner toast instead of covering the buttons.
+@media (max-width: 800px) {
+    .build-info__update {
+        position: fixed;
+        right: 0.75rem;
+        bottom: 0.75rem;
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .build-info--update {
+    .build-info__avatar--pending {
         animation: none;
         opacity: 1;
     }
