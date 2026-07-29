@@ -123,9 +123,37 @@ A session can be pinned to a wall-clock time (`Schedule.pin`/`unpin`/`isAnchored
 
 ### Sound System
 
-Audio files in `public/` directory:
+Sources are WAV files in `src/assets/sounds/`; `./normalize_audio.sh` converts them to
+`public/sounds/**/*.webm` (Opus, −18 LUFS) — the app only ever loads the `.webm` copies, via
+absolute `/tymer/sounds/...` URLs.
 
-- `button.wav` - Button interactions
-- `period-end.wav` - Period completion
-- `timer-end.wav` - Timer completion
-- `tick.wav` - Periodic ticks during work periods
+**Events, takes, and the manifest.** A sound event is a directory of interchangeable takes, and one
+is chosen at random per play. A browser cannot list a directory, so `build-tools/generate-sound-manifest.js`
+scans `public/sounds/` and writes `src/lib/sound-manifest.js` (`SOUND_VARIANTS`, keyed
+`elapsed_6`, `overtime_break_12`, `timesup_work`, `notification_1`, `button`, `timerFinished`).
+`normalize_audio.sh` regenerates it at the end, so it cannot go stale; `pnpm run sounds:manifest`
+rebuilds it alone. **Both layouts resolve to the same key** — flat `elapsed/006.webm` and
+`elapsed/006/<take>.webm` merge into `elapsed_6` — so takes can be added without moving what is
+already there.
+
+`buildSoundConfig` in `src/lib/sounds.js` holds an ARRAY of `Howl`s per key and `playByKey` picks
+via `pickVariant` (`src/lib/pick-variant.js`), which never returns the previous index for that key —
+so a repeated event does not replay the same take twice in a row. Last-index bookkeeping is a
+module-level `Map`, deliberately not a signal (it is never rendered). A key absent from the manifest
+falls back to the previously hardcoded single path, so a missing manifest cannot break playback.
+
+`AVAILABLE_SOUNDS` in `src/lib/sound-discovery.js` defines which minute marks exist per bank
+(`elapsed`, `remaining`, `overtime`, `overtimeBreak`) and is what `SoundScheduler` schedules from.
+The overtime ladder ends at 48 — the old 60-minute buzz was retired.
+
+**Spoken text is generated, not recorded.** The words live in `sound-prompts/*.txt`, one file per
+set (one voice, one character, one block per event), rendered by the vendored Gemini TTS tool in
+`build-tools/tts/`. See `sound-prompts/README.md` for the set format and `build-tools/tts/README.md`
+for the generate → promote workflow. Promoting a second set merges it in as extra takes rather than
+overwriting.
+
+Not speech: `notifications/*.ogg` (63 chimes, played before period announcements), `button.webm`,
+`timer-end.webm`.
+
+PWA precaching uses recursive globs (`sounds/**/*.webm`, `sounds/**/*.ogg`) in `vite.config.js` —
+single-`*` globs silently missed `overtime/break/` and every notification.
