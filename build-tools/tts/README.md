@@ -95,27 +95,44 @@ out the run stops there and prints the `--only` path to resume from.
 | 1 | ~15 | 3 days |
 | 3 | ~45 | one ~12-minute run |
 
-## Stalled requests
+## When it isn't the quota
 
-A rate limit is not the only way a request can fail to come back. The audio
-arrives as a stream of small chunks, and that stream can simply stop — no error,
-no close, nothing. `google-genai` builds its HTTP client with **no timeout at
-all** unless told otherwise, so an unconfigured client waits on a dead socket
-forever; one such stall burned 31 minutes of a run that was averaging 25s a clip.
+A rate limit is not the only way a request fails to come back, and the other ways
+share a property: they say nothing about the key. They raise `Transient`, which
+costs **no strike** and retires nothing, and the block is retried on the next key
+up to `MAX_TRANSIENT_ATTEMPTS` (3). After that the block is announced, skipped,
+and the run moves on — a plain re-run picks it up like any other missing clip.
 
-Two limits bound it:
+`google-genai` defaults leave two holes that both had to be closed explicitly.
 
-- **`CHUNK_TIMEOUT_SECONDS` (90)** — the gap between chunks, passed as
-  `HttpOptions.timeout` and applied per socket operation. It is not a cap on how
-  long a clip may take, so it does not cut long-but-healthy generations short.
+**No timeout.** The client is built with `timeout=None` unless `HttpOptions` says
+otherwise, and that `None` reaches the streaming `send()`. Audio arrives as a
+stream of small chunks, and that stream can simply stop — no error, no close,
+nothing — so an unconfigured client waits on a dead socket forever. One such
+stall burned 31 minutes of a run that was averaging 25s a clip.
+
+- **`CHUNK_TIMEOUT_SECONDS` (90)** — the gap between chunks, applied per socket
+  operation. Not a cap on how long a clip may take, so it never cuts a
+  long-but-healthy generation short.
 - **`STREAM_DEADLINE_SECONDS` (180)** — the whole response, checked as chunks
   arrive. A stream that trickles indefinitely never trips the per-chunk limit.
 
-Either one raises `Stalled`, and the block is retried on the next key up to
-`MAX_STALL_ATTEMPTS` (3). Unlike a 429 this costs the key **no strike** — a dead
-socket says nothing about quota. After three stalls the block is announced,
-skipped, and the run moves on; a plain re-run picks it up like any other missing
-clip.
+**No retries.** `HttpOptions.retry_options` defaults to `None`, which the SDK
+resolves to `stop_after_attempt(1)` — the retry machinery is present but disabled.
+A single `503 UNAVAILABLE` ("this model is currently experiencing high demand")
+was therefore a first-and-only try, and it crashed a run at block 4 of 21.
+`SERVER_RETRY_ATTEMPTS` (3) turns it on with exponential backoff so a short
+capacity blip is absorbed in place.
+
+`SERVER_RETRY_STATUS_CODES` is `408, 500, 502, 503, 504`. The SDK's own default
+list also includes **429, which is deliberately dropped** — a rate limit is the
+KeyPool's business, it spends from the same per-minute budget as a real request,
+and retrying it inside the client is exactly the storm that the
+one-request-per-minute spacing exists to prevent.
+
+A 5xx that outlives those retries still reaches the loop as a `Transient`, this
+time carrying `SERVER_BUSY_BACKOFF_SECONDS` (30). Another key does not help
+there — it is the same overloaded model — so it waits before asking again.
 
 ## Tests
 

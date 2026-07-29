@@ -25,7 +25,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-from google.genai.errors import ClientError
+from google.genai.errors import ClientError, ServerError
 from rich.console import Console
 from rich.table import Table
 
@@ -51,9 +51,30 @@ CHUNK_TIMEOUT_SECONDS = 90
 # whole response too. Clips are a few seconds of speech; a minute is a long tail.
 STREAM_DEADLINE_SECONDS = 180
 
-# Stalls are transient. Hand the block to the next key and try again, but not
-# indefinitely — a block that will not stream should not eat the whole run.
-MAX_STALL_ATTEMPTS = 3
+# The SDK ships a retry policy but leaves it OFF: HttpOptions.retry_options
+# defaults to None, which retry_args() turns into stop_after_attempt(1). The 503
+# "model experiencing high demand" that killed a run was a first-and-only try.
+# Switching it on absorbs a short capacity blip in place, before the block ever
+# reaches the key rotation below.
+SERVER_RETRY_ATTEMPTS = 3
+
+# The SDK's own default list includes 429 — deliberately dropped here. A rate
+# limit is the KeyPool's business: it spends from the same per-minute budget as a
+# real request, so retrying in place is precisely the storm that the
+# one-request-per-minute spacing exists to prevent. It must stay an exception
+# that reaches the handler, not something absorbed inside the client.
+SERVER_RETRY_STATUS_CODES = [408, 500, 502, 503, 504]
+
+# Retries above cover getting the response; chunk iteration happens after
+# _request returns, so a mid-stream stall lands here instead. Hand the block to
+# the next key and try again, but not indefinitely — one bad block should not eat
+# the run.
+MAX_TRANSIENT_ATTEMPTS = 3
+
+# A 503 means the model is out of capacity, and the SDK's exponential backoff has
+# already come and gone by the time we see one. Another key does not help — it is
+# the same overloaded model — so wait before asking again.
+SERVER_BUSY_BACKOFF_SECONDS = 30
 
 # The key lives next to this script, not wherever it happens to be invoked from.
 load_dotenv(os.path.join(TOOL_DIR, '.env'))
@@ -145,8 +166,19 @@ class RateLimited(Exception):
         self.daily = daily
 
 
-class Stalled(Exception):
-    """The response stopped arriving. Not the key's fault, so it costs no strike."""
+class Transient(Exception):
+    """The request failed for a reason that says nothing about this key — a
+    stalled stream, a dropped connection, an overloaded model.
+
+    Distinct from RateLimited, which is a fact about the key's quota: a Transient
+    costs no strike and never retires anything. `wait_seconds` is how long to
+    pause before trying again, since a dead socket wants another key immediately
+    while an out-of-capacity model wants time to recover.
+    """
+
+    def __init__(self, reason, wait_seconds=0):
+        super().__init__(reason)
+        self.wait_seconds = wait_seconds
 
 
 class KeyPool:
@@ -576,7 +608,7 @@ def generate_audio(client, block, base_output_dir='sounds', retry_count=0, overw
             config=generate_content_config,
         ):
             if time.monotonic() > deadline:
-                raise Stalled(f'stream still open after {STREAM_DEADLINE_SECONDS}s')
+                raise Transient(f'stream still open after {STREAM_DEADLINE_SECONDS}s')
             if chunk.parts is None:
                 continue
             if chunk.parts[0].inline_data and chunk.parts[0].inline_data.data:
@@ -599,7 +631,14 @@ def generate_audio(client, block, base_output_dir='sounds', retry_count=0, overw
         file_name = resolve_output_filename(base_filename, file_extension, full_folder, overwrite)
         save_binary_file(file_name, data_buffer)
     except httpx.TimeoutException as e:
-        raise Stalled(f'no data for {CHUNK_TIMEOUT_SECONDS}s ({type(e).__name__})') from e
+        raise Transient(f'no data for {CHUNK_TIMEOUT_SECONDS}s ({type(e).__name__})') from e
+    except httpx.TransportError as e:
+        # Connection reset, protocol error, DNS — the request never completed.
+        raise Transient(f'connection failed ({type(e).__name__})') from e
+    except ServerError as e:
+        # 5xx that outlived the SDK's retries. Nothing to do with this key, and
+        # crashing here would throw away every block still queued behind it.
+        raise Transient(f'server error {e.code}', wait_seconds=SERVER_BUSY_BACKOFF_SECONDS) from e
     except ClientError as e:
         if e.code == 429:  # Rate limit error
             error_message = str(e)
@@ -869,15 +908,15 @@ if __name__ == '__main__':
             print(f'\nALL {len(api_keys)} KEY(S) HAVE REACHED THEIR QUOTA.')
             print('Free-tier quota resets at midnight Pacific Time.')
         print(f'\nGenerated {done} of {len(selected)} block(s).')
-        if stalled_blocks:
-            print(f'{len(stalled_blocks)} block(s) skipped after repeated stalls — re-run to pick them up:')
-            for path in stalled_blocks:
+        if skipped_blocks:
+            print(f'{len(skipped_blocks)} block(s) skipped after repeated failures — re-run to pick them up:')
+            for path in skipped_blocks:
                 print(f'  {path}')
         if stopped_at:
             print(f'Resume later with:  --only {stopped_at}')
 
     done = 0
-    stalled_blocks = []
+    skipped_blocks = []
     current = None
     try:
         for i, block in enumerate(selected, 1):
@@ -886,7 +925,7 @@ if __name__ == '__main__':
             print(f'  Path: {block["path"]}')
 
             # Try the block on each live key in turn before giving up on it.
-            stalls = 0
+            failures = 0
             while True:
                 key = pool.next_key()
                 if key is None:
@@ -895,22 +934,30 @@ if __name__ == '__main__':
                 if key not in clients:
                     clients[key] = genai.Client(
                         api_key=key,
-                        # HttpOptions.timeout is milliseconds.
-                        http_options=types.HttpOptions(timeout=CHUNK_TIMEOUT_SECONDS * 1000),
+                        http_options=types.HttpOptions(
+                            timeout=CHUNK_TIMEOUT_SECONDS * 1000,  # milliseconds
+                            retry_options=types.HttpRetryOptions(
+                                attempts=SERVER_RETRY_ATTEMPTS,
+                                http_status_codes=SERVER_RETRY_STATUS_CODES,
+                            ),
+                        ),
                     )
 
                 try:
                     generate_audio(clients[key], block, base_output_dir, overwrite=args.overwrite)
                     done += 1
                     break
-                except Stalled as stalled:
-                    stalls += 1
-                    print(f'  {pool.label(key)} stalled: {stalled}')
-                    if stalls >= MAX_STALL_ATTEMPTS:
-                        print(f'  Giving up on {block["path"]} after {stalls} stalls — moving on.')
-                        stalled_blocks.append(block['path'])
+                except Transient as transient:
+                    failures += 1
+                    print(f'  {pool.label(key)}: {transient}')
+                    if failures >= MAX_TRANSIENT_ATTEMPTS:
+                        print(f'  Giving up on {block["path"]} after {failures} attempts — moving on.')
+                        skipped_blocks.append(block['path'])
                         break
-                    print(f'  Retrying on the next key ({stalls}/{MAX_STALL_ATTEMPTS})...')
+                    if transient.wait_seconds:
+                        print(f'  Waiting {transient.wait_seconds}s for it to recover...')
+                        time.sleep(transient.wait_seconds)
+                    print(f'  Retrying on the next key ({failures}/{MAX_TRANSIENT_ATTEMPTS})...')
                 except RateLimited as limited:
                     retired = pool.record_rate_limit(key, limited.daily)
                     if retired:
