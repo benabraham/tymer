@@ -10,6 +10,12 @@ means adding another file, not editing this one.
 | File | Voice | Covers |
 | --- | --- | --- |
 | `tymer-gacrux.txt` | Gacrux (mature, middle pitch) | all 36 speech events |
+| `tymer-gacrux-brisk.txt` | Gacrux | same 36, same words, delivered fast |
+| `tymer-kore-strict.txt` | Kore | same 36, reworded, harsher overtime ladder |
+
+All three land in the same event directories, so they merge as interchangeable
+takes. Each carries a distinct `@name` (`brisk`, `strict`) so filenames never
+collide.
 
 ## Format
 

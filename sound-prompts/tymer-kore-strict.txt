@@ -1,0 +1,227 @@
+# Tymer voice set — Kore, REWORDED with a harder overtime ladder
+#
+# A different voice from the two Gacrux sets: same events and same sentiment as
+# tymer-gacrux.txt, but every line is worded differently, at roughly the same
+# spoken length. Delivery sits at the measured set's tempo (the brisk set is the
+# fast one); what sets this one apart is the voice, the words, and an overtime
+# ladder that runs out of patience faster and ends harsher. All three sets
+# generate into the same event directories, so they end up as interchangeable
+# takes and Tymer picks between them at random.
+#
+# @name below labels every file in this set `strict-N.wav`, so it never
+# collides with the other sets' filenames.
+#
+# Regenerate: see sound-prompts/README.md
+
+@voice Kore
+@name strict
+@profile Tymer — the timekeeper
+@scene
+A quiet home workspace in the late afternoon. One person, deep in a focus
+session. The timekeeper is not in the room — it is a steady voice that only
+speaks when a moment has been reached, then stops.
+@style
+Empathetic. Genuinely on the listener's side — warm, understanding, never
+scolding. Plain-spoken rather than formal.
+@pace Measured. A natural beat between sentences, no dawdling.
+@accent Transatlantic.
+@context
+The timekeeper marks the passage of a work or break period out loud. It is
+trusted precisely because it does not nag — so when it does harden, that
+carries real weight.
+
+
+# ---------------------------------------------------------------------------
+# elapsed — neutral progress markers, quietly encouraging
+# ---------------------------------------------------------------------------
+
+[elapsed/006]
+@text [calm] That's six minutes behind you already.
+
+[elapsed/012]
+@text [calm] That's twelve minutes behind you now.
+
+[elapsed/024]
+@text [calm] That's twenty-four minutes behind you now.
+
+[elapsed/036]
+@text [calm] That's thirty-six minutes behind you now.
+
+[elapsed/048]
+@text [calm] That's forty-eight minutes behind you now.
+
+[elapsed/060]
+@style Warm, quietly pleased — a small milestone worth marking.
+@text [warm] That's a full hour behind you. [encouraging] Nicely done.
+
+[elapsed/072]
+@text [calm] That's an hour and twelve minutes behind you.
+
+[elapsed/084]
+@text [calm] That's an hour and twenty-four minutes behind you.
+
+[elapsed/096]
+@text [calm] That's an hour and thirty-six minutes behind you.
+
+[elapsed/108]
+@text [calm] That's an hour and forty-eight minutes behind you.
+
+
+# ---------------------------------------------------------------------------
+# remaining — gentle forward lean, "bring it home"
+# ---------------------------------------------------------------------------
+
+[remaining/024]
+@style Steady, lightly anticipatory.
+@text [measured] Twenty-four minutes to go. [gently] A good moment to start winding down.
+
+[remaining/012]
+@style Steady, a touch more focused.
+@text [measured] Twelve minutes to go. [encouraging] Home stretch.
+
+[remaining/006]
+@style Quiet, close, almost confidential.
+@pace Slightly slower — the end is in sight.
+@text [softly] Just six minutes left now.
+
+
+# ---------------------------------------------------------------------------
+# overtime (work) — the escalation ladder, one rung harsher than the measured
+# set. Patience is spent by 018 and never returns.
+# ---------------------------------------------------------------------------
+
+[overtime/006]
+@style Warm, light. A nudge offered, not an instruction.
+@pace Unhurried, easy.
+@text [gently] A quiet nudge — time to start closing this out.
+
+[overtime/012]
+@style Matter-of-fact, plainly expectant. The warmth has gone flat.
+@pace Steady, no softening.
+@text [matter-of-fact] Your time is gone. Find a stopping point.
+
+[overtime/018]
+@style Impatient. Done asking nicely — the politeness is now a formality.
+@pace Clipped.
+@text [firmly] This has run long enough. Wrap it up, please.
+
+[overtime/024]
+@style Openly annoyed. Not a request, and the listener should hear that.
+@pace Pressing, no room left to reply.
+@text [insistent] That's twenty-four minutes past your own deadline. [pointedly] Bring it to an end.
+
+[overtime/030]
+@style Stern and exasperated. Addressing someone who has ignored this twice.
+@pace Deliberate, weighted, each word landing.
+@text [sternly] You are well overdue now. [flat] Close it down. No more delay.
+
+[overtime/036]
+@style Hard and commanding. Out of patience entirely; nothing warm remains.
+@pace Fast, forceful, cutting in.
+@text [urgently] Enough. [commanding] Stop what you are doing and finish this.
+
+[overtime/042]
+@style Sharp, absolute, unmistakably the last time it will ask.
+@pace Clipped, staccato — each sentence a hammer strike.
+@text [sharply] This is the last warning. [commanding] Put it down. You are far past time.
+
+[overtime/048]
+@style
+Maximum severity — the top of the ladder. Furious patience gone entirely,
+pressing hard: this stops on this word. Driving, not cold; the intensity keeps
+climbing and never releases.
+@pace Driving and emphatic. Weight on every word, pushing forward, never dragging.
+@text [urgently] Your time ran out forty-eight minutes ago. [insistent] This stops now. No more excuses.
+
+
+# ---------------------------------------------------------------------------
+# overtime/break — same ladder, break-flavoured
+# ---------------------------------------------------------------------------
+
+[overtime/break/006]
+@style Warm and easy. Genuinely no pressure yet.
+@pace Unhurried, gentle.
+@text [gently] No rush at all — but whenever you're ready, this would be a good moment to head back.
+
+[overtime/break/012]
+@style Matter-of-fact, plainly expectant.
+@pace Steady.
+@text [matter-of-fact] The break has run its course. Time to ease yourself back in.
+
+[overtime/break/018]
+@style Impatient. Still polite, but the patience behind it is spent.
+@pace Clipped.
+@text [firmly] That is long enough for a break. Back to work now, please.
+
+[overtime/break/024]
+@style Openly annoyed. Not a suggestion any more.
+@pace Pressing.
+@text [insistent] Your break is twenty-four minutes past its end. [pointedly] Get back to it.
+
+[overtime/break/030]
+@style Stern and exasperated.
+@pace Deliberate, weighted.
+@text [sternly] This break has gone far past what you planned. [flat] Back to work. Now, not in a minute.
+
+[overtime/break/036]
+@style Hard and commanding. Nothing warm remains.
+@pace Fast, forceful.
+@text [urgently] Enough resting. [commanding] The break ended long ago. Back at it, immediately.
+
+[overtime/break/042]
+@style Sharp, absolute. Final-warning authority.
+@pace Clipped, staccato.
+@text [sharply] Last warning. [commanding] The break is finished. You have taken far more than you planned.
+
+[overtime/break/048]
+@style
+Maximum severity — the top of the ladder. Patience gone entirely, pressing
+hard. Driving rather than cold; intensity keeps climbing and never releases.
+@pace Driving and emphatic. Weight on every word, pushing forward, never dragging.
+@text [urgently] Your break ended forty-eight minutes ago. [insistent] That is over. Back to work, this second.
+
+
+# ---------------------------------------------------------------------------
+# timesup — period boundary reached, announcing what comes next
+# ---------------------------------------------------------------------------
+
+[timesup/work]
+@style Clear and rousing — a call to begin.
+@pace Crisp.
+@text [decisive] That's time. [rousing] Let's get to work.
+
+[timesup/break]
+@style Relieved, warm — permission to stop.
+@pace Relaxed.
+@text [decisive] That's time. [warmly] Go and take your break.
+
+[timesup/fun]
+@style Bright and genuinely pleased.
+@pace Light, quicker.
+@text [decisive] That's time. [brightly] Go and enjoy yourself.
+
+[timesup/finish]
+@style Settled and final. The day closing properly, with satisfaction.
+@pace Slow, unwinding.
+@text [contented] That's everything. [warmly] We're done for today.
+
+
+# ---------------------------------------------------------------------------
+# alternatives — second takes of the same three transitions, deliberately
+# delivered differently so the pair doesn't sound like a repeat
+# ---------------------------------------------------------------------------
+
+[alternatives/work]
+@style Quieter, steadier — a nudge rather than a call.
+@pace Measured.
+@text [matter-of-fact] Time's up. [encouraging] Back to work.
+
+[alternatives/break]
+@style Softer, almost a sigh of relief.
+@pace Unhurried.
+@text [gently] Time's up. [warmly] Go and rest.
+
+[alternatives/fun]
+@style Playful, conspiratorial.
+@pace Light.
+@text [playfully] Time's up. [delighted] Time to enjoy yourself.
