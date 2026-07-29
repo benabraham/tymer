@@ -95,6 +95,28 @@ out the run stops there and prints the `--only` path to resume from.
 | 1 | ~15 | 3 days |
 | 3 | ~45 | one ~12-minute run |
 
+## Stalled requests
+
+A rate limit is not the only way a request can fail to come back. The audio
+arrives as a stream of small chunks, and that stream can simply stop — no error,
+no close, nothing. `google-genai` builds its HTTP client with **no timeout at
+all** unless told otherwise, so an unconfigured client waits on a dead socket
+forever; one such stall burned 31 minutes of a run that was averaging 25s a clip.
+
+Two limits bound it:
+
+- **`CHUNK_TIMEOUT_SECONDS` (90)** — the gap between chunks, passed as
+  `HttpOptions.timeout` and applied per socket operation. It is not a cap on how
+  long a clip may take, so it does not cut long-but-healthy generations short.
+- **`STREAM_DEADLINE_SECONDS` (180)** — the whole response, checked as chunks
+  arrive. A stream that trickles indefinitely never trips the per-chunk limit.
+
+Either one raises `Stalled`, and the block is retried on the next key up to
+`MAX_STALL_ATTEMPTS` (3). Unlike a 429 this costs the key **no strike** — a dead
+socket says nothing about quota. After three stalls the block is announced,
+skipped, and the run moves on; a plain re-run picks it up like any other missing
+clip.
+
 ## Tests
 
 ```bash

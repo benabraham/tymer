@@ -13,6 +13,7 @@
 
 import argparse
 import filecmp
+import httpx
 import mimetypes
 import os
 import re
@@ -38,6 +39,21 @@ DEFAULT_OUTPUT_DIR = os.path.join(REPO_ROOT, 'src', 'assets', 'sounds')
 # few clips and they failed outright. A full minute keeps every request inside
 # a safe window even when the previous one had to retry twice.
 DEFAULT_DELAY_SECONDS = 60
+
+# google-genai builds its httpx client with `timeout=None` unless HttpOptions
+# says otherwise, and that None reaches the streaming send() — so a stalled SSE
+# response blocks the iterator forever. It cost a 31-minute hang on a run that
+# was otherwise averaging 25s per clip. httpx applies this per socket operation,
+# so it is the gap between audio chunks, not the length of the whole clip.
+CHUNK_TIMEOUT_SECONDS = 90
+
+# A stream that trickles forever never trips the per-chunk timeout, so bound the
+# whole response too. Clips are a few seconds of speech; a minute is a long tail.
+STREAM_DEADLINE_SECONDS = 180
+
+# Stalls are transient. Hand the block to the next key and try again, but not
+# indefinitely — a block that will not stream should not eat the whole run.
+MAX_STALL_ATTEMPTS = 3
 
 # The key lives next to this script, not wherever it happens to be invoked from.
 load_dotenv(os.path.join(TOOL_DIR, '.env'))
@@ -127,6 +143,10 @@ class RateLimited(Exception):
         super().__init__(f'rate limited (retry in {retry_seconds:.0f}s, daily={daily})')
         self.retry_seconds = retry_seconds
         self.daily = daily
+
+
+class Stalled(Exception):
+    """The response stopped arriving. Not the key's fault, so it costs no strike."""
 
 
 class KeyPool:
@@ -548,12 +568,15 @@ def generate_audio(client, block, base_output_dir='sounds', retry_count=0, overw
         # so collect them all and write a single file once the stream ends.
         audio_chunks = []
         audio_mime_type = None
+        deadline = time.monotonic() + STREAM_DEADLINE_SECONDS
 
         for chunk in client.models.generate_content_stream(
             model=model,
             contents=contents,
             config=generate_content_config,
         ):
+            if time.monotonic() > deadline:
+                raise Stalled(f'stream still open after {STREAM_DEADLINE_SECONDS}s')
             if chunk.parts is None:
                 continue
             if chunk.parts[0].inline_data and chunk.parts[0].inline_data.data:
@@ -575,6 +598,8 @@ def generate_audio(client, block, base_output_dir='sounds', retry_count=0, overw
 
         file_name = resolve_output_filename(base_filename, file_extension, full_folder, overwrite)
         save_binary_file(file_name, data_buffer)
+    except httpx.TimeoutException as e:
+        raise Stalled(f'no data for {CHUNK_TIMEOUT_SECONDS}s ({type(e).__name__})') from e
     except ClientError as e:
         if e.code == 429:  # Rate limit error
             error_message = str(e)
@@ -844,28 +869,48 @@ if __name__ == '__main__':
             print(f'\nALL {len(api_keys)} KEY(S) HAVE REACHED THEIR QUOTA.')
             print('Free-tier quota resets at midnight Pacific Time.')
         print(f'\nGenerated {done} of {len(selected)} block(s).')
+        if stalled_blocks:
+            print(f'{len(stalled_blocks)} block(s) skipped after repeated stalls — re-run to pick them up:')
+            for path in stalled_blocks:
+                print(f'  {path}')
         if stopped_at:
             print(f'Resume later with:  --only {stopped_at}')
 
     done = 0
+    stalled_blocks = []
+    current = None
     try:
         for i, block in enumerate(selected, 1):
+            current = block
             print(f'[{i}/{len(selected)}] Processing: {block["text"][:50]}...')
             print(f'  Path: {block["path"]}')
 
             # Try the block on each live key in turn before giving up on it.
+            stalls = 0
             while True:
                 key = pool.next_key()
                 if key is None:
                     report(done, stopped_at=block['path'])
                     sys.exit(1)
                 if key not in clients:
-                    clients[key] = genai.Client(api_key=key)
+                    clients[key] = genai.Client(
+                        api_key=key,
+                        # HttpOptions.timeout is milliseconds.
+                        http_options=types.HttpOptions(timeout=CHUNK_TIMEOUT_SECONDS * 1000),
+                    )
 
                 try:
                     generate_audio(clients[key], block, base_output_dir, overwrite=args.overwrite)
                     done += 1
                     break
+                except Stalled as stalled:
+                    stalls += 1
+                    print(f'  {pool.label(key)} stalled: {stalled}')
+                    if stalls >= MAX_STALL_ATTEMPTS:
+                        print(f'  Giving up on {block["path"]} after {stalls} stalls — moving on.')
+                        stalled_blocks.append(block['path'])
+                        break
+                    print(f'  Retrying on the next key ({stalls}/{MAX_STALL_ATTEMPTS})...')
                 except RateLimited as limited:
                     retired = pool.record_rate_limit(key, limited.daily)
                     if retired:
@@ -899,5 +944,7 @@ if __name__ == '__main__':
         report(done)
     except KeyboardInterrupt:
         print('\n\nInterrupted by user.')
-        report(done, stopped_at=selected[done]['path'] if done < len(selected) else None)
+        # The interrupted block itself, not selected[done] — a skipped stall
+        # makes `done` stop tracking how far through the list we are.
+        report(done, stopped_at=current['path'] if current else None)
         sys.exit(0)

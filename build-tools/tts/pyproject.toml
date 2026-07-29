@@ -5,6 +5,9 @@ description = "Generates Tymer's spoken sounds from the prompt sets in sound-pro
 requires-python = ">=3.9"
 dependencies = [
     "google-genai",
+    # Transitively a google-genai dependency, but imported directly to catch the
+    # stream timeouts it raises — so it is declared here too.
+    "httpx",
     "python-dotenv",
     "rich",
 ]
