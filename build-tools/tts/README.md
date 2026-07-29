@@ -106,7 +106,8 @@ Requests go round-robin across the live keys. A key is **retired for the rest of
 the run** after 3 rate limits, or immediately if the API reports its daily quota
 spent — retirement is announced as it happens. Every run ends with a per-key
 summary of requests, rate limits, and why any key was dropped; if they all run
-out the run stops there and prints the `--only` path to resume from.
+out the run stops there. Nothing needs noting down to continue — the same
+command tomorrow generates whatever is still missing.
 
 | Keys | Clips/day | 33-clip set |
 | --- | --- | --- |

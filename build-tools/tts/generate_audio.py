@@ -943,7 +943,15 @@ if __name__ == '__main__':
     clients = {}
     print(f'Using {len(api_keys)} API key(s), round-robin\n')
 
-    def report(done, stopped_at=None):
+    def report(done):
+        """Close out a run — however it ended.
+
+        There is no resume hint: a re-run skips whatever is already on disk, so
+        picking up where this left off is just the same command again. The old
+        hint named `--only <path>`, which is a prefix filter rather than a
+        starting point — following it would have regenerated that one clip and
+        called the set done.
+        """
         print('\nAPI keys:')
         for line in pool.summary_lines():
             print(line)
@@ -952,18 +960,14 @@ if __name__ == '__main__':
             print('Free-tier quota resets at midnight Pacific Time.')
         print(f'\nGenerated {done} of {len(selected)} block(s).')
         if skipped_blocks:
-            print(f'{len(skipped_blocks)} block(s) skipped after repeated failures — re-run to pick them up:')
+            print(f'{len(skipped_blocks)} block(s) skipped after repeated failures:')
             for path in skipped_blocks:
                 print(f'  {path}')
-        if stopped_at:
-            print(f'Resume later with:  --only {stopped_at}')
 
     done = 0
     skipped_blocks = []
-    current = None
     try:
         for i, block in enumerate(selected, 1):
-            current = block
             print(f'[{i}/{len(selected)}] Processing: {block["text"][:50]}...')
             print(f'  Path: {block["path"]}')
 
@@ -972,7 +976,7 @@ if __name__ == '__main__':
             while True:
                 key = pool.next_key()
                 if key is None:
-                    report(done, stopped_at=block['path'])
+                    report(done)
                     sys.exit(1)
                 if key not in clients:
                     clients[key] = genai.Client(
@@ -1010,7 +1014,7 @@ if __name__ == '__main__':
                               f'({pool.strikes[key]}/{pool.max_strikes} strikes)')
 
                     if pool.all_exhausted():
-                        report(done, stopped_at=block['path'])
+                        report(done)
                         sys.exit(1)
 
                     # With one key left there is nobody to hand the block to, so
@@ -1034,7 +1038,5 @@ if __name__ == '__main__':
         report(done)
     except KeyboardInterrupt:
         print('\n\nInterrupted by user.')
-        # The interrupted block itself, not selected[done] — a skipped stall
-        # makes `done` stop tracking how far through the list we are.
-        report(done, stopped_at=current['path'] if current else None)
+        report(done)
         sys.exit(0)
