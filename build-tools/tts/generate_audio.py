@@ -119,27 +119,96 @@ def promote_staging(staging, destination):
     return copied, skipped
 
 
-class QuotaExhausted(Exception):
-    """One API key is out of quota. Callers may retry the block on another key."""
+class RateLimited(Exception):
+    """A request was refused with 429. `daily` distinguishes a spent daily quota
+    from a momentary per-minute throttle."""
+
+    def __init__(self, retry_seconds, daily):
+        super().__init__(f'rate limited (retry in {retry_seconds:.0f}s, daily={daily})')
+        self.retry_seconds = retry_seconds
+        self.daily = daily
+
+
+class KeyPool:
+    """Rotates requests across API keys and drops the ones that stop working.
+
+    Quota is per Google Cloud project, so keys from different accounts have
+    entirely separate budgets — both daily and per-minute. Cycling through them
+    therefore multiplies throughput rather than merely providing a fallback, and
+    the wait between requests can be divided by the number of live keys.
+
+    A key is retired after MAX_STRIKES rate limits, or immediately when the API
+    says its daily quota is gone. Retired keys are not tried again this run.
+    """
+
+    MAX_STRIKES = 3
+
+    def __init__(self, keys, max_strikes=MAX_STRIKES):
+        self.keys = list(keys)
+        self.max_strikes = max_strikes
+        self.strikes = {key: 0 for key in self.keys}
+        self.requests = {key: 0 for key in self.keys}
+        self.retired = []
+        self.retire_reason = {}
+        self._cursor = 0
+
+    def label(self, key):
+        return f'key {self.keys.index(key) + 1}'
+
+    def active(self):
+        return [key for key in self.keys if key not in self.retired]
+
+    def next_key(self):
+        """The next live key, round-robin. None when every key is retired."""
+        live = self.active()
+        if not live:
+            return None
+        key = live[self._cursor % len(live)]
+        self._cursor += 1
+        self.requests[key] += 1
+        return key
+
+    def retire(self, key, reason):
+        if key not in self.retired:
+            self.retired.append(key)
+            self.retire_reason[key] = reason
+
+    def record_rate_limit(self, key, daily):
+        """Count a 429 against a key. Returns True if that retired it."""
+        self.strikes[key] += 1
+        if daily:
+            self.retire(key, 'daily quota reached')
+            return True
+        if self.strikes[key] >= self.max_strikes:
+            self.retire(key, f'{self.strikes[key]} rate limits')
+            return True
+        return False
+
+    def all_exhausted(self):
+        return not self.active()
+
+    def summary_lines(self):
+        lines = []
+        for key in self.keys:
+            state = self.retire_reason.get(key, 'still available')
+            lines.append(
+                f'  {self.label(key)} ({key[:6]}...{key[-4:]}): '
+                f'{self.requests[key]} request(s), {self.strikes[key]} rate limit(s) — {state}'
+            )
+        return lines
 
 
 def load_api_keys(env):
     """Collect API keys from the environment, in the order they should be used.
 
-    Accepts GEMINI_API_KEY plus GEMINI_API_KEY_2, _3, ... (one per Google
-    account), or GEMINI_API_KEYS as a comma-separated list. Each account carries
-    its own free-tier daily quota, so several keys multiply how much of a set
-    can be generated in one day. Blanks and duplicates are dropped.
+    GEMINI_API_KEYS holds any number of keys separated by commas, newlines or
+    whitespace; GEMINI_API_KEY holds a single one. Both may be set. Each Google
+    account carries its own quota, so the list is what multiplies how much of a
+    set can be generated in a day. Blanks and duplicates are dropped.
     """
     raw = []
-    if env.get('GEMINI_API_KEYS'):
-        raw.extend(env['GEMINI_API_KEYS'].split(','))
-    if env.get('GEMINI_API_KEY'):
-        raw.append(env['GEMINI_API_KEY'])
-    index = 2
-    while env.get(f'GEMINI_API_KEY_{index}'):
-        raw.append(env[f'GEMINI_API_KEY_{index}'])
-        index += 1
+    raw.extend(re.split(r'[,\s]+', env.get('GEMINI_API_KEYS', '')))
+    raw.append(env.get('GEMINI_API_KEY', ''))
 
     keys = []
     for key in raw:
@@ -558,21 +627,15 @@ def generate_audio(client, block, base_output_dir='sounds', retry_count=0, overw
                     minutes = int((retry_seconds % 3600) // 60)
                     reset_msg = f'~{hours}h {minutes}m'
 
-                print(f'  Daily quota limit reached on this key!')
-                print(f'  Free tier: 15 requests per day for TTS model')
-                print(f'  Quota typically resets at midnight Pacific Time')
-                print(f'  Estimated time until reset: {reset_msg}')
-                raise QuotaExhausted('daily quota reached')
+                print(f'  Daily quota reached (resets in {reset_msg})')
+                raise RateLimited(retry_seconds, daily=True)
 
             # Short retry delay - wait and retry
             print(f'  Rate limit hit. Waiting {retry_seconds:.0f} seconds...')
             time.sleep(retry_seconds)
 
             # Retry the request
-            if retry_count < 5:
-                return generate_audio(client, block, base_output_dir, retry_count + 1, overwrite)
-            print(f'  Rate limit persisted through {retry_count} retries on this key')
-            raise QuotaExhausted(f'rate limit persisted through {retry_count} retries')
+            raise RateLimited(retry_seconds, daily=False)
         else:
             raise
 
@@ -769,40 +832,72 @@ if __name__ == '__main__':
         print('Error: no API key found. Put GEMINI_API_KEY in build-tools/tts/.env')
         sys.exit(1)
 
-    key_index = 0
-    print(f'Using {len(api_keys)} API key(s)\n')
-    client = genai.Client(api_key=api_keys[key_index])
+    pool = KeyPool(api_keys)
+    clients = {}
+    print(f'Using {len(api_keys)} API key(s), round-robin\n')
 
-    # Process each selected block
+    def report(done, stopped_at=None):
+        print('\nAPI keys:')
+        for line in pool.summary_lines():
+            print(line)
+        if pool.all_exhausted():
+            print(f'\nALL {len(api_keys)} KEY(S) HAVE REACHED THEIR QUOTA.')
+            print('Free-tier quota resets at midnight Pacific Time.')
+        print(f'\nGenerated {done} of {len(selected)} block(s).')
+        if stopped_at:
+            print(f'Resume later with:  --only {stopped_at}')
+
+    done = 0
     try:
         for i, block in enumerate(selected, 1):
             print(f'[{i}/{len(selected)}] Processing: {block["text"][:50]}...')
             print(f'  Path: {block["path"]}')
 
-            # A key that runs dry doesn't end the run — every remaining key gets
-            # this block before we give up, so several accounts' daily quotas add up.
+            # Try the block on each live key in turn before giving up on it.
             while True:
+                key = pool.next_key()
+                if key is None:
+                    report(done, stopped_at=block['path'])
+                    sys.exit(1)
+                if key not in clients:
+                    clients[key] = genai.Client(api_key=key)
+
                 try:
-                    generate_audio(client, block, base_output_dir, overwrite=args.overwrite)
+                    generate_audio(clients[key], block, base_output_dir, overwrite=args.overwrite)
+                    done += 1
                     break
-                except QuotaExhausted as exhausted:
-                    key_index += 1
-                    if key_index >= len(api_keys):
-                        print(f'\nAll {len(api_keys)} key(s) exhausted ({exhausted}).')
-                        print(f'Generated {i - 1} of {len(selected)} block(s).')
-                        print(f'Resume later with:  --only {block["path"]}')
+                except RateLimited as limited:
+                    retired = pool.record_rate_limit(key, limited.daily)
+                    if retired:
+                        print(f'  {pool.label(key)} retired: {pool.retire_reason[key]}')
+                    else:
+                        print(f'  {pool.label(key)} rate limited '
+                              f'({pool.strikes[key]}/{pool.max_strikes} strikes)')
+
+                    if pool.all_exhausted():
+                        report(done, stopped_at=block['path'])
                         sys.exit(1)
-                    print(f'  Switching to API key {key_index + 1} of {len(api_keys)}...')
-                    client = genai.Client(api_key=api_keys[key_index])
+
+                    # With one key left there is nobody to hand the block to, so
+                    # waiting out the limit is the only way forward.
+                    if len(pool.active()) == 1 and not retired:
+                        print(f'  Waiting {limited.retry_seconds:.0f}s before retrying...')
+                        time.sleep(limited.retry_seconds)
+                    else:
+                        print(f'  Handing this block to another key...')
             print()
 
-            # Rate limiting: wait between requests (free tier: 3 requests/minute)
+            # Each key has its own per-minute budget, so the wait shrinks with
+            # the number of live keys — three keys means a third of the spacing.
             if i < len(selected):
-                print(f'  Waiting {args.delay} seconds for rate limit...')
-                time.sleep(args.delay)
+                spacing = args.delay / max(1, len(pool.active()))
+                print(f'  Waiting {spacing:.0f}s ({len(pool.active())} key(s) live)...')
+                time.sleep(spacing)
                 print()
 
-        print('All done!')
+        print('\nAll done!')
+        report(done)
     except KeyboardInterrupt:
-        print('\n\nInterrupted by user. Exiting gracefully...')
+        print('\n\nInterrupted by user.')
+        report(done, stopped_at=selected[done]['path'] if done < len(selected) else None)
         sys.exit(0)

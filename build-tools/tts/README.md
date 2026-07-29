@@ -75,14 +75,25 @@ set is 36 clips — so one key cannot do a whole set in one day.
 
 Two things soften that:
 
-- **Several keys.** Add `GEMINI_API_KEY_2`, `_3`, … from other Google accounts.
-  When a key runs dry the tool switches to the next one mid-run; the daily
-  quotas add up.
-- **`--delay 60` by default.** A 429 retry spends from the same per-minute
-  budget as a normal request, so tight spacing turns one retry into a cascade
-  that starves the following clips. A full minute leaves room to recover.
+- **Several keys.** `GEMINI_API_KEYS` takes a list of any length. Quota is per
+  Cloud project, so keys from *different Google accounts* have separate daily
+  **and** per-minute budgets — two keys in one project share a budget and buy
+  nothing.
+- **`--delay 60` by default, divided by the number of live keys.** A 429 spends
+  from the same per-minute budget as a real request, so tight spacing turns one
+  retry into a cascade. With three keys the actual spacing is 20s, because each
+  project is only being asked once a minute.
 
-If every key runs out mid-run, the tool prints the `--only` path to resume from.
+Requests go round-robin across the live keys. A key is **retired for the rest of
+the run** after 3 rate limits, or immediately if the API reports its daily quota
+spent — retirement is announced as it happens. Every run ends with a per-key
+summary of requests, rate limits, and why any key was dropped; if they all run
+out the run stops there and prints the `--only` path to resume from.
+
+| Keys | Clips/day | 36-clip set |
+| --- | --- | --- |
+| 1 | ~15 | 3 days |
+| 3 | ~45 | one ~12-minute run |
 
 ## Tests
 

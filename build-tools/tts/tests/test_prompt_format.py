@@ -349,24 +349,23 @@ def test_resolve_output_filename_overwrite_vs_accumulate(tmp_path):
     assert os.path.exists(first)
 
 
-def test_load_api_keys_collects_and_dedupes():
-    """Several Google accounts each carry their own daily quota."""
+def test_load_api_keys_reads_a_list():
+    """Keys are a list, not a hardcoded _1/_2/_3 sequence."""
     assert load_api_keys({}) == []
     assert load_api_keys({'GEMINI_API_KEY': 'a'}) == ['a']
 
-    # numbered keys extend the primary one, in order
-    assert load_api_keys({
-        'GEMINI_API_KEY': 'a',
-        'GEMINI_API_KEY_2': 'b',
-        'GEMINI_API_KEY_3': 'c',
-    }) == ['a', 'b', 'c']
+    # comma, newline and whitespace separated all work
+    assert load_api_keys({'GEMINI_API_KEYS': 'a,b,c'}) == ['a', 'b', 'c']
+    assert load_api_keys({'GEMINI_API_KEYS': 'a\nb\nc'}) == ['a', 'b', 'c']
+    assert load_api_keys({'GEMINI_API_KEYS': 'a b  c'}) == ['a', 'b', 'c']
+    assert load_api_keys({'GEMINI_API_KEYS': ' a , b ,, c '}) == ['a', 'b', 'c']
 
-    # a gap stops the scan, so _4 without _3 is not silently skipped past
-    assert load_api_keys({'GEMINI_API_KEY': 'a', 'GEMINI_API_KEY_4': 'd'}) == ['a']
+    # the list and the singular variable combine, list first, without duplicates
+    assert load_api_keys({'GEMINI_API_KEYS': 'a,b', 'GEMINI_API_KEY': 'c'}) == ['a', 'b', 'c']
+    assert load_api_keys({'GEMINI_API_KEYS': 'a,b', 'GEMINI_API_KEY': 'a'}) == ['a', 'b']
 
-    # comma-separated form, with blanks and duplicates removed
-    assert load_api_keys({'GEMINI_API_KEYS': 'a, b ,,a'}) == ['a', 'b']
     assert load_api_keys({'GEMINI_API_KEY': '   '}) == []
+    assert load_api_keys({'GEMINI_API_KEYS': '  '}) == []
 
 
 def test_resolve_set_file_accepts_bare_name_or_path(tmp_path):
@@ -490,3 +489,66 @@ def test_next_free_take_skips_occupied_numbers(tmp_path):
     (event / 'brisk-2.wav').write_bytes(b'b')
     (event / 'brisk-3.wav').write_bytes(b'c')
     assert next_free_take(target).endswith('brisk-4.wav')
+
+
+def test_key_pool_round_robins_across_keys():
+    from generate_audio import KeyPool
+
+    pool = KeyPool(['a', 'b', 'c'])
+    assert [pool.next_key() for _ in range(7)] == ['a', 'b', 'c', 'a', 'b', 'c', 'a']
+    assert pool.requests == {'a': 3, 'b': 2, 'c': 2}
+
+
+def test_key_pool_retires_after_three_rate_limits():
+    from generate_audio import KeyPool
+
+    pool = KeyPool(['a', 'b'])
+    assert pool.record_rate_limit('a', daily=False) is False
+    assert pool.record_rate_limit('a', daily=False) is False
+    assert pool.active() == ['a', 'b']
+
+    assert pool.record_rate_limit('a', daily=False) is True
+    assert pool.active() == ['b']
+    assert 'a' in pool.retired
+    assert '3 rate limits' in pool.retire_reason['a']
+
+    # a retired key is never handed out again
+    assert {pool.next_key() for _ in range(5)} == {'b'}
+
+
+def test_key_pool_retires_immediately_on_daily_quota():
+    from generate_audio import KeyPool
+
+    pool = KeyPool(['a', 'b'])
+    assert pool.record_rate_limit('a', daily=True) is True
+    assert pool.active() == ['b']
+    assert pool.retire_reason['a'] == 'daily quota reached'
+
+
+def test_key_pool_reports_when_everything_is_exhausted():
+    from generate_audio import KeyPool
+
+    pool = KeyPool(['a', 'b'])
+    assert pool.all_exhausted() is False
+
+    for key in ('a', 'b'):
+        pool.record_rate_limit(key, daily=True)
+
+    assert pool.all_exhausted() is True
+    assert pool.next_key() is None
+
+    summary = '\n'.join(pool.summary_lines())
+    assert 'key 1' in summary and 'key 2' in summary
+    assert summary.count('daily quota reached') == 2
+
+
+def test_key_pool_summary_marks_survivors():
+    from generate_audio import KeyPool
+
+    pool = KeyPool(['aaaaaaaaaaaa', 'bbbbbbbbbbbb'])
+    pool.next_key()
+    pool.record_rate_limit('aaaaaaaaaaaa', daily=True)
+
+    summary = pool.summary_lines()
+    assert 'daily quota reached' in summary[0]
+    assert 'still available' in summary[1]
