@@ -139,8 +139,19 @@ already there.
 `buildSoundConfig` in `src/lib/sounds.js` holds an ARRAY of `Howl`s per key and `playByKey` picks
 via `pickVariant` (`src/lib/pick-variant.js`), which never returns the previous index for that key —
 so a repeated event does not replay the same take twice in a row. Last-index bookkeeping is a
-module-level `Map`, deliberately not a signal (it is never rendered). A key absent from the manifest
-falls back to the previously hardcoded single path, so a missing manifest cannot break playback.
+module-level `Map`, deliberately not a signal (it is never rendered).
+
+**The manifest is the only source of sound paths.** `getVariantPaths(key)` returns
+`SOUND_VARIANTS[key] ?? []` — there is no hardcoded fallback. There used to be one, and it was a
+trap rather than a safety net: the flat paths it fell back to (`elapsed/006.webm`,
+`timesup/work.webm`, `overtime/break/006.webm`, …) all stopped existing when the bank was
+restructured into take directories, so a missing key produced a `Howl` on a 404 that sat in
+`state === 'loading'` forever, in silence. An empty list instead reaches `playByKey`'s existing
+not-found branch, which logs and records a failed `soundPlaybackLog` entry. `REQUIRED_SOUND_KEYS`
+(derived from `AVAILABLE_SOUNDS` + the 63 notifications + `button`/`timerFinished`/`timesup_*`) is
+what `buildSoundConfig` iterates, and `src/lib/sounds.test.js` guards it both ways: every required
+key has a manifest entry, and every manifest path exists on disk. That second assertion is the one
+that catches a bank restructure.
 
 `AVAILABLE_SOUNDS` in `src/lib/sound-discovery.js` defines which minute marks exist per bank
 (`elapsed`, `remaining`, `overtime`, `overtimeBreak`) and is what `SoundScheduler` schedules from.

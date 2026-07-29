@@ -5,12 +5,28 @@ import { SOUND_VARIANTS } from './sound-manifest.js'
 import { pickVariant } from './pick-variant.js'
 import { log } from './log.js'
 
-// Resolves the variant paths for a sound key: prefer the generated manifest,
-// falling back to the hardcoded single path so a missing/stale manifest can
-// never break playback.
-export const getVariantPaths = (key, fallbackPaths) => {
-    return SOUND_VARIANTS[key] || fallbackPaths
+// Resolves the variant paths for a sound key from the generated manifest.
+// A key absent from the manifest resolves to no variants — callers (playByKey,
+// playRandomNotification) already treat an empty list as "sound not found".
+export const getVariantPaths = key => {
+    return SOUND_VARIANTS[key] ?? []
 }
+
+// The complete set of sound keys the app needs, derived from the discovery
+// config rather than hand-written so it can never drift from it.
+export const REQUIRED_SOUND_KEYS = [
+    ...AVAILABLE_SOUNDS.elapsed.map(min => `elapsed_${min}`),
+    ...AVAILABLE_SOUNDS.remaining.map(min => `remaining_${min}`),
+    ...AVAILABLE_SOUNDS.overtime.map(min => `overtime_${min}`),
+    ...AVAILABLE_SOUNDS.overtimeBreak.map(min => `overtime_break_${min}`),
+    ...Array.from({ length: 63 }, (_, i) => `notification_${i + 1}`),
+    'button',
+    'timerFinished',
+    'timesup_work',
+    'timesup_break',
+    'timesup_fun',
+    'timesup_finish',
+]
 
 // Audio context unlock state — a signal so the UI can flag "audio not activated
 // yet" (browsers block playback until the first user gesture).
@@ -102,56 +118,18 @@ const buildSoundConfig = () => {
         return {}
     }
 
-    const buildHowls = (key, fallbackPaths) =>
-        getVariantPaths(key, fallbackPaths).map(src => new Howl({ src: [src], loop: false }))
+    const missing = []
+    const config = {}
 
-    const config = {
-        // Keep existing general sounds
-        button: buildHowls('button', ['/tymer/sounds/button.webm']),
-        timerFinished: buildHowls('timerFinished', ['/tymer/sounds/timer-end.webm']),
+    REQUIRED_SOUND_KEYS.forEach(key => {
+        const variants = getVariantPaths(key)
+        if (variants.length === 0) missing.push(key)
+        config[key] = variants.map(src => new Howl({ src: [src], loop: false }))
+    })
+
+    if (missing.length > 0) {
+        log('🔊 Sounds missing from manifest', missing.join(', '), 2)
     }
-
-    // Build notification sounds (01.ogg to 63.ogg)
-    for (let i = 1; i <= 63; i++) {
-        const num = String(i).padStart(2, '0')
-        const key = `notification_${i}`
-        config[key] = buildHowls(key, [`/tymer/sounds/notifications/${num}.ogg`])
-    }
-
-    // Build elapsed sounds
-    AVAILABLE_SOUNDS.elapsed.forEach(min => {
-        const key = `elapsed_${min}`
-        const path = `/tymer/sounds/elapsed/${String(min).padStart(3, '0')}.webm`
-        config[key] = buildHowls(key, [path])
-    })
-
-    // Build remaining sounds
-    AVAILABLE_SOUNDS.remaining.forEach(min => {
-        const key = `remaining_${min}`
-        const path = `/tymer/sounds/remaining/${String(min).padStart(3, '0')}.webm`
-        config[key] = buildHowls(key, [path])
-    })
-
-    // Build timesup sounds
-    const timesupTypes = ['work', 'break', 'fun', 'finish']
-    for (const type of timesupTypes) {
-        const key = `timesup_${type}`
-        config[key] = buildHowls(key, [`/tymer/sounds/timesup/${type}.webm`])
-    }
-
-    // Build overtime sounds
-    AVAILABLE_SOUNDS.overtime.forEach(min => {
-        const key = `overtime_${min}`
-        const path = `/tymer/sounds/overtime/${String(min).padStart(3, '0')}.webm`
-        config[key] = buildHowls(key, [path])
-    })
-
-    // Build break overtime sounds
-    AVAILABLE_SOUNDS.overtimeBreak.forEach(min => {
-        const key = `overtime_break_${min}`
-        const path = `/tymer/sounds/overtime/break/${String(min).padStart(3, '0')}.webm`
-        config[key] = buildHowls(key, [path])
-    })
 
     return config
 }
@@ -168,42 +146,30 @@ const lastVariantIndex = new Map()
 // consumer gets every variant of every event.
 export const soundConfig = {
     elapsed: AVAILABLE_SOUNDS.elapsed.reduce((acc, min) => {
-        const key = `elapsed_${min}`
-        acc[`${min}min`] = getVariantPaths(key, [
-            `/tymer/sounds/elapsed/${String(min).padStart(3, '0')}.webm`,
-        ])
+        acc[`${min}min`] = getVariantPaths(`elapsed_${min}`)
         return acc
     }, {}),
     remaining: AVAILABLE_SOUNDS.remaining.reduce((acc, min) => {
-        const key = `remaining_${min}`
-        acc[`${min}min`] = getVariantPaths(key, [
-            `/tymer/sounds/remaining/${String(min).padStart(3, '0')}.webm`,
-        ])
+        acc[`${min}min`] = getVariantPaths(`remaining_${min}`)
         return acc
     }, {}),
     timesup: {
-        work: getVariantPaths('timesup_work', ['/tymer/sounds/timesup/work.webm']),
-        break: getVariantPaths('timesup_break', ['/tymer/sounds/timesup/break.webm']),
-        fun: getVariantPaths('timesup_fun', ['/tymer/sounds/timesup/fun.webm']),
-        finish: getVariantPaths('timesup_finish', ['/tymer/sounds/timesup/finish.webm']),
+        work: getVariantPaths('timesup_work'),
+        break: getVariantPaths('timesup_break'),
+        fun: getVariantPaths('timesup_fun'),
+        finish: getVariantPaths('timesup_finish'),
     },
     overtime: AVAILABLE_SOUNDS.overtime.reduce((acc, min) => {
-        const key = `overtime_${min}`
-        acc[`${min}min`] = getVariantPaths(key, [
-            `/tymer/sounds/overtime/${String(min).padStart(3, '0')}.webm`,
-        ])
+        acc[`${min}min`] = getVariantPaths(`overtime_${min}`)
         return acc
     }, {}),
     overtimeBreak: AVAILABLE_SOUNDS.overtimeBreak.reduce((acc, min) => {
-        const key = `overtime_break_${min}`
-        acc[`${min}min`] = getVariantPaths(key, [
-            `/tymer/sounds/overtime/break/${String(min).padStart(3, '0')}.webm`,
-        ])
+        acc[`${min}min`] = getVariantPaths(`overtime_break_${min}`)
         return acc
     }, {}),
     general: {
-        button: getVariantPaths('button', ['/tymer/sounds/button.webm']),
-        timerFinished: getVariantPaths('timerFinished', ['/tymer/sounds/timer-end.webm']),
+        button: getVariantPaths('button'),
+        timerFinished: getVariantPaths('timerFinished'),
     },
 }
 
