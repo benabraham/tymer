@@ -37,6 +37,24 @@ uv run generate_audio.py tymer-gacrux-brisk --promote
 cd ../.. && ./normalize_audio.sh
 ```
 
+### From the repo root, without the `cd`
+
+Every path the tool uses — `sound-prompts/`, `.env`, `.staging/`, the output
+tree — resolves against the script rather than the working directory, so it runs
+the same from anywhere. Only `uv` needs telling where the project is:
+
+```bash
+pnpm run sounds:generate tymer-gacrux-brisk --dry-run    # flags pass through, no `--` needed
+uv run --directory build-tools/tts generate_audio.py tymer-gacrux-brisk
+```
+
+The hints the tool prints back (`Promote it with: …`, `Run … to convert them`)
+adapt to how it was launched, so they stay copy-pasteable. Both launchers `cd`
+into `build-tools/tts` before running, so `os.getcwd()` is no help — the shell's
+real directory comes from `INIT_CWD`, which pnpm exports and `uv` does not. A
+bare `uv run --directory` from the root is therefore indistinguishable from a
+real `cd` and gets the `cd`-relative hint.
+
 Step 2 reports `Already generated: 12/36` and stops early with *"This set is
 complete — nothing to generate"* rather than spending quota re-doing work.
 Step 3 refuses to run while anything is missing, so the app never plays a

@@ -552,3 +552,41 @@ def test_key_pool_summary_marks_survivors():
     summary = pool.summary_lines()
     assert 'daily quota reached' in summary[0]
     assert 'still available' in summary[1]
+
+
+def test_invocation_hint_names_the_package_script_when_run_through_pnpm():
+    from generate_audio import REPO_ROOT, invocation_hint
+
+    env = {'INIT_CWD': REPO_ROOT, 'npm_lifecycle_event': 'sounds:generate'}
+    assert invocation_hint(env) == 'pnpm run sounds:generate'
+
+
+def test_invocation_hint_from_the_tools_own_directory():
+    from generate_audio import TOOL_DIR, invocation_hint
+
+    assert invocation_hint({'INIT_CWD': TOOL_DIR}) == 'uv run generate_audio.py'
+
+
+def test_invocation_hint_from_anywhere_else_spells_out_the_directory():
+    from generate_audio import TOOL_DIR, invocation_hint
+
+    hint = invocation_hint({'INIT_CWD': '/somewhere/unrelated'})
+    assert hint == f'uv run --directory {TOOL_DIR} generate_audio.py'
+
+
+def test_normalize_hint_is_relative_inside_the_repo_absolute_outside():
+    from generate_audio import REPO_ROOT, TOOL_DIR, normalize_hint
+
+    assert normalize_hint({'INIT_CWD': REPO_ROOT}) == './normalize_audio.sh'
+    assert normalize_hint({'INIT_CWD': TOOL_DIR}) == '../../normalize_audio.sh'
+    assert normalize_hint({'INIT_CWD': '/somewhere/unrelated'}) == os.path.join(REPO_ROOT, 'normalize_audio.sh')
+
+
+def test_shell_cwd_prefers_init_cwd_because_the_launchers_chdir(tmp_path, monkeypatch):
+    """pnpm/uv both chdir into the tool dir, so os.getcwd() is not where the
+    user is. INIT_CWD is what carries that across."""
+    from generate_audio import TOOL_DIR, shell_cwd
+
+    monkeypatch.chdir(TOOL_DIR)
+    assert shell_cwd({'INIT_CWD': str(tmp_path)}) == os.path.realpath(str(tmp_path))
+    assert shell_cwd({}) == os.path.realpath(TOOL_DIR)

@@ -1,11 +1,16 @@
 # Generates Tymer's spoken sounds from the prompt sets in sound-prompts/.
 #
-#   uv run generate_audio.py tymer-gacrux-brisk --dry-run       # preview, no API calls
+#   uv run generate_audio.py tymer-gacrux-brisk --dry-run        # preview, no API calls
 #   uv run generate_audio.py tymer-gacrux-brisk --overwrite      # generate the whole set
 #   uv run generate_audio.py tymer-gacrux --only overtime/       # one branch
 #
+# Or from the repo root, no cd needed — every path below resolves against this
+# file rather than the working directory:
+#
+#   pnpm run sounds:generate tymer-gacrux-brisk --dry-run
+#
 # A set name resolves against sound-prompts/ and output defaults to
-# src/assets/sounds/, so neither has to be spelled out. Run ../../normalize_audio.sh
+# src/assets/sounds/, so neither has to be spelled out. Run normalize_audio.sh
 # afterwards to convert to .webm and regenerate the sound manifest.
 #
 # Needs a Gemini API key in build-tools/tts/.env (see .env.example).
@@ -78,6 +83,44 @@ SERVER_BUSY_BACKOFF_SECONDS = 30
 
 # The key lives next to this script, not wherever it happens to be invoked from.
 load_dotenv(os.path.join(TOOL_DIR, '.env'))
+
+
+def shell_cwd(env):
+    """The directory the user typed the command in.
+
+    Not necessarily os.getcwd(): both launchers chdir into the tool's directory
+    before exec — `uv run --directory` by definition, and `pnpm run` because the
+    script it runs is that same uv command. npm and pnpm export the original as
+    INIT_CWD, which is the only way back to where the shell actually is.
+    """
+    return os.path.realpath(env.get('INIT_CWD') or os.getcwd())
+
+
+def invocation_hint(env):
+    """How to re-invoke this script from where the user actually is.
+
+    Nothing here depends on the working directory — every path resolves against
+    the script — so the tool runs the same from the repo root as from its own
+    directory. The follow-up hints are meant to be pasted straight back into the
+    shell, though, so they have to name the form that works from there.
+    """
+    package_script = env.get('npm_lifecycle_event')
+    if package_script:
+        return f'pnpm run {package_script}'
+    if shell_cwd(env) == os.path.realpath(TOOL_DIR):
+        return 'uv run generate_audio.py'
+    return f'uv run --directory {TOOL_DIR} generate_audio.py'
+
+
+def normalize_hint(env):
+    """The same, for the sibling shell script that converts what was promoted."""
+    script = os.path.join(REPO_ROOT, 'normalize_audio.sh')
+    cwd = shell_cwd(env)
+    if cwd == os.path.realpath(REPO_ROOT):
+        return './normalize_audio.sh'
+    if os.path.commonpath([cwd, REPO_ROOT]) == os.path.realpath(REPO_ROOT):
+        return os.path.relpath(script, cwd)
+    return script
 
 
 def staging_dir_for(set_path):
@@ -847,7 +890,7 @@ if __name__ == '__main__':
                 print(f'  {name}')
             if len(renamed) > 5:
                 print(f'  ... and {len(renamed) - 5} more')
-        print('Run ../../normalize_audio.sh to convert them and refresh the manifest.')
+        print(f'Run {normalize_hint(os.environ)} to convert them and refresh the manifest.')
         sys.exit(0)
 
     selected = select_blocks(blocks, only=args.only, limit=args.limit)
@@ -862,7 +905,7 @@ if __name__ == '__main__':
     if not selected:
         if already == len(blocks):
             print('This set is complete — nothing to generate.')
-            print(f'Promote it with:  uv run generate_audio.py {args.set_file} --promote')
+            print(f'Promote it with:  {invocation_hint(os.environ)} {args.set_file} --promote')
         else:
             print('Nothing to do for this selection (use --regenerate to redo existing clips).')
         sys.exit(0)

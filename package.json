@@ -14,6 +14,7 @@
     "preview": "vite preview",
     "test": "vitest",
     "sounds:manifest": "node build-tools/generate-sound-manifest.js",
+    "sounds:generate": "uv run --directory build-tools/tts generate_audio.py",
     "test:coverage": "vitest run --coverage",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,css,md}\"",
     "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,css,md}\""
