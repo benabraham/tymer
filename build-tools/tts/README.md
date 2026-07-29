@@ -18,7 +18,7 @@ Get a key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
 
 ## Use
 
-A set is 36 clips and free-tier quota is ~15/day, so generating one is a
+A set is 33 clips and free-tier quota is ~15/day, so generating one is a
 multi-day job. The tool is built around that: clips accumulate in a **staging
 directory** per set, each run generates only what is **still missing**, and
 nothing reaches the app until the set is complete and you promote it.
@@ -55,7 +55,7 @@ real directory comes from `INIT_CWD`, which pnpm exports and `uv` does not. A
 bare `uv run --directory` from the root is therefore indistinguishable from a
 real `cd` and gets the `cd`-relative hint.
 
-Step 2 reports `Already generated: 12/36` and stops early with *"This set is
+Step 2 reports `Already generated: 12/33` and stops early with *"This set is
 complete — nothing to generate"* rather than spending quota re-doing work.
 Step 3 refuses to run while anything is missing, so the app never plays a
 half-updated bank.
@@ -89,7 +89,7 @@ Pass an explicit output directory to bypass staging entirely.
 ## Quota
 
 The free tier allows roughly **15 requests/day and 3/minute per account**, and a
-set is 36 clips — so one key cannot do a whole set in one day.
+set is 33 clips — so one key cannot do a whole set in one day.
 
 Two things soften that:
 
@@ -108,7 +108,7 @@ spent — retirement is announced as it happens. Every run ends with a per-key
 summary of requests, rate limits, and why any key was dropped; if they all run
 out the run stops there and prints the `--only` path to resume from.
 
-| Keys | Clips/day | 36-clip set |
+| Keys | Clips/day | 33-clip set |
 | --- | --- | --- |
 | 1 | ~15 | 3 days |
 | 3 | ~45 | one ~12-minute run |

@@ -198,22 +198,3 @@ Insistent rather than cold; intensity keeps rising and never releases.
 @text [contented] Nothing more to do. [warmly] Let's finish for today.
 
 
-# ---------------------------------------------------------------------------
-# alternatives — second takes of the same three transitions, deliberately
-# delivered differently so the pair doesn't sound like a repeat
-# ---------------------------------------------------------------------------
-
-[alternatives/work]
-@style Quieter, steadier — a nudge rather than a call.
-@pace Measured.
-@text [matter-of-fact] Time is up. [encouraging] Let's start working.
-
-[alternatives/break]
-@style Softer, almost a sigh of relief.
-@pace Unhurried.
-@text [gently] Time is up. [warmly] Let's have a break.
-
-[alternatives/fun]
-@style Playful, conspiratorial.
-@pace Light.
-@text [playfully] Time is up. [delighted] Let's have some fun now.

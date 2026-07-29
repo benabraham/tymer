@@ -206,22 +206,3 @@ hard. Driving rather than cold; intensity keeps climbing and never releases.
 @text [contented] That's everything. [warmly] We're done for today.
 
 
-# ---------------------------------------------------------------------------
-# alternatives — second takes of the same three transitions, deliberately
-# delivered differently so the pair doesn't sound like a repeat
-# ---------------------------------------------------------------------------
-
-[alternatives/work]
-@style Quieter, steadier — a nudge rather than a call.
-@pace Measured.
-@text [matter-of-fact] Time's up. [encouraging] Back to work.
-
-[alternatives/break]
-@style Softer, almost a sigh of relief.
-@pace Unhurried.
-@text [gently] Time's up. [warmly] Go and rest.
-
-[alternatives/fun]
-@style Playful, conspiratorial.
-@pace Light.
-@text [playfully] Time's up. [delighted] Time to enjoy yourself.

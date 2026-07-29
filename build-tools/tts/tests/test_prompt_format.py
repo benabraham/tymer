@@ -245,7 +245,7 @@ def test_tymer_sets_round_trip():
     brisk_defaults, brisk = parse_set_file(set_path('tymer-gacrux-brisk.txt'))
 
     assert measured_defaults['voice'] == brisk_defaults['voice'] == 'Gacrux'
-    assert len(measured) == len(brisk) == 36
+    assert len(measured) == len(brisk) == 33
     assert [b['path'] for b in measured] == [b['path'] for b in brisk]
 
     for block in measured + brisk:
@@ -590,3 +590,30 @@ def test_shell_cwd_prefers_init_cwd_because_the_launchers_chdir(tmp_path, monkey
     monkeypatch.chdir(TOOL_DIR)
     assert shell_cwd({'INIT_CWD': str(tmp_path)}) == os.path.realpath(str(tmp_path))
     assert shell_cwd({}) == os.path.realpath(TOOL_DIR)
+
+
+# The block paths generate-sound-manifest.js turns into manifest keys. Anything
+# else is generated, normalized, precached and then never played, because
+# sounds.js can only reach a clip through a manifest key.
+RECOGNIZED_BLOCK_PATHS = re.compile(
+    r'^(?:'
+    r'overtime/break/\d+'
+    r'|(?:elapsed|remaining|overtime)/\d+'
+    r'|timesup/[a-zA-Z-]+'
+    r')$'
+)
+
+
+@pytest.mark.parametrize('set_name', ['tymer-gacrux.txt', 'tymer-gacrux-brisk.txt', 'tymer-kore-strict.txt'])
+def test_every_block_path_reaches_the_app(set_name):
+    """No set may contain a block the manifest generator would ignore.
+
+    An `alternatives/` section survived three sets this way: the clips were
+    generated, promoted, converted and shipped in the PWA precache, but the
+    generator has no rule for that path, so no key existed and nothing could
+    ever play them.
+    """
+    _, blocks = parse_set_file(set_path(set_name))
+
+    unreachable = [b['path'] for b in blocks if not RECOGNIZED_BLOCK_PATHS.match(b['path'])]
+    assert unreachable == [], f'{set_name}: block paths the app cannot reach: {unreachable}'

@@ -9,9 +9,9 @@ means adding another file, not editing this one.
 
 | File | Voice | Covers |
 | --- | --- | --- |
-| `tymer-gacrux.txt` | Gacrux (mature, middle pitch) | all 36 speech events |
-| `tymer-gacrux-brisk.txt` | Gacrux | same 36, same words, delivered fast |
-| `tymer-kore-strict.txt` | Kore | same 36, reworded, harsher overtime ladder |
+| `tymer-gacrux.txt` | Gacrux (mature, middle pitch) | all 33 speech events |
+| `tymer-gacrux-brisk.txt` | Gacrux | same 33, same words, delivered fast |
+| `tymer-kore-strict.txt` | Kore | same 33, reworded, harsher overtime ladder |
 
 All three land in the same event directories, so they merge as interchangeable
 takes. Each carries a distinct `@name` (`brisk`, `strict`) so filenames never
@@ -90,7 +90,7 @@ cd ../.. && ./normalize_audio.sh
 That also regenerates `src/lib/sound-manifest.js`, so new takes become playable
 without a further step.
 
-Free-tier quota is roughly 15 requests/day per account against 36 clips per set,
+Free-tier quota is roughly 15 requests/day per account against 33 clips per set,
 so add keys from other Google accounts to generate more in one day — the tool
 switches keys automatically when one runs dry.
 

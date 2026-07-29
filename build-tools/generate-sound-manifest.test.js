@@ -126,7 +126,7 @@ describe('scanSoundManifest', () => {
     })
 
     it('ignores unrecognized files', () => {
-        writeFile('alternatives/work.webm')
+        writeFile('scratch/aside.webm')
         writeFile('button-disabled.ogg')
         writeFile('README.md')
 

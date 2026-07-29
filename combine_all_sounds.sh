@@ -57,7 +57,7 @@ categorize_files() {
             overtime_files+=("$file")
             echo "    → Categorized as: OVERTIME"
         else
-            # General UI sounds (button, timer-end, alternatives)
+            # General UI sounds (button, timer-end)
             general_files+=("$file")
             echo "    → Categorized as: GENERAL"
         fi

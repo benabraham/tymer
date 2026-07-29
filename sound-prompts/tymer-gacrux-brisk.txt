@@ -195,21 +195,3 @@ the listener to move right now. Intensity rises and does not release.
 @pace Unhurried only at the very end of the line.
 @text [contented] Nothing more to do. [warmly] Let's finish for today.
 
-# ---------------------------------------------------------------------------
-# alternatives — second takes of the same three transitions
-# ---------------------------------------------------------------------------
-
-[alternatives/work]
-@style Quieter, steadier — a nudge rather than a call.
-@pace Quick, level.
-@text [matter-of-fact] Time is up. [encouraging] Let's start working.
-
-[alternatives/break]
-@style Softer, an easy exhale.
-@pace Quick and light.
-@text [gently] Time is up. [warmly] Let's have a break.
-
-[alternatives/fun]
-@style Playful, conspiratorial.
-@pace Quick, bouncy.
-@text [playfully] Time is up. [delighted] Let's have some fun now.
