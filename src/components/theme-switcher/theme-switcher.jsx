@@ -1,9 +1,17 @@
 import { useState } from 'preact/hooks'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faSun, faSnowflake, faBug, faClock, faThumbtack } from '@fortawesome/free-solid-svg-icons'
+import {
+    faSun,
+    faSnowflake,
+    faBug,
+    faClock,
+    faThumbtack,
+    faCompress,
+} from '@fortawesome/free-solid-svg-icons'
 import { getTheme, cycleTheme } from '../../lib/theme'
 import { debugVisible, toggleDebug } from '../../lib/debug'
 import { clocksVisible, toggleClocks } from '../../lib/clocks'
+import { compactMode, toggleCompact } from '../../lib/compact'
 import { canTogglePin, togglePinTimer } from '../../lib/timer'
 import { Schedule } from '../../lib/schedule'
 import { SoundToggle } from './sound-toggle'
@@ -40,6 +48,15 @@ export const ThemeSwitcher = () => {
                 aria-label="Toggle absolute times"
             >
                 <FontAwesomeIcon icon={faClock} />
+            </button>
+            <button
+                class={`top-controls__button ${compactMode.value ? 'top-controls__button--active' : ''}`}
+                onClick={toggleCompact}
+                title="Toggle compact mode"
+                aria-label="Toggle compact mode"
+                aria-pressed={compactMode.value}
+            >
+                <FontAwesomeIcon icon={faCompress} />
             </button>
             <button
                 class={`top-controls__button ${debugVisible.value ? 'top-controls__button--active' : ''}`}

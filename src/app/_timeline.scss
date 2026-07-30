@@ -17,6 +17,20 @@
   }
 }
 
+.timeline--compact {
+  min-height: 4rem;
+}
+
+// When absolute times are hidden there is no start/end label under the line,
+// so tighten the bottom gap and halve the line's lower overshoot.
+.timeline--clocks-hidden {
+  margin-bottom: 1rem;
+
+  .timeline__current-time {
+    bottom: calc(-0.5 * var(--line-overshoot));
+  }
+}
+
 .timeline__period {
   position: relative;
   color: var(--color-text-button);

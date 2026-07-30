@@ -4,6 +4,7 @@ import { Schedule } from '../../lib/schedule'
 import { formatTime } from '../../lib/format'
 import { unlockAudio } from '../../lib/sounds'
 import { debugVisible } from '../../lib/debug'
+import { compactMode } from '../../lib/compact'
 import { Timeline } from './timeline/timeline'
 import { TimerControls } from './controls/timer-controls'
 import { DurationsConfigPanel } from './durations-config/durations-config-panel'
@@ -89,7 +90,7 @@ export function Timer() {
             <TimerControls />
             <DurationsConfigPanel />
             <Timeline />
-            <PeriodControls />
+            {!compactMode.value && <PeriodControls />}
             <Stats />
             {debugVisible.value && <DebuggingInfo />}
         </>
