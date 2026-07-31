@@ -209,6 +209,21 @@ class RateLimited(Exception):
         self.daily = daily
 
 
+def pacific_reset_eta():
+    """Free-tier daily quotas reset at midnight Pacific; returns '~Xh Ym' until then."""
+    from datetime import timezone, timedelta
+    from zoneinfo import ZoneInfo
+
+    try:
+        pacific = ZoneInfo('America/Los_Angeles')
+    except Exception:
+        return 'by tomorrow (midnight Pacific)'
+    now = datetime.now(timezone.utc).astimezone(pacific)
+    reset = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    left = (reset - now).total_seconds()
+    return f'~{int(left // 3600)}h {int(left % 3600 // 60)}m'
+
+
 class Transient(Exception):
     """The request failed for a reason that says nothing about this key — a
     stalled stream, a dropped connection, an overloaded model.
@@ -683,68 +698,55 @@ def generate_audio(client, block, base_output_dir='sounds', retry_count=0, overw
         # crashing here would throw away every block still queued behind it.
         raise Transient(f'server error {e.code}', wait_seconds=SERVER_BUSY_BACKOFF_SECONDS) from e
     except ClientError as e:
-        if e.code == 429:  # Rate limit error
-            error_message = str(e)
-
-            # Parse retry delay from API error
-            retry_seconds = None
-            try:
-                # Try to parse from RetryInfo in error details
-                error_dict = eval(str(e).split('. ', 1)[1]) if '. {' in str(e) else {}
-                if error_dict:
-                    details = error_dict.get('error', {}).get('details', [])
-                    for detail in details:
-                        if detail.get('@type') == 'type.googleapis.com/google.rpc.RetryInfo':
-                            retry_delay_str = detail.get('retryDelay', '')
-                            if retry_delay_str.endswith('s'):
-                                retry_seconds = float(retry_delay_str[:-1])
-                            break
-            except Exception:
-                pass
-
-            # Also try to parse from error message
-            if retry_seconds is None and 'Please retry in' in error_message:
-                match = re.search(r'retry in ([\d.]+)s', error_message)
-                if match:
-                    retry_seconds = float(match.group(1))
-
-            # Default retry delay and ensure minimum wait
-            if retry_seconds is None or retry_seconds < 5:
-                retry_seconds = max(retry_seconds if retry_seconds else 5, 5)  # Minimum 5 seconds
-
-            # Check if this is truly a long-term daily quota (very long wait) or a short burst limit
-            if 'GenerateRequestsPerDayPerProjectPerModel' in error_message and retry_seconds > 3600:
-                # Long wait time - probably hit actual daily limit
-                from datetime import timezone, timedelta
-                from zoneinfo import ZoneInfo
-
-                try:
-                    pacific = ZoneInfo('America/Los_Angeles')
-                    now_utc = datetime.now(timezone.utc)
-                    now_pacific = now_utc.astimezone(pacific)
-                    next_midnight_pacific = (now_pacific + timedelta(days=1)).replace(
-                        hour=0, minute=0, second=0, microsecond=0
-                    )
-                    time_until_reset = next_midnight_pacific - now_pacific
-                    hours = int(time_until_reset.total_seconds() // 3600)
-                    minutes = int((time_until_reset.total_seconds() % 3600) // 60)
-                    reset_msg = f'~{hours}h {minutes}m'
-                except Exception:
-                    hours = int(retry_seconds // 3600)
-                    minutes = int((retry_seconds % 3600) // 60)
-                    reset_msg = f'~{hours}h {minutes}m'
-
-                print(f'  Daily quota reached (resets in {reset_msg})')
-                raise RateLimited(retry_seconds, daily=True)
-
-            # Short retry delay - wait and retry
-            print(f'  Rate limit hit. Waiting {retry_seconds:.0f} seconds...')
-            time.sleep(retry_seconds)
-
-            # Retry the request
-            raise RateLimited(retry_seconds, daily=False)
-        else:
+        if e.code != 429:
             raise
+
+        # A 429 body is structured (e.details is the parsed response JSON):
+        # google.rpc.QuotaFailure names the exact quota that was hit, and
+        # google.rpc.RetryInfo suggests a wait. The quotaId is the ONLY
+        # reliable daily-vs-burst signal — a spent DAILY quota has been
+        # observed arriving with `retryDelay: 12s`, so the length of the
+        # suggested wait says nothing about which limit it was.
+        error = e.details.get('error', e.details) if isinstance(e.details, dict) else {}
+        details = error.get('details') or []
+        message = error.get('message', '') or str(e)
+
+        violations = [
+            violation
+            for detail in details
+            if detail.get('@type', '').endswith('google.rpc.QuotaFailure')
+            for violation in detail.get('violations', [])
+        ]
+
+        retry_seconds = None
+        for detail in details:
+            if detail.get('@type', '').endswith('google.rpc.RetryInfo'):
+                delay = detail.get('retryDelay', '')
+                if delay.endswith('s'):
+                    try:
+                        retry_seconds = float(delay[:-1])
+                    except ValueError:
+                        pass
+        if retry_seconds is None:
+            match = re.search(r'retry in ([\d.]+)s', message)
+            if match:
+                retry_seconds = float(match.group(1))
+        retry_seconds = max(retry_seconds or 0, 5)
+
+        daily_violations = [v for v in violations if 'PerDay' in v.get('quotaId', '')]
+        # Message fallback for a body with no structured violations
+        if daily_violations or (not violations and 'PerDay' in message):
+            limits = ', '.join(
+                f"{v.get('quotaValue', '?')}/day for {v.get('quotaDimensions', {}).get('model', 'this model')}"
+                for v in daily_violations
+            ) or 'daily limit'
+            print(f'  Daily quota spent for this key ({limits}) — resets in {pacific_reset_eta()}')
+            raise RateLimited(retry_seconds, daily=True)
+
+        quota_names = ', '.join(sorted({v['quotaId'] for v in violations if v.get('quotaId')}))
+        print(f'  Rate limit hit ({quota_names or "no quotaId in the reply"}). Waiting {retry_seconds:.0f} seconds...')
+        time.sleep(retry_seconds)
+        raise RateLimited(retry_seconds, daily=False)
 
 def convert_to_wav(audio_data: bytes, mime_type: str) -> bytes:
     """Generates a WAV file header for the given audio data and parameters.
