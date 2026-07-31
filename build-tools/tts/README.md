@@ -88,8 +88,10 @@ Pass an explicit output directory to bypass staging entirely.
 
 ## Quota
 
-The free tier allows roughly **15 requests/day and 3/minute per account**, and a
-set is 33 clips — so one key cannot do a whole set in one day.
+The free tier allows **10 requests/day per account for this model** (the 429's
+`QuotaFailure` reports `quotaValue: 10` for `gemini-3.1-flash-tts`) plus a
+per-minute burst limit, and a set is 33 clips — so one key cannot do a whole
+set in one day.
 
 Two things soften that:
 
@@ -111,8 +113,9 @@ command tomorrow generates whatever is still missing.
 
 | Keys | Clips/day | 33-clip set |
 | --- | --- | --- |
-| 1 | ~15 | 3 days |
-| 3 | ~45 | one ~12-minute run |
+| 1 | 10 | 4 days |
+| 3 | 30 | 2 days |
+| 4 | 40 | one run |
 
 ## When it isn't the quota
 

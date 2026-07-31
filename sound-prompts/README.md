@@ -12,10 +12,12 @@ means adding another file, not editing this one.
 | `tymer-gacrux.txt` | Gacrux (mature, middle pitch) | all 33 speech events |
 | `tymer-gacrux-brisk.txt` | Gacrux | same 33, same words, delivered fast |
 | `tymer-kore-strict.txt` | Kore | same 33, reworded, harsher overtime ladder |
+| `tymer-leda-whisper.txt` | Leda | same 33, whispered, broad Southern, edge of parody |
+| `tymer-leda-hush.txt` | Leda | same words as the whisper set, voiced murmur instead of a whisper |
 
-All three land in the same event directories, so they merge as interchangeable
-takes. Each carries a distinct `@name` (`brisk`, `strict`) so filenames never
-collide.
+All sets land in the same event directories, so they merge as interchangeable
+takes. Each carries a distinct `@name` (`brisk`, `strict`, `whisper`, `hush`) so
+filenames never collide.
 
 ## Format
 
@@ -90,7 +92,7 @@ cd ../.. && ./normalize_audio.sh
 That also regenerates `src/lib/sound-manifest.js`, so new takes become playable
 without a further step.
 
-Free-tier quota is roughly 15 requests/day per account against 33 clips per set,
+Free-tier quota is 10 requests/day per account against 33 clips per set,
 so add keys from other Google accounts to generate more in one day — the tool
 switches keys automatically when one runs dry.
 
