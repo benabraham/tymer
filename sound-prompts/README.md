@@ -19,6 +19,12 @@ All sets land in the same event directories, so they merge as interchangeable
 takes. Each carries a distinct `@name` (`brisk`, `strict`, `whisper`, `hush`) so
 filenames never collide.
 
+**`@name` is required.** It is not just collision avoidance — the app derives the
+voice set from the filename stem (minus the trailing `-N` take suffix), so
+`@name` is what lets the user pick that set alone in the top-left switcher. A set
+without one gets text-derived filenames and every clip becomes its own pseudo-set;
+`src/lib/sounds.test.js` fails on that rather than shipping it.
+
 ## Format
 
 ```

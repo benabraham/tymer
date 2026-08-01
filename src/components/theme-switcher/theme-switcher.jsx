@@ -15,6 +15,7 @@ import { compactMode, toggleCompact } from '../../lib/compact'
 import { canTogglePin, togglePinTimer } from '../../lib/timer'
 import { Schedule } from '../../lib/schedule'
 import { SoundToggle } from './sound-toggle'
+import { SoundSetSwitcher } from './sound-set-switcher'
 import './theme-switcher.scss'
 
 export const ThemeSwitcher = () => {
@@ -33,6 +34,7 @@ export const ThemeSwitcher = () => {
     return (
         <div class="top-controls">
             <SoundToggle />
+            <SoundSetSwitcher />
             <button
                 class="top-controls__button"
                 onClick={handleThemeClick}

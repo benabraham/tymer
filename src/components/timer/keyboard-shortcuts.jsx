@@ -34,6 +34,7 @@ import { configPanelOpen } from '../../lib/period-configs'
 import { Schedule } from '../../lib/schedule'
 import { getNextMultipleOf3Delta } from '../../lib/snap'
 import { unlockAudio, toggleSound } from '../../lib/sounds'
+import { cycleSoundSet } from '../../lib/sound-set'
 
 export function KeyboardShortcuts() {
     useEffect(() => {
@@ -405,6 +406,18 @@ export function KeyboardShortcuts() {
             ) {
                 event.preventDefault()
                 toggleSound()
+                handled = true
+            }
+
+            // V - cycle voice set
+            else if (
+                (event.key === 'v' || event.key === 'V')
+                && !event.ctrlKey
+                && !event.altKey
+                && !event.shiftKey
+            ) {
+                event.preventDefault()
+                cycleSoundSet()
                 handled = true
             }
 

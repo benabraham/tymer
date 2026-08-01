@@ -3,13 +3,35 @@ import { signal } from '@preact/signals'
 import { AVAILABLE_SOUNDS } from './sound-discovery'
 import { SOUND_VARIANTS } from './sound-manifest.js'
 import { pickVariant } from './pick-variant.js'
+import { activeSoundSet, ALL_SETS } from './sound-set.js'
 import { log } from './log.js'
 
-// Resolves the variant paths for a sound key from the generated manifest.
+// Resolves the variants (objects) for a sound key from the generated manifest.
 // A key absent from the manifest resolves to no variants — callers (playByKey,
 // playRandomNotification) already treat an empty list as "sound not found".
-export const getVariantPaths = key => {
+export const getVariants = key => {
     return SOUND_VARIANTS[key] ?? []
+}
+
+// Resolves just the variant paths — consumed by soundConfig (build-time
+// preload export) and by tests that guard the full pool regardless of the
+// active set selection.
+export const getVariantPaths = key => {
+    return getVariants(key).map(v => v.src)
+}
+
+// Narrows `variants` to the given set. `ALL_SETS` returns everything
+// unchanged — today's behavior. Otherwise, filters to just that set's takes,
+// BUT falls back to the full pool when the filter matches nothing: set-less
+// keys (button, the 63 notifications, timerFinished) carry no set at all and
+// must keep playing under every selection, and a half-generated set degrades
+// to the full pool instead of going silent — the exact silent-404-Howl trap
+// CLAUDE.md documents from the old hardcoded-fallback bug.
+export const pickCandidates = ({ variants, set }) => {
+    if (set === ALL_SETS) return variants
+
+    const filtered = variants.filter(v => v.set === set)
+    return filtered.length > 0 ? filtered : variants
 }
 
 // The complete set of sound keys the app needs, derived from the discovery
@@ -122,9 +144,12 @@ const buildSoundConfig = () => {
     const config = {}
 
     REQUIRED_SOUND_KEYS.forEach(key => {
-        const variants = getVariantPaths(key)
+        const variants = getVariants(key)
         if (variants.length === 0) missing.push(key)
-        config[key] = variants.map(src => new Howl({ src: [src], loop: false }))
+        config[key] = variants.map(({ src, set }) => ({
+            set,
+            howl: new Howl({ src: [src], loop: false }),
+        }))
     })
 
     if (missing.length > 0) {
@@ -215,18 +240,21 @@ const getPeriodContext = () => {
 const playByKey = async soundKey => {
     if (!soundEnabled.value) return false
 
-    const variants = sounds[soundKey]
+    const allVariants = sounds[soundKey]
     const periodContext = getPeriodContext()
 
-    if (!variants || variants.length === 0) {
+    if (!allVariants || allVariants.length === 0) {
         log('🔊 Sound not found', soundKey, 2)
         addSoundLog(soundKey, false, new Error('Sound not found'), false, periodContext)
         return false
     }
 
-    const variantIndex = pickVariant(variants, lastVariantIndex.get(soundKey) ?? -1)
-    lastVariantIndex.set(soundKey, variantIndex)
-    const sound = variants[variantIndex]
+    const set = activeSoundSet.value
+    const candidates = pickCandidates({ variants: allVariants, set })
+    const indexKey = `${soundKey}|${set}`
+    const variantIndex = pickVariant(candidates, lastVariantIndex.get(indexKey) ?? -1)
+    lastVariantIndex.set(indexKey, variantIndex)
+    const sound = candidates[variantIndex].howl
 
     try {
         // Try to unlock audio if not already unlocked
@@ -272,15 +300,18 @@ const playRandomNotification = async () => {
 
     log('🔊 Playing random notification', notificationKey, 10)
 
-    const variants = sounds[notificationKey]
-    if (!variants || variants.length === 0) {
+    const allVariants = sounds[notificationKey]
+    if (!allVariants || allVariants.length === 0) {
         log('🔊 Notification sound not found', notificationKey, 2)
         return false
     }
 
-    const variantIndex = pickVariant(variants, lastVariantIndex.get(notificationKey) ?? -1)
-    lastVariantIndex.set(notificationKey, variantIndex)
-    const sound = variants[variantIndex]
+    const set = activeSoundSet.value
+    const candidates = pickCandidates({ variants: allVariants, set })
+    const indexKey = `${notificationKey}|${set}`
+    const variantIndex = pickVariant(candidates, lastVariantIndex.get(indexKey) ?? -1)
+    lastVariantIndex.set(indexKey, variantIndex)
+    const sound = candidates[variantIndex].howl
 
     try {
         if (!audioUnlocked.value) await unlockAudio()

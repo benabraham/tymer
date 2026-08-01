@@ -12,3 +12,37 @@ export const createTogglePreference = (key, defaultValue) => {
     }
     return { value, toggle }
 }
+
+// Creates a localStorage-backed signal restricted to a fixed set of options.
+// A stored value outside `options` (e.g. removed at the source) falls back
+// to `defaultValue` rather than leaving the app on a dead value.
+export const createChoicePreference = (key, { options, defaultValue }) => {
+    const loadInitial = () => {
+        try {
+            const stored = localStorage.getItem(key)
+            return options.includes(stored) ? stored : defaultValue
+        } catch {
+            return defaultValue
+        }
+    }
+
+    const value = signal(loadInitial())
+
+    const set = next => {
+        if (!options.includes(next)) return
+        value.value = next
+        try {
+            localStorage.setItem(key, next)
+        } catch {
+            // Ignore storage failures — the in-memory value still applies.
+        }
+    }
+
+    const cycle = () => {
+        const currentIndex = options.indexOf(value.value)
+        const nextIndex = (currentIndex + 1) % options.length
+        set(options[nextIndex])
+    }
+
+    return { value, set, cycle }
+}

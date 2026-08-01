@@ -48,3 +48,28 @@
     background: var(--color-warning);
   }
 }
+
+.sound-set-switcher {
+  width: auto;
+  border-radius: 1.25rem;
+  padding: 0 0.75rem;
+  gap: 0.4rem;
+
+  &__labels {
+    display: grid;
+  }
+
+  // Every label occupies the same grid cell, so the box is as wide as the
+  // longest one and the button never changes width as the set cycles.
+  &__label {
+    grid-area: 1 / 1;
+    visibility: hidden;
+    font-size: 0.8rem;
+    line-height: 1;
+    white-space: nowrap;
+
+    &--active {
+      visibility: visible;
+    }
+  }
+}

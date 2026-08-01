@@ -129,29 +129,55 @@ absolute `/tymer/sounds/...` URLs.
 
 **Events, takes, and the manifest.** A sound event is a directory of interchangeable takes, and one
 is chosen at random per play. A browser cannot list a directory, so `build-tools/generate-sound-manifest.js`
-scans `public/sounds/` and writes `src/lib/sound-manifest.js` (`SOUND_VARIANTS`, keyed
-`elapsed_6`, `overtime_break_12`, `timesup_work`, `notification_1`, `button`, `timerFinished`).
+scans `public/sounds/` and writes `src/lib/sound-manifest.js` — `SOUND_VARIANTS`, keyed
+`elapsed_6`, `overtime_break_12`, `timesup_work`, `notification_1`, `button`, `timerFinished`, whose
+values are arrays of `{ src, set }`; plus `SOUND_SETS`, the distinct set names found on disk.
 `normalize_audio.sh` regenerates it at the end, so it cannot go stale; `pnpm run sounds:manifest`
 rebuilds it alone. **Both layouts resolve to the same key** — flat `elapsed/006.webm` and
 `elapsed/006/<take>.webm` merge into `elapsed_6` — so takes can be added without moving what is
 already there.
 
-`buildSoundConfig` in `src/lib/sounds.js` holds an ARRAY of `Howl`s per key and `playByKey` picks
-via `pickVariant` (`src/lib/pick-variant.js`), which never returns the previous index for that key —
-so a repeated event does not replay the same take twice in a row. Last-index bookkeeping is a
+`buildSoundConfig` in `src/lib/sounds.js` holds an ARRAY of `{ set, howl }` per key and `playByKey`
+picks via `pickVariant` (`src/lib/pick-variant.js`), which never returns the previous index for that
+key — so a repeated event does not replay the same take twice in a row. Last-index bookkeeping is a
 module-level `Map`, deliberately not a signal (it is never rendered).
 
-**The manifest is the only source of sound paths.** `getVariantPaths(key)` returns
-`SOUND_VARIANTS[key] ?? []` — there is no hardcoded fallback. There used to be one, and it was a
+**Voice sets.** Each speech take's filename stem *is* its set — `elapsed/006/brisk-1.webm` belongs to
+`brisk`, `brisk-2.webm` to the same set (a trailing `-<N>` take suffix is stripped). So the sets a
+prompt file promotes are already distinguishable on disk and nothing has to move; the generator just
+records the set alongside the path. **This makes `@name` in a prompt set load-bearing** — a set
+without one gets text-derived filenames and each clip becomes its own pseudo-set, which the coverage
+test below fails on. Files that carry no set — the flat layouts, `notifications/*.ogg`,
+`button.webm`, `timer-end.webm` — get `set: null` and belong to every set.
+
+`src/lib/sound-set.js` owns the selection: `activeSoundSet` (persisted under `soundSet`, default
+`ALL_SETS === 'all'`), `soundSetOptions`, `cycleSoundSet`, and a computed `soundSetLabel` — no
+hand-maintained name list anywhere, so a fifth voice appears in the UI with no code edit. The
+switcher is the masks button in the top-left controls (`sound-set-switcher.jsx`, `V` key); it renders
+every option's label stacked in one CSS grid cell with the inactive ones `visibility: hidden`, so the
+button is permanently as wide as the longest name and does not jump as the set cycles.
+
+`pickCandidates({ variants, set })` filters at play time (Howls stay eagerly built, so switching is
+instant and reloads nothing). **An empty filter falls back to the full pool** rather than returning
+nothing: set-less keys match no set and must keep playing under every selection, and a
+half-promoted set degrades to the other voices instead of going silent — silence is exactly the
+failure mode described below. Because the index now points into a *filtered* list, `lastVariantIndex`
+is keyed `` `${soundKey}|${set}` ``; a stale index from another set would be meaningless.
+
+**The manifest is the only source of sound paths.** `getVariants(key)` returns
+`SOUND_VARIANTS[key] ?? []` (and `getVariantPaths` maps that to bare `src` strings for `soundConfig`,
+the build-time preload export — preloading covers every set regardless of what is selected). There is
+no hardcoded fallback. There used to be one, and it was a
 trap rather than a safety net: the flat paths it fell back to (`elapsed/006.webm`,
 `timesup/work.webm`, `overtime/break/006.webm`, …) all stopped existing when the bank was
 restructured into take directories, so a missing key produced a `Howl` on a 404 that sat in
 `state === 'loading'` forever, in silence. An empty list instead reaches `playByKey`'s existing
 not-found branch, which logs and records a failed `soundPlaybackLog` entry. `REQUIRED_SOUND_KEYS`
 (derived from `AVAILABLE_SOUNDS` + the 63 notifications + `button`/`timerFinished`/`timesup_*`) is
-what `buildSoundConfig` iterates, and `src/lib/sounds.test.js` guards it both ways: every required
-key has a manifest entry, and every manifest path exists on disk. That second assertion is the one
-that catches a bank restructure.
+what `buildSoundConfig` iterates, and `src/lib/sounds.test.js` guards it three ways: every required
+key has a manifest entry, every manifest path exists on disk, and every set in `SOUND_SETS` covers
+every speech key. The second assertion is the one that catches a bank restructure; the third catches
+a half-promoted set and a prompt file that forgot its `@name`.
 
 `AVAILABLE_SOUNDS` in `src/lib/sound-discovery.js` defines which minute marks exist per bank
 (`elapsed`, `remaining`, `overtime`, `overtimeBreak`) and is what `SoundScheduler` schedules from.

@@ -62,67 +62,110 @@ afterEach(() => {
 })
 
 describe('scanSoundManifest', () => {
-    it('maps a flat file to its key', () => {
+    it('maps a flat file to its key, with a null set', () => {
         writeFile('elapsed/006.webm')
 
-        const manifest = scanSoundManifest(tmpRoot)
+        const { variants, sets } = scanSoundManifest(tmpRoot)
 
-        expect(manifest).toEqual({
-            elapsed_6: ['/tymer/sounds/elapsed/006.webm'],
+        expect(variants).toEqual({
+            elapsed_6: [{ src: '/tymer/sounds/elapsed/006.webm', set: null }],
         })
+        expect(sets).toEqual([])
     })
 
-    it('collects all variants from a directory, sorted', () => {
+    it('collects all variants from a directory, sorted, with the take-dir set derived per file', () => {
         writeFile('elapsed/006/b.webm')
         writeFile('elapsed/006/a.webm')
 
-        const manifest = scanSoundManifest(tmpRoot)
+        const { variants, sets } = scanSoundManifest(tmpRoot)
 
-        expect(manifest).toEqual({
-            elapsed_6: ['/tymer/sounds/elapsed/006/a.webm', '/tymer/sounds/elapsed/006/b.webm'],
+        expect(variants).toEqual({
+            elapsed_6: [
+                { src: '/tymer/sounds/elapsed/006/a.webm', set: 'a' },
+                { src: '/tymer/sounds/elapsed/006/b.webm', set: 'b' },
+            ],
         })
+        expect(sets).toEqual(['a', 'b'])
     })
 
-    it('maps overtime/break files to overtime_break_N, not break_N', () => {
+    it('strips a trailing -<digits> take suffix from the set name', () => {
+        writeFile('elapsed/006/brisk-1.webm')
+        writeFile('elapsed/006/brisk-2.webm')
+
+        const { variants, sets } = scanSoundManifest(tmpRoot)
+
+        expect(variants.elapsed_6.map(v => v.set)).toEqual(['brisk', 'brisk'])
+        expect(sets).toEqual(['brisk'])
+    })
+
+    it('maps overtime/break files to overtime_break_N, not break_N, with a null set for the flat layout', () => {
         writeFile('overtime/break/012.webm')
 
-        const manifest = scanSoundManifest(tmpRoot)
+        const { variants, sets } = scanSoundManifest(tmpRoot)
 
-        expect(manifest).toEqual({
-            overtime_break_12: ['/tymer/sounds/overtime/break/012.webm'],
+        expect(variants).toEqual({
+            overtime_break_12: [{ src: '/tymer/sounds/overtime/break/012.webm', set: null }],
         })
+        expect(sets).toEqual([])
     })
 
-    it('maps timesup/work.webm to timesup_work', () => {
+    it('derives a set for overtime/break take-dir files', () => {
+        writeFile('overtime/break/012/hush-1.webm')
+
+        const { variants, sets } = scanSoundManifest(tmpRoot)
+
+        expect(variants).toEqual({
+            overtime_break_12: [
+                { src: '/tymer/sounds/overtime/break/012/hush-1.webm', set: 'hush' },
+            ],
+        })
+        expect(sets).toEqual(['hush'])
+    })
+
+    it('maps timesup/work.webm to timesup_work with a null set', () => {
         writeFile('timesup/work.webm')
 
-        const manifest = scanSoundManifest(tmpRoot)
+        const { variants, sets } = scanSoundManifest(tmpRoot)
 
-        expect(manifest).toEqual({
-            timesup_work: ['/tymer/sounds/timesup/work.webm'],
+        expect(variants).toEqual({
+            timesup_work: [{ src: '/tymer/sounds/timesup/work.webm', set: null }],
         })
+        expect(sets).toEqual([])
     })
 
-    it('maps notifications/01.ogg to notification_1', () => {
+    it('derives a set for timesup take-dir files', () => {
+        writeFile('timesup/work/strict-1.webm')
+
+        const { variants, sets } = scanSoundManifest(tmpRoot)
+
+        expect(variants).toEqual({
+            timesup_work: [{ src: '/tymer/sounds/timesup/work/strict-1.webm', set: 'strict' }],
+        })
+        expect(sets).toEqual(['strict'])
+    })
+
+    it('maps notifications/01.ogg to notification_1 with a null set', () => {
         writeFile('notifications/01.ogg')
 
-        const manifest = scanSoundManifest(tmpRoot)
+        const { variants, sets } = scanSoundManifest(tmpRoot)
 
-        expect(manifest).toEqual({
-            notification_1: ['/tymer/sounds/notifications/01.ogg'],
+        expect(variants).toEqual({
+            notification_1: [{ src: '/tymer/sounds/notifications/01.ogg', set: null }],
         })
+        expect(sets).toEqual([])
     })
 
-    it('maps button.webm to button and timer-end.webm to timerFinished', () => {
+    it('maps button.webm to button and timer-end.webm to timerFinished, both null set', () => {
         writeFile('button.webm')
         writeFile('timer-end.webm')
 
-        const manifest = scanSoundManifest(tmpRoot)
+        const { variants, sets } = scanSoundManifest(tmpRoot)
 
-        expect(manifest).toEqual({
-            button: ['/tymer/sounds/button.webm'],
-            timerFinished: ['/tymer/sounds/timer-end.webm'],
+        expect(variants).toEqual({
+            button: [{ src: '/tymer/sounds/button.webm', set: null }],
+            timerFinished: [{ src: '/tymer/sounds/timer-end.webm', set: null }],
         })
+        expect(sets).toEqual([])
     })
 
     it('ignores unrecognized files', () => {
@@ -130,28 +173,30 @@ describe('scanSoundManifest', () => {
         writeFile('button-disabled.ogg')
         writeFile('README.md')
 
-        const manifest = scanSoundManifest(tmpRoot)
+        const { variants, sets } = scanSoundManifest(tmpRoot)
 
-        expect(manifest).toEqual({})
+        expect(variants).toEqual({})
+        expect(sets).toEqual([])
     })
 
-    it('scans a mixed flat + directory layout across events', () => {
+    it('scans a mixed flat + directory layout across events, collecting all sets found', () => {
         writeFile('elapsed/006.webm')
-        writeFile('remaining/012/a.webm')
-        writeFile('remaining/012/b.webm')
+        writeFile('remaining/012/brisk-1.webm')
+        writeFile('remaining/012/hush-1.webm')
         writeFile('overtime/break/018.webm')
         writeFile('button.webm')
 
-        const manifest = scanSoundManifest(tmpRoot)
+        const { variants, sets } = scanSoundManifest(tmpRoot)
 
-        expect(manifest).toEqual({
-            elapsed_6: ['/tymer/sounds/elapsed/006.webm'],
+        expect(variants).toEqual({
+            elapsed_6: [{ src: '/tymer/sounds/elapsed/006.webm', set: null }],
             remaining_12: [
-                '/tymer/sounds/remaining/012/a.webm',
-                '/tymer/sounds/remaining/012/b.webm',
+                { src: '/tymer/sounds/remaining/012/brisk-1.webm', set: 'brisk' },
+                { src: '/tymer/sounds/remaining/012/hush-1.webm', set: 'hush' },
             ],
-            overtime_break_18: ['/tymer/sounds/overtime/break/018.webm'],
-            button: ['/tymer/sounds/button.webm'],
+            overtime_break_18: [{ src: '/tymer/sounds/overtime/break/018.webm', set: null }],
+            button: [{ src: '/tymer/sounds/button.webm', set: null }],
         })
+        expect(sets).toEqual(['brisk', 'hush'])
     })
 })
