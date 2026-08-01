@@ -26,7 +26,7 @@ import shutil
 import struct
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
@@ -209,19 +209,84 @@ class RateLimited(Exception):
         self.daily = daily
 
 
-def pacific_reset_eta():
-    """Free-tier daily quotas reset at midnight Pacific; returns '~Xh Ym' until then."""
-    from datetime import timezone, timedelta
+def pacific_reset_at():
+    """The next midnight Pacific — when free-tier daily quotas come back — as an
+    aware datetime. None when the tz database is unavailable, which is the one
+    case where the wall-clock time cannot be worked out."""
     from zoneinfo import ZoneInfo
 
     try:
         pacific = ZoneInfo('America/Los_Angeles')
     except Exception:
-        return 'by tomorrow (midnight Pacific)'
+        return None
     now = datetime.now(timezone.utc).astimezone(pacific)
-    reset = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-    left = (reset - now).total_seconds()
-    return f'~{int(left // 3600)}h {int(left % 3600 // 60)}m'
+    return (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+def format_duration(seconds):
+    """'3h 12m' / '12m' / '40s' — coarse on purpose, this is a countdown to a wait."""
+    seconds = max(0, int(seconds))
+    if seconds < 60:
+        return f'{seconds}s'
+    if seconds < 3600:
+        return f'{seconds // 60}m'
+    return f'{seconds // 3600}h {seconds % 3600 // 60}m'
+
+
+def format_local(moment):
+    """A reset time is only actionable in the clock the user is looking at, so
+    every quota message renders it in local time — with the weekday when it
+    lands on another day, since midnight Pacific usually does."""
+    local = moment.astimezone()
+    if local.date() == datetime.now().date():
+        return f'{local:%H:%M}'
+    return f'{local:%H:%M} {local:%a %-d %b}'
+
+
+def quota_reset_notice():
+    """'at 09:00 Sat 2 Aug local time — in 3h 12m'."""
+    reset = pacific_reset_at()
+    if reset is None:
+        return 'at midnight Pacific Time'
+    left = (reset - datetime.now(timezone.utc)).total_seconds()
+    return f'at {format_local(reset)} local time — in {format_duration(left)}'
+
+
+# Resume a few minutes AFTER the reset rather than on it: the boundary is
+# Google's, not ours, and a clock that is a minute fast would spend the first
+# request of the new day collecting another 429 and retiring the key again.
+QUOTA_RESET_BUFFER_SECONDS = 5 * 60
+
+
+def wait_for_quota_reset():
+    """Offer to sleep until the daily quota is back. True if we waited and the
+    run should carry on, False if the user declined or there is nobody to ask."""
+    reset = pacific_reset_at()
+    if reset is None or not sys.stdin.isatty():
+        return False
+
+    resume = reset + timedelta(seconds=QUOTA_RESET_BUFFER_SECONDS)
+    left = (resume - datetime.now(timezone.utc)).total_seconds()
+    prompt = (f'\nWait {format_duration(left)} and retry at {format_local(resume)} '
+              f'local time? [Y/n] ')
+    try:
+        answer = input(prompt).strip().lower()
+    except EOFError:
+        return False
+    if answer and not answer.startswith('y'):
+        return False
+
+    while True:
+        left = (resume - datetime.now(timezone.utc)).total_seconds()
+        if left <= 0:
+            break
+        # One line, rewritten in place — a three-hour wait would otherwise
+        # bury the run's output under a couple of hundred countdown lines.
+        print(f'  Waiting for quota — {format_duration(left)} left '
+              f'(resuming at {format_local(resume)})...   ', end='\r', flush=True)
+        time.sleep(min(left, 30))
+    print('\nQuota should be back — resuming.\n')
+    return True
 
 
 class Transient(Exception):
@@ -296,6 +361,14 @@ class KeyPool:
 
     def all_exhausted(self):
         return not self.active()
+
+    def revive(self):
+        """Put every retired key back in rotation — for after a daily reset has
+        been waited out. Request counts stay, since they describe the whole run;
+        strikes do not, since they described a budget that no longer exists."""
+        self.retired = []
+        self.retire_reason = {}
+        self.strikes = {key: 0 for key in self.keys}
 
     def summary_lines(self):
         lines = []
@@ -740,7 +813,7 @@ def generate_audio(client, block, base_output_dir='sounds', retry_count=0, overw
                 f"{v.get('quotaValue', '?')}/day for {v.get('quotaDimensions', {}).get('model', 'this model')}"
                 for v in daily_violations
             ) or 'daily limit'
-            print(f'  Daily quota spent for this key ({limits}) — resets in {pacific_reset_eta()}')
+            print(f'  Daily quota spent for this key ({limits}) — resets {quota_reset_notice()}')
             raise RateLimited(retry_seconds, daily=True)
 
         quota_names = ', '.join(sorted({v['quotaId'] for v in violations if v.get('quotaId')}))
@@ -855,9 +928,7 @@ def build_arg_parser():
     return parser
 
 
-if __name__ == '__main__':
-    args = build_arg_parser().parse_args()
-
+def main(args):
     try:
         set_path = resolve_set_file(args.set_file)
         defaults, blocks = parse_set_file(set_path)
@@ -959,7 +1030,7 @@ if __name__ == '__main__':
             print(line)
         if pool.all_exhausted():
             print(f'\nALL {len(api_keys)} KEY(S) HAVE REACHED THEIR QUOTA.')
-            print('Free-tier quota resets at midnight Pacific Time.')
+            print(f'Free-tier quota resets {quota_reset_notice()}.')
         print(f'\nGenerated {done} of {len(selected)} block(s).')
         if skipped_blocks:
             print(f'{len(skipped_blocks)} block(s) skipped after repeated failures:')
@@ -968,73 +1039,97 @@ if __name__ == '__main__':
 
     done = 0
     skipped_blocks = []
+    # Blocks still to generate. Running out of quota does not end the run any
+    # more — it parks whatever is left here and offers to wait for the reset.
+    pending = list(selected)
     try:
-        for i, block in enumerate(selected, 1):
-            print(f'[{i}/{len(selected)}] Processing: {block["text"][:50]}...')
-            print(f'  Path: {block["path"]}')
+        while pending:
+            queue, pending, exhausted = pending, [], False
 
-            # Try the block on each live key in turn before giving up on it.
-            failures = 0
-            while True:
-                key = pool.next_key()
-                if key is None:
-                    report(done)
-                    sys.exit(1)
-                if key not in clients:
-                    clients[key] = genai.Client(
-                        api_key=key,
-                        http_options=types.HttpOptions(
-                            timeout=CHUNK_TIMEOUT_SECONDS * 1000,  # milliseconds
-                            retry_options=types.HttpRetryOptions(
-                                attempts=SERVER_RETRY_ATTEMPTS,
-                                http_status_codes=SERVER_RETRY_STATUS_CODES,
-                            ),
-                        ),
-                    )
+            for i, block in enumerate(queue, 1):
+                position = len(selected) - len(queue) + i
+                print(f'[{position}/{len(selected)}] Processing: {block["text"][:50]}...')
+                print(f'  Path: {block["path"]}')
 
-                try:
-                    generate_audio(clients[key], block, base_output_dir, overwrite=args.overwrite)
-                    done += 1
-                    break
-                except Transient as transient:
-                    failures += 1
-                    print(f'  {pool.label(key)}: {transient}')
-                    if failures >= MAX_TRANSIENT_ATTEMPTS:
-                        print(f'  Giving up on {block["path"]} after {failures} attempts — moving on.')
-                        skipped_blocks.append(block['path'])
+                # Try the block on each live key in turn before giving up on it.
+                failures = 0
+                while True:
+                    key = pool.next_key()
+                    if key is None:
+                        exhausted = True
                         break
-                    if transient.wait_seconds:
-                        print(f'  Waiting {transient.wait_seconds}s for it to recover...')
-                        time.sleep(transient.wait_seconds)
-                    print(f'  Retrying on the next key ({failures}/{MAX_TRANSIENT_ATTEMPTS})...')
-                except RateLimited as limited:
-                    retired = pool.record_rate_limit(key, limited.daily)
-                    if retired:
-                        print(f'  {pool.label(key)} retired: {pool.retire_reason[key]}')
-                    else:
-                        print(f'  {pool.label(key)} rate limited '
-                              f'({pool.strikes[key]}/{pool.max_strikes} strikes)')
+                    if key not in clients:
+                        clients[key] = genai.Client(
+                            api_key=key,
+                            http_options=types.HttpOptions(
+                                timeout=CHUNK_TIMEOUT_SECONDS * 1000,  # milliseconds
+                                retry_options=types.HttpRetryOptions(
+                                    attempts=SERVER_RETRY_ATTEMPTS,
+                                    http_status_codes=SERVER_RETRY_STATUS_CODES,
+                                ),
+                            ),
+                        )
 
-                    if pool.all_exhausted():
-                        report(done)
-                        sys.exit(1)
+                    try:
+                        generate_audio(clients[key], block, base_output_dir, overwrite=args.overwrite)
+                        done += 1
+                        break
+                    except Transient as transient:
+                        failures += 1
+                        print(f'  {pool.label(key)}: {transient}')
+                        if failures >= MAX_TRANSIENT_ATTEMPTS:
+                            print(f'  Giving up on {block["path"]} after {failures} attempts — moving on.')
+                            skipped_blocks.append(block['path'])
+                            break
+                        if transient.wait_seconds:
+                            print(f'  Waiting {transient.wait_seconds}s for it to recover...')
+                            time.sleep(transient.wait_seconds)
+                        print(f'  Retrying on the next key ({failures}/{MAX_TRANSIENT_ATTEMPTS})...')
+                    except RateLimited as limited:
+                        retired = pool.record_rate_limit(key, limited.daily)
+                        if retired:
+                            print(f'  {pool.label(key)} retired: {pool.retire_reason[key]}')
+                        else:
+                            print(f'  {pool.label(key)} rate limited '
+                                  f'({pool.strikes[key]}/{pool.max_strikes} strikes)')
 
-                    # With one key left there is nobody to hand the block to, so
-                    # waiting out the limit is the only way forward.
-                    if len(pool.active()) == 1 and not retired:
-                        print(f'  Waiting {limited.retry_seconds:.0f}s before retrying...')
-                        time.sleep(limited.retry_seconds)
-                    else:
-                        print(f'  Handing this block to another key...')
-            print()
+                        if pool.all_exhausted():
+                            exhausted = True
+                            break
 
-            # Each key has its own per-minute budget, so the wait shrinks with
-            # the number of live keys — three keys means a third of the spacing.
-            if i < len(selected):
-                spacing = args.delay / max(1, len(pool.active()))
-                print(f'  Waiting {spacing:.0f}s ({len(pool.active())} key(s) live)...')
-                time.sleep(spacing)
+                        # With one key left there is nobody to hand the block to, so
+                        # waiting out the limit is the only way forward.
+                        if len(pool.active()) == 1 and not retired:
+                            print(f'  Waiting {limited.retry_seconds:.0f}s before retrying...')
+                            time.sleep(limited.retry_seconds)
+                        else:
+                            print(f'  Handing this block to another key...')
+
+                # This block never got generated, so it goes back at the head of
+                # the queue along with everything after it.
+                if exhausted:
+                    pending = queue[i - 1:]
+                    break
                 print()
+
+                # Each key has its own per-minute budget, so the wait shrinks with
+                # the number of live keys — three keys means a third of the spacing.
+                if i < len(queue):
+                    spacing = args.delay / max(1, len(pool.active()))
+                    print(f'  Waiting {spacing:.0f}s ({len(pool.active())} key(s) live)...')
+                    time.sleep(spacing)
+                    print()
+
+            if not exhausted:
+                break
+
+            # Out of quota with work left. Report where the run stands, then
+            # offer to sit out the reset rather than making the user come back
+            # and reissue the command at midnight Pacific themselves.
+            report(done)
+            if not wait_for_quota_reset():
+                sys.exit(1)
+            pool.revive()
 
         print('\nAll done!')
         report(done)
@@ -1042,3 +1137,7 @@ if __name__ == '__main__':
         print('\n\nInterrupted by user.')
         report(done)
         sys.exit(0)
+
+
+if __name__ == '__main__':
+    main(build_arg_parser().parse_args())

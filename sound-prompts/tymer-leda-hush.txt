@@ -1,6 +1,6 @@
 # Tymer voice set — Leda, HUSHED (the whisper set, less whispery)
 #
-# Word-for-word the same blocks as tymer-leda-whisper.txt, delivered soft and
+# Based on the same blocks as tymer-leda-whisper.txt, delivered soft and
 # low but fully VOICED — a hush, not a whisper. Same Leda voice, same Southern
 # accent dialed up to the edge of parody: stock idioms on purpose — fixin' to,
 # lollygaggin', bless your heart, that dog won't hunt, y'all come back now.
@@ -13,6 +13,11 @@
 # TERSENESS: lines get shorter as she gets angrier. The minute count is the
 # only untouchable payload; it is compressed colloquially ("hour twelve")
 # rather than cut.
+#
+# ORDER (differs from the whisper set): every time announcement leads with an
+# attention catch — an endearment or interjection ("Sugar…", "Well now…") —
+# and only THEN delivers the minute count, so the listener is already tuned in
+# when the number lands.
 #
 # @name below labels every file in this set `hush-N.wav`, so it never collides
 # with the whisper, brisk or strict sets' filenames. All sets generate into the
@@ -45,34 +50,34 @@ does not nag — so when it does harden, that carries real weight.
 # ---------------------------------------------------------------------------
 
 [elapsed/006]
-@text [calm] Six minutes down, sugar pie.
+@text [calm] Sugar pie… six minutes down.
 
 [elapsed/012]
-@text [calm] Twelve minutes gone, hon.
+@text [calm] Hon… twelve minutes gone.
 
 [elapsed/024]
-@text [calm] Twenty-four minutes… rollin' right along.
+@text [calm] Well now… twenty-four minutes, rollin' right along.
 
 [elapsed/036]
-@text [calm] Thirty-six minutes, sweet pea.
+@text [calm] Sweet pea… thirty-six minutes.
 
 [elapsed/048]
-@text [calm] Forty-eight minutes gone… I declare.
+@text [calm] I declare… forty-eight minutes gone.
 
 [elapsed/060]
-@text [warm] A whole hour, darlin'. [encouraging] Ain't that somethin'.
+@text [warm] Darlin'… a whole hour. [encouraging] Ain't that somethin'.
 
 [elapsed/072]
-@text [calm] Hour twelve, hon.
+@text [calm] Hon… hour twelve.
 
 [elapsed/084]
-@text [calm] Hour twenty-four now.
+@text [calm] Well now… hour twenty-four.
 
 [elapsed/096]
-@text [calm] Hour thirty-six, sugar.
+@text [calm] Sugar… hour thirty-six.
 
 [elapsed/108]
-@text [calm] Hour forty-eight… [softly] lord have mercy.
+@text [softly] Lord have mercy… [calm] hour forty-eight.
 
 
 # ---------------------------------------------------------------------------
@@ -80,13 +85,13 @@ does not nag — so when it does harden, that carries real weight.
 # ---------------------------------------------------------------------------
 
 [remaining/024]
-@text [measured] Twenty-four minutes left… [gently] start bringin' it on home.
+@text [gently] Listen here, sugar… [measured] twenty-four minutes left. Start bringin' it on home.
 
 [remaining/012]
-@text [measured] Twelve minutes, darlin'. [encouraging] Home stretch.
+@text [measured] Darlin'… twelve minutes. [encouraging] Home stretch.
 
 [remaining/006]
-@text [softly] Six little minutes, sugar.
+@text [softly] Sugar… six little minutes.
 
 
 # ---------------------------------------------------------------------------
@@ -105,7 +110,7 @@ does not nag — so when it does harden, that carries real weight.
 @text [firmly] That's… long enough now. Quit your lollygaggin'.
 
 [overtime/024]
-@text [insistent] Twenty-four minutes past, darlin'… [pointedly] and I ain't askin'.
+@text [insistent] Darlin'… twenty-four minutes past. [pointedly] And I ain't askin'.
 
 [overtime/030]
 @text [sternly] Bless your heart… [pause] [flat] close it down. Right this minute.
@@ -117,7 +122,7 @@ does not nag — so when it does harden, that carries real weight.
 @text [sharply] Last warnin', sugar. [pause] [commanding] Put. It. Down.
 
 [overtime/048]
-@text [urgently] Forty-eight minutes gone… [pause] [insistent] this stops now, sugar. Lord as my witness.
+@text [urgently] Sugar… forty-eight minutes gone. [pause] [insistent] This stops now. Lord as my witness.
 
 
 # ---------------------------------------------------------------------------
@@ -134,7 +139,7 @@ does not nag — so when it does harden, that carries real weight.
 @text [firmly] That's plenty of porch-sittin'. Back to work now.
 
 [overtime/break/024]
-@text [insistent] Twenty-four minutes past your break… [pointedly] git on back to it.
+@text [insistent] Hon… twenty-four minutes past your break. [pointedly] Git on back to it.
 
 [overtime/break/030]
 @text [sternly] Bless your heart… [pause] [flat] break's long over. Back to work. Now.
@@ -146,7 +151,7 @@ does not nag — so when it does harden, that carries real weight.
 @text [sharply] Last warnin'. [pause] [commanding] Break's done. Now git.
 
 [overtime/break/048]
-@text [urgently] Forty-eight minutes, sugar… [pause] [insistent] that dog won't hunt. Back to work.
+@text [urgently] Sugar… forty-eight minutes. [pause] [insistent] That dog won't hunt. Back to work.
 
 
 # ---------------------------------------------------------------------------

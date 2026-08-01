@@ -107,9 +107,25 @@ Two things soften that:
 Requests go round-robin across the live keys. A key is **retired for the rest of
 the run** after 3 rate limits, or immediately if the API reports its daily quota
 spent — retirement is announced as it happens. Every run ends with a per-key
-summary of requests, rate limits, and why any key was dropped; if they all run
-out the run stops there. Nothing needs noting down to continue — the same
-command tomorrow generates whatever is still missing.
+summary of requests, rate limits, and why any key was dropped.
+
+When every key is out, the run says when the quota comes back **in local time
+and as a countdown** — midnight Pacific is a useless thing to read off a clock
+in another timezone — and offers to wait for it:
+
+```
+ALL 3 KEY(S) HAVE REACHED THEIR QUOTA.
+Free-tier quota resets at 09:00 local time — in 1h 20m.
+
+Wait 1h 20m and retry at 09:05 local time? [Y/n]
+```
+
+Answering yes (the default) sleeps until 5 minutes past the reset — the boundary
+is Google's clock, not ours — then revives every key and picks up at the block
+that was in flight, so nothing already generated is redone. Answering no exits
+non-zero, as it always did; nothing needs noting down either way, since the same
+command later generates whatever is still missing. The offer is skipped when
+stdin is not a terminal, so unattended runs still fail fast.
 
 | Keys | Clips/day | 33-clip set |
 | --- | --- | --- |
