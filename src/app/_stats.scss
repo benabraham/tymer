@@ -169,6 +169,10 @@
     color: var(--color-text-on-bg);
 }
 
+.stats-remaining-text {
+    opacity: 0.8;
+}
+
 .stats-elapsed-text {
     position: relative;
     top: -100%;

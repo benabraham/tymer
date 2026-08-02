@@ -6,6 +6,10 @@ export const StatsBars = ({ periodSums, workProjectedMs }) => {
         const isElapsed = variant === 'current'
         const showElapsed = isElapsed && periodData.duration !== periodData.durationElapsed
         const showProjected = type === 'work' && variant === 'current' && workProjectedMs != null
+        const showRemaining =
+            isElapsed
+            && periodData.durationRemaining > 0
+            && periodData.durationRemaining !== periodData.duration
 
         return (
             <div class={`stats-bar stats-bar--${type} stats-bar--${variant}`}>
@@ -13,6 +17,11 @@ export const StatsBars = ({ periodSums, workProjectedMs }) => {
                     {isElapsed
                         ? formatTime(periodData.duration)
                         : `${type} ${formatTime(periodData.duration)}`}
+                    {showRemaining && (
+                        <span class="stats-remaining-text">
+                            {` (${formatTime(periodData.durationRemaining, { mode: 'remaining' })} remains)`}
+                        </span>
+                    )}
                 </div>
                 {showElapsed && (
                     <div
