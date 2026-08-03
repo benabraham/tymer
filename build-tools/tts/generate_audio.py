@@ -167,14 +167,43 @@ def next_free_take(target):
         counter += 1
 
 
+def existing_takes(target):
+    """Every already-promoted take with the same set stem as `target`.
+
+    'elapsed/006/brisk-1.wav' matches brisk-1.wav, brisk-2.wav, ... in that
+    folder — takes from other sets use a different stem and never match.
+    """
+    folder = os.path.dirname(target)
+    stem = re.sub(r'-\d+$', '', os.path.splitext(os.path.basename(target))[0])
+    if not os.path.isdir(folder):
+        return []
+    return [
+        os.path.join(folder, name)
+        for name in sorted(os.listdir(folder))
+        if re.fullmatch(re.escape(stem) + r'-\d+\.wav', name)
+    ]
+
+
+def set_fully_promoted(blocks, destination):
+    """True when every event already holds at least one promoted take of this set.
+
+    From that point on a further batch is purely additive — some events gaining
+    an extra take while others wait cannot leave the bank half-updated — so the
+    all-clips-staged promote gate no longer serves a purpose and is relaxed.
+    """
+    return all(existing_takes(expected_file(block, destination)) for block in blocks)
+
+
 def promote_staging(staging, destination):
     """Copy a completed set into the real asset tree, merging with what is there.
 
     Sets are promoted one after another into the same directories, and every
     file in an event directory is an interchangeable take. So a name already in
     use is not a conflict to resolve by overwriting — it is another take, and
-    the incoming file takes the next free number. An identical file is skipped,
-    which keeps re-promoting the same set idempotent instead of piling up copies.
+    the incoming file takes the next free number. A file identical to ANY
+    existing take of the same set is skipped — not just the exact target name,
+    because an earlier promote may have renamed the clip to -2, -3, ... — which
+    keeps re-promoting idempotent instead of piling up copies.
 
     Returns (copied, skipped) as lists of destination-relative paths.
     """
@@ -188,10 +217,10 @@ def promote_staging(staging, destination):
             target = os.path.join(destination, os.path.relpath(source, staging))
             os.makedirs(os.path.dirname(target), exist_ok=True)
 
+            if any(filecmp.cmp(source, take, shallow=False) for take in existing_takes(target)):
+                skipped.append(os.path.relpath(target, destination))
+                continue
             if os.path.exists(target):
-                if filecmp.cmp(source, target, shallow=False):
-                    skipped.append(os.path.relpath(target, destination))
-                    continue
                 target = next_free_take(target)
 
             shutil.copy2(source, target)
@@ -944,7 +973,11 @@ def main(args):
 
     if args.promote:
         outstanding = missing_blocks(blocks, staging)
-        if outstanding:
+        if len(outstanding) == len(blocks):
+            print('\nNothing staged — there is nothing to promote.')
+            print(f'Generate a batch first:  {invocation_hint(os.environ)} {args.set_file}')
+            sys.exit(0)
+        if outstanding and not set_fully_promoted(blocks, DEFAULT_OUTPUT_DIR):
             print(f'\nRefusing to promote: {len(outstanding)} of {len(blocks)} clip(s) still missing.')
             print('Generate the rest first — promoting now would leave the bank half-updated.')
             for block in outstanding[:10]:
@@ -952,6 +985,9 @@ def main(args):
             if len(outstanding) > 10:
                 print(f'  ... and {len(outstanding) - 10} more')
             sys.exit(1)
+        if outstanding:
+            print(f'\nPartial batch — {len(blocks) - len(outstanding)} of {len(blocks)} staged.')
+            print('Every event already has a take of this set, so promoting these as extras.')
         copied, skipped = promote_staging(staging, DEFAULT_OUTPUT_DIR)
         print(f'\nPromoted {len(copied)} clip(s) into {DEFAULT_OUTPUT_DIR}')
         if skipped:

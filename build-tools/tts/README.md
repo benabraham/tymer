@@ -58,7 +58,9 @@ real `cd` and gets the `cd`-relative hint.
 Step 2 reports `Already generated: 12/33` and stops early with *"This set is
 complete — nothing to generate"* rather than spending quota re-doing work.
 Step 3 refuses to run while anything is missing, so the app never plays a
-half-updated bank.
+half-updated bank — unless every event already has a promoted take of this
+set, in which case a partial staging is purely additive (some events gain an
+extra take early) and promotes without waiting for the rest.
 
 `normalize_audio.sh` produces the `.webm` files the app loads and regenerates
 `src/lib/sound-manifest.js`.
@@ -68,11 +70,18 @@ half-updated bank.
 Promote a second set into the same tree and its clips land **beside** the first
 as extra takes — `brisk-1.wav`, `brisk-2.wav` — which is exactly what the app
 picks between at random. Nothing is overwritten. Re-promoting an unchanged set
-is a no-op, so it is safe to repeat.
+is a no-op (a clip identical to *any* existing take of the set is skipped, even
+if an earlier promote renamed it), so it is safe to repeat.
 
 ```bash
 uv run generate_audio.py tymer-gacrux --promote     # merges with what's there
 ```
+
+The same applies to a second batch of the **same** set: clear the set's
+`.staging/` directory, regenerate, and promote — each clip lands beside the
+first batch as `-2`. Because the whole set is already in the app, the promote
+gate relaxes: you can promote after every quota day instead of waiting for all
+clips, and keep resuming the batch until it is done.
 
 | Flag | Effect |
 | --- | --- |
