@@ -14,9 +14,10 @@ means adding another file, not editing this one.
 | `tymer-kore-strict.txt` | Kore | same 33, reworded, harsher overtime ladder |
 | `tymer-leda-whisper.txt` | Leda | same 33, whispered, broad Southern, edge of parody |
 | `tymer-leda-hush.txt` | Leda | same words as the whisper set, voiced murmur instead of a whisper |
+| `tymer-laomedeia-diva.txt` | Laomedeia | same 33, telenovela diva — Spanish-seasoned English, volcanic top of the ladder |
 
 All sets land in the same event directories, so they merge as interchangeable
-takes. Each carries a distinct `@name` (`brisk`, `strict`, `whisper`, `hush`) so
+takes. Each carries a distinct `@name` (`brisk`, `strict`, `whisper`, `hush`, `diva`) so
 filenames never collide.
 
 **`@name` is required.** It is not just collision avoidance — the app derives the
