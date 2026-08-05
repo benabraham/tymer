@@ -18,13 +18,19 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version-file: '.nvmrc'
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Format check
+        run: pnpm run format:check
+
+      - name: Tests
+        run: pnpm run test
 
       - name: Build
         run: pnpm run build
