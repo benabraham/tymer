@@ -26,8 +26,11 @@
         "isolatedModules": true,
         // TODO: noUncheckedIndexedAccess deliberately deferred — this codebase is
         // array/index heavy and it would force non-null assertions everywhere.
-        "allowJs": true,
-        "checkJs": false,
+        // The migration is finished — nothing under src/ is .js any more, so
+        // allowJs is off and a stray .js file is now an error rather than an
+        // untyped hole. vite.config.js and build-tools/ stay JavaScript, but
+        // they are outside `include`.
+        "allowJs": false,
         "types": ["vitest/globals", "node"]
     },
     "include": ["src"]
