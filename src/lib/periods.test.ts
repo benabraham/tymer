@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import { Periods } from './periods'
+import type { PeriodData } from './period.js'
 
 // Minimal Period-shaped fixtures. The pure-function tests only assert array
-// shape and currentIndex — Period internals are not inspected here.
-const p = id => ({ id })
+// shape and currentIndex — Period internals are not inspected here, so the
+// `{ id }` shape is cast rather than built out to a full PeriodData.
+const p = (id: string): PeriodData => ({ id }) as unknown as PeriodData
 
 describe('Periods.insert', () => {
     describe('currentIndex === null (timer not yet started)', () => {

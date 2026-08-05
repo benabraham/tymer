@@ -28,7 +28,7 @@
         // array/index heavy and it would force non-null assertions everywhere.
         "allowJs": true,
         "checkJs": false,
-        "types": ["vitest/globals"]
+        "types": ["vitest/globals", "node"]
     },
     "include": ["src"]
 }

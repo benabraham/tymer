@@ -3,12 +3,12 @@ import { createChoicePreference } from './preference.js'
 
 describe('createChoicePreference', () => {
     beforeEach(() => {
-        localStorage.getItem.mockReset()
-        localStorage.setItem.mockReset()
+        vi.mocked(localStorage.getItem).mockReset()
+        vi.mocked(localStorage.setItem).mockReset()
     })
 
     it('defaults to defaultValue when nothing is stored', () => {
-        localStorage.getItem.mockReturnValue(null)
+        vi.mocked(localStorage.getItem).mockReturnValue(null)
 
         const { value } = createChoicePreference('testChoice', {
             options: ['a', 'b', 'c'],
@@ -19,7 +19,7 @@ describe('createChoicePreference', () => {
     })
 
     it('uses the stored value when it is a valid option', () => {
-        localStorage.getItem.mockReturnValue('b')
+        vi.mocked(localStorage.getItem).mockReturnValue('b')
 
         const { value } = createChoicePreference('testChoice', {
             options: ['a', 'b', 'c'],
@@ -30,7 +30,7 @@ describe('createChoicePreference', () => {
     })
 
     it('falls back to defaultValue when the stored value is no longer a valid option', () => {
-        localStorage.getItem.mockReturnValue('removed-option')
+        vi.mocked(localStorage.getItem).mockReturnValue('removed-option')
 
         const { value } = createChoicePreference('testChoice', {
             options: ['a', 'b', 'c'],
@@ -41,7 +41,7 @@ describe('createChoicePreference', () => {
     })
 
     it('set() writes a valid option to the signal and localStorage', () => {
-        localStorage.getItem.mockReturnValue(null)
+        vi.mocked(localStorage.getItem).mockReturnValue(null)
 
         const { value, set } = createChoicePreference('testChoice', {
             options: ['a', 'b', 'c'],
@@ -55,21 +55,23 @@ describe('createChoicePreference', () => {
     })
 
     it('set() ignores a value outside options', () => {
-        localStorage.getItem.mockReturnValue(null)
+        vi.mocked(localStorage.getItem).mockReturnValue(null)
 
         const { value, set } = createChoicePreference('testChoice', {
             options: ['a', 'b', 'c'],
             defaultValue: 'a',
         })
 
-        set('nonexistent')
+        // Exercises the runtime guard against a value TS wouldn't normally
+        // allow through `set`'s `T` — e.g. a stale caller or non-TS data source.
+        set('nonexistent' as 'a' | 'b' | 'c')
 
         expect(value.value).toBe('a')
         expect(localStorage.setItem).not.toHaveBeenCalled()
     })
 
     it('cycle() advances to the next option and wraps past the end', () => {
-        localStorage.getItem.mockReturnValue('c')
+        vi.mocked(localStorage.getItem).mockReturnValue('c')
 
         const { value, cycle } = createChoicePreference('testChoice', {
             options: ['a', 'b', 'c'],
@@ -84,7 +86,7 @@ describe('createChoicePreference', () => {
     })
 
     it('falls back to defaultValue when localStorage.getItem throws (private mode)', () => {
-        localStorage.getItem.mockImplementation(() => {
+        vi.mocked(localStorage.getItem).mockImplementation(() => {
             throw new Error('storage disabled')
         })
 
@@ -97,8 +99,8 @@ describe('createChoicePreference', () => {
     })
 
     it('set() still updates the signal when localStorage.setItem throws', () => {
-        localStorage.getItem.mockReturnValue(null)
-        localStorage.setItem.mockImplementation(() => {
+        vi.mocked(localStorage.getItem).mockReturnValue(null)
+        vi.mocked(localStorage.setItem).mockImplementation(() => {
             throw new Error('storage disabled')
         })
 

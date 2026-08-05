@@ -1,16 +1,17 @@
 import { describe, it, expect } from 'vitest'
 import { Period } from './period'
 import { MIN_PERIOD_MS } from './config'
+import type { PeriodData, PeriodType } from './period.js'
 
 // Helper to build a minimal period for tests
 const makePeriod = ({
     duration = 48 * 60 * 1000,
     elapsed = 0,
     remaining = 48 * 60 * 1000,
-    type = 'work',
+    type = 'work' as PeriodType,
     note = '',
     userIntendedDuration = 48 * 60 * 1000,
-} = {}) => ({
+} = {}): PeriodData => ({
     config: { type, note, userIntendedDuration },
     state: { duration, elapsed, remaining },
 })
@@ -604,7 +605,9 @@ describe('Period.create', () => {
         expect(result.state.duration).toBe(durationMs)
         expect(result.state.elapsed).toBe(0)
         expect(result.state.remaining).toBe(durationMs)
-        expect(result.state.finished).toBeUndefined()
+        // `finished` is not part of PeriodStateData — lifecycle is derived from
+        // position, never stored. Cast to check the runtime shape has no such key.
+        expect((result.state as unknown as Record<string, unknown>).finished).toBeUndefined()
     })
 
     it('config has type, note, userIntendedDuration set correctly', () => {
@@ -635,7 +638,7 @@ describe('Period.create', () => {
 
 describe('Period.unstarted', () => {
     const makeConfig = ({
-        type = 'work',
+        type = 'work' as PeriodType,
         note = '',
         userIntendedDuration = 48 * 60 * 1000,
     } = {}) => ({
@@ -680,7 +683,9 @@ describe('Period.unstarted', () => {
         const config = makeConfig()
         const result = Period.unstarted(config)
 
-        expect(result.state.finished).toBeUndefined()
+        // `finished` is not part of PeriodStateData — lifecycle is derived from
+        // position, never stored. Cast to check the runtime shape has no such key.
+        expect((result.state as unknown as Record<string, unknown>).finished).toBeUndefined()
     })
 
     it('input config is not mutated', () => {

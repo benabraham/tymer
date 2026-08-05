@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { getNextMultipleOf3Delta } from './snap'
 
-const min = m => m * 60 * 1000
+const min = (m: number): number => m * 60 * 1000
 
 describe('getNextMultipleOf3Delta up direction', () => {
     it.each([

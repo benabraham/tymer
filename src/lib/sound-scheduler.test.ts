@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { SoundScheduler } from './sound-scheduler'
+import type { SoundWindow } from './sound-scheduler'
 
 describe('SoundScheduler', () => {
-    let scheduler
+    let scheduler: SoundScheduler
 
     beforeEach(() => {
         scheduler = new SoundScheduler(2000)
@@ -80,23 +81,23 @@ describe('SoundScheduler', () => {
 
     describe('priority system', () => {
         it('prioritizes overtime > timesup > remaining > elapsed', () => {
-            const windows = [
-                { type: 'elapsed', priority: 1, key: 'elapsed_48', targetMs: 0 },
-                { type: 'remaining', priority: 2, key: 'remaining_6', targetMs: 0 },
-                { type: 'timesup', priority: 3, key: 'timesup', targetMs: 0 },
-                { type: 'overtime', priority: 4, key: 'overtime_6', targetMs: 0 },
+            const windows: SoundWindow[] = [
+                { type: 'elapsed', priority: 1, key: 'elapsed_48', targetMs: 0, soundPath: '' },
+                { type: 'remaining', priority: 2, key: 'remaining_6', targetMs: 0, soundPath: '' },
+                { type: 'timesup', priority: 3, key: 'timesup', targetMs: 0, soundPath: '' },
+                { type: 'overtime', priority: 4, key: 'overtime_6', targetMs: 0, soundPath: '' },
             ]
 
             const winner = scheduler.selectHighestPriority(windows)
-            expect(winner.type).toBe('overtime')
+            expect(winner!.type).toBe('overtime')
 
             // Without overtime (exclude the last element)
             const winner2 = scheduler.selectHighestPriority([windows[0], windows[1], windows[2]])
-            expect(winner2.type).toBe('timesup')
+            expect(winner2!.type).toBe('timesup')
 
             // Without overtime and timesup (only first two)
             const winner3 = scheduler.selectHighestPriority([windows[0], windows[1]])
-            expect(winner3.type).toBe('remaining')
+            expect(winner3!.type).toBe('remaining')
         })
     })
 
@@ -113,7 +114,7 @@ describe('SoundScheduler', () => {
             // Third tick - exits all windows
             sound = scheduler.checkSounds(6 * 60000 + 2001, 12 * 60000, 'break', false)
             expect(sound).not.toBe(null)
-            expect(sound.type).toBe('remaining') // Remaining 6 wins over elapsed 6
+            expect(sound!.type).toBe('remaining') // Remaining 6 wins over elapsed 6
         })
 
         it('handles multiple overlapping windows correctly', () => {
@@ -126,7 +127,7 @@ describe('SoundScheduler', () => {
             // Exit all windows - should trigger
             const sound = scheduler.checkSounds(24 * 60000 + 2001, 48 * 60000, 'work', false)
             expect(sound).not.toBe(null)
-            expect(sound.key).toBe('remaining_24') // At 50% mark, remaining takes over
+            expect(sound!.key).toBe('remaining_24') // At 50% mark, remaining takes over
         })
     })
 
@@ -156,22 +157,22 @@ describe('SoundScheduler', () => {
             // When next period is work
             const workWindows = scheduler.getAllPossibleWindows(48 * 60000, 'break', 'work')
             const workTimesup = workWindows.find(w => w.type === 'timesup')
-            expect(workTimesup.soundPath).toBe('sounds/timesup/work.webm')
+            expect(workTimesup!.soundPath).toBe('sounds/timesup/work.webm')
 
             // When next period is break
             const breakWindows = scheduler.getAllPossibleWindows(48 * 60000, 'work', 'break')
             const breakTimesup = breakWindows.find(w => w.type === 'timesup')
-            expect(breakTimesup.soundPath).toBe('sounds/timesup/break.webm')
+            expect(breakTimesup!.soundPath).toBe('sounds/timesup/break.webm')
 
             // When next period is fun
             const funWindows = scheduler.getAllPossibleWindows(12 * 60000, 'work', 'fun')
             const funTimesup = funWindows.find(w => w.type === 'timesup')
-            expect(funTimesup.soundPath).toBe('sounds/timesup/fun.webm')
+            expect(funTimesup!.soundPath).toBe('sounds/timesup/fun.webm')
 
             // When there is no next period (timer finish)
             const finishWindows = scheduler.getAllPossibleWindows(48 * 60000, 'work', null)
             const finishTimesup = finishWindows.find(w => w.type === 'timesup')
-            expect(finishTimesup.soundPath).toBe('sounds/timesup/finish.webm')
+            expect(finishTimesup!.soundPath).toBe('sounds/timesup/finish.webm')
         })
     })
 
@@ -358,8 +359,8 @@ describe('SoundScheduler', () => {
 
             // Should play elapsed_12, NOT remaining_24
             expect(sound).toBeDefined()
-            expect(sound.type).toBe('elapsed')
-            expect(sound.minutes).toBe(12)
+            expect(sound!.type).toBe('elapsed')
+            expect(sound!.minutes).toBe(12)
         })
 
         it('allows remaining sounds after threshold', () => {
@@ -371,8 +372,8 @@ describe('SoundScheduler', () => {
             const sound = scheduler.checkSounds(30 * 60000 + 2001, intendedMs, 'work', false) // Exit window
 
             expect(sound).toBeDefined()
-            expect(sound.type).toBe('remaining')
-            expect(sound.minutes).toBe(6)
+            expect(sound!.type).toBe('remaining')
+            expect(sound!.minutes).toBe(6)
         })
 
         it('transitions correctly at exact threshold point', () => {
@@ -385,8 +386,8 @@ describe('SoundScheduler', () => {
 
             // Should play remaining_24 (at exact threshold, transitioning to remaining phase)
             expect(sound).toBeDefined()
-            expect(sound.type).toBe('remaining')
-            expect(sound.minutes).toBe(24)
+            expect(sound!.type).toBe('remaining')
+            expect(sound!.minutes).toBe(24)
         })
 
         it('handles overlapping windows with different priorities correctly', () => {
@@ -400,20 +401,23 @@ describe('SoundScheduler', () => {
 
             // Should play remaining_12 (past threshold, elapsed filtered out)
             expect(sound).toBeDefined()
-            expect(sound.type).toBe('remaining')
-            expect(sound.minutes).toBe(12)
+            expect(sound!.type).toBe('remaining')
+            expect(sound!.minutes).toBe(12)
         })
     })
 
     describe('comprehensive period duration tests', () => {
-        const testPeriod = (minutes, expectedSounds) => {
+        const testPeriod = (
+            minutes: number,
+            expectedSounds: { time: number; expected: string | null }[],
+        ) => {
             it(`handles ${minutes}-minute period correctly`, () => {
                 const scheduler = new SoundScheduler(2000)
                 const intendedMs = minutes * 60000
                 const threshold = scheduler.getThreshold(intendedMs)
                 const thresholdMin = Math.round(threshold / 60000)
 
-                const played = []
+                const played: string[] = []
 
                 expectedSounds.forEach(({ time, expected }) => {
                     const timeMs = time * 60000
@@ -425,7 +429,7 @@ describe('SoundScheduler', () => {
 
                     if (expected) {
                         expect(sound).toBeDefined()
-                        expect(sound.key).toBe(expected)
+                        expect(sound!.key).toBe(expected)
                         played.push(`${time}min: ${expected}`)
                         // Reset state for next sound
                         scheduler.onElapsedAdjustment(timeMs + 3000, timeMs)

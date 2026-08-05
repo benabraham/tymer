@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { Schedule } from './schedule'
+import type { SchedulePhase } from './schedule'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -211,7 +212,7 @@ describe('Schedule.resume()', () => {
         // After resume, elapsed since new start = Date.now() - newStart
         // newStart = 1_000_000 + 60_000 = 1_060_000
         // elapsed = 1_090_000 - 1_060_000 = 30_000 ✓ (same as when paused)
-        const elapsed = Date.now() - Schedule.timestampStarted.value
+        const elapsed = Date.now() - (Schedule.timestampStarted.value as number)
         expect(elapsed).toBe(30_000)
     })
 
@@ -385,7 +386,7 @@ describe('Schedule.advance()', () => {
         vi.setSystemTime(1_200_000)
         Schedule.advance({ remainderMs, nextPeriodElapsedMs })
 
-        const elapsedAfterAdvance = Date.now() - Schedule.timestampStarted.value
+        const elapsedAfterAdvance = Date.now() - (Schedule.timestampStarted.value as number)
         expect(elapsedAfterAdvance).toBe(remainderMs + nextPeriodElapsedMs)
     })
 
@@ -424,7 +425,8 @@ describe('Schedule.advance()', () => {
         Schedule.advance({ remainderMs, nextPeriodElapsedMs })
 
         // Paused elapsed = timestampPaused - timestampStarted
-        const elapsedWhenPaused = Schedule.timestampPaused.value - Schedule.timestampStarted.value
+        const elapsedWhenPaused =
+            (Schedule.timestampPaused.value as number) - (Schedule.timestampStarted.value as number)
         expect(elapsedWhenPaused).toBe(remainderMs + nextPeriodElapsedMs)
     })
 
@@ -492,7 +494,7 @@ describe('Schedule.rewind()', () => {
 
         Schedule.rewind({ extensionMs: 0, prevElapsedMs, currentElapsedMs })
 
-        const elapsedAfterRewind = Date.now() - Schedule.timestampStarted.value
+        const elapsedAfterRewind = Date.now() - (Schedule.timestampStarted.value as number)
         expect(elapsedAfterRewind).toBe(prevElapsedMs)
     })
 
@@ -532,7 +534,8 @@ describe('Schedule.rewind()', () => {
 
         Schedule.rewind({ extensionMs: 0, prevElapsedMs, currentElapsedMs })
 
-        const pausedElapsed = Schedule.timestampPaused.value - Schedule.timestampStarted.value
+        const pausedElapsed =
+            (Schedule.timestampPaused.value as number) - (Schedule.timestampStarted.value as number)
         expect(pausedElapsed).toBe(prevElapsedMs)
     })
 
@@ -571,7 +574,7 @@ describe('Schedule.shiftStartedAt()', () => {
         vi.useFakeTimers()
         vi.setSystemTime(1_000_000)
         Schedule.start()
-        const before = Schedule.timestampStarted.value
+        const before = Schedule.timestampStarted.value as number
 
         Schedule.shiftStartedAt(5_000)
         expect(Schedule.timestampStarted.value).toBe(before + 5_000)
@@ -581,7 +584,7 @@ describe('Schedule.shiftStartedAt()', () => {
         vi.useFakeTimers()
         vi.setSystemTime(1_000_000)
         Schedule.start()
-        const before = Schedule.timestampStarted.value
+        const before = Schedule.timestampStarted.value as number
 
         Schedule.shiftStartedAt(-10_000)
         expect(Schedule.timestampStarted.value).toBe(before - 10_000)
@@ -830,7 +833,13 @@ describe('Schedule.setSnapshot()', () => {
     })
 
     it('snapshot computed mirrors the written values', () => {
-        const input = {
+        const input: {
+            phase: SchedulePhase
+            currentPeriodIndex: number | null
+            timestampStarted: number | null
+            timestampPaused: number | null
+            timestampAnchor: number | null
+        } = {
             phase: 'completed',
             currentPeriodIndex: null,
             timestampStarted: null,

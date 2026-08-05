@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 describe('sound-set', () => {
     beforeEach(() => {
-        localStorage.getItem.mockReset()
-        localStorage.setItem.mockReset()
+        vi.mocked(localStorage.getItem).mockReset()
+        vi.mocked(localStorage.setItem).mockReset()
         vi.resetModules()
     })
 
@@ -15,7 +15,7 @@ describe('sound-set', () => {
     })
 
     it('defaults activeSoundSet to "all" when nothing is stored', async () => {
-        localStorage.getItem.mockReturnValue(null)
+        vi.mocked(localStorage.getItem).mockReturnValue(null)
         const { activeSoundSet, ALL_SETS } = await import('./sound-set.js')
 
         expect(activeSoundSet.value).toBe(ALL_SETS)
@@ -23,14 +23,14 @@ describe('sound-set', () => {
     })
 
     it('falls back to "all" when the stored value is not a known option', async () => {
-        localStorage.getItem.mockReturnValue('garbage-set-name')
+        vi.mocked(localStorage.getItem).mockReturnValue('garbage-set-name')
         const { activeSoundSet, ALL_SETS } = await import('./sound-set.js')
 
         expect(activeSoundSet.value).toBe(ALL_SETS)
     })
 
     it('cycleSoundSet walks every option and wraps back to "all"', async () => {
-        localStorage.getItem.mockReturnValue(null)
+        vi.mocked(localStorage.getItem).mockReturnValue(null)
         const { activeSoundSet, cycleSoundSet, soundSetOptions } = await import('./sound-set.js')
 
         const seen = [activeSoundSet.value]

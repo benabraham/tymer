@@ -13,7 +13,7 @@ describe('formatTime rounding', () => {
             const remainingFormatted = formatTime(remainingMs, { mode: 'remaining' }) // remaining mode, ceils to 10 min
 
             // Parse formatted times back to minutes
-            const parseTime = timeStr => {
+            const parseTime = (timeStr: string) => {
                 const [hours, minutes] = timeStr.split(':').map(Number)
                 return hours * 60 + minutes
             }
@@ -37,7 +37,7 @@ describe('formatTime rounding', () => {
             const elapsedFormatted = formatTime(elapsedMs, { mode: 'elapsed' }) // elapsed mode, floors to 47 min
             const remainingFormatted = formatTime(remainingMs, { mode: 'remaining' }) // remaining mode, ceils to 1 min
 
-            const parseTime = timeStr => {
+            const parseTime = (timeStr: string) => {
                 const [hours, minutes] = timeStr.split(':').map(Number)
                 return hours * 60 + minutes
             }
@@ -61,7 +61,7 @@ describe('formatTime rounding', () => {
             const elapsedFormatted = formatTime(elapsedMs, { mode: 'elapsed' }) // elapsed mode, floors to 29 min
             const remainingFormatted = formatTime(remainingMs, { mode: 'remaining' }) // remaining mode, ceils to 31 min
 
-            const parseTime = timeStr => {
+            const parseTime = (timeStr: string) => {
                 const [hours, minutes] = timeStr.split(':').map(Number)
                 return hours * 60 + minutes
             }
@@ -85,7 +85,7 @@ describe('formatTime rounding', () => {
             const elapsedFormatted = formatTime(elapsedMs, { mode: 'elapsed' }) // elapsed mode, floors to 9 min
             const remainingFormatted = formatTime(remainingMs, { mode: 'remaining' }) // remaining mode, ceils to 1 min
 
-            const parseTime = timeStr => {
+            const parseTime = (timeStr: string) => {
                 const [hours, minutes] = timeStr.split(':').map(Number)
                 return hours * 60 + minutes
             }
@@ -109,7 +109,7 @@ describe('formatTime rounding', () => {
             const elapsedFormatted = formatTime(elapsedMs, { mode: 'elapsed' }) // elapsed mode
             const remainingFormatted = formatTime(remainingMs, { mode: 'remaining' }) // remaining mode
 
-            const parseTime = timeStr => {
+            const parseTime = (timeStr: string) => {
                 const [hours, minutes] = timeStr.split(':').map(Number)
                 return hours * 60 + minutes
             }

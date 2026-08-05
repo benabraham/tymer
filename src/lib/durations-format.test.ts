@@ -8,6 +8,7 @@ import {
     hasAnchorLine,
     formatAnchorToken,
 } from './durations-format'
+import type { PeriodData, PeriodType } from './period.js'
 
 const MIN = 60000
 const SEC = 1000
@@ -155,7 +156,17 @@ describe('formatAnchorToken', () => {
 })
 
 describe('serializeCurrentDurations', () => {
-    const period = ({ type, duration, elapsed, note = '' }) => ({
+    const period = ({
+        type,
+        duration,
+        elapsed,
+        note = '',
+    }: {
+        type: PeriodType
+        duration: number
+        elapsed: number
+        note?: string
+    }): PeriodData => ({
         config: { type, note, userIntendedDuration: duration },
         state: { duration, elapsed, remaining: Math.max(0, duration - elapsed) },
     })
