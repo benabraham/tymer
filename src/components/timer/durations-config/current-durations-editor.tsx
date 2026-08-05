@@ -15,7 +15,7 @@ import { AutoTextarea } from './auto-textarea'
 // the cursor because editor-originated applies skip that write-back.
 // Format per line: <Type> <elapsed>/<total> <Note>  (elapsed omitted when 0).
 export const CurrentDurationsEditor = () => {
-    const handleInput = value => {
+    const handleInput = (value: string) => {
         currentDurationsText.value = value
         applyCurrentDurations(value)
     }

@@ -1,8 +1,22 @@
 import { useRef, useLayoutEffect } from 'preact/hooks'
+import type { JSX } from 'preact'
+
+type AutoTextareaProps = {
+    value: string
+    readonly?: boolean
+    autoFocus?: boolean
+    onInput?: (value: string) => void
+} & Omit<JSX.IntrinsicElements['textarea'], 'value' | 'readonly' | 'autoFocus' | 'onInput'>
 
 // Textarea that grows vertically to fit its content (no inner scrollbar).
-export const AutoTextarea = ({ value, readonly = false, autoFocus = false, onInput, ...props }) => {
-    const ref = useRef(null)
+export const AutoTextarea = ({
+    value,
+    readonly = false,
+    autoFocus = false,
+    onInput,
+    ...props
+}: AutoTextareaProps) => {
+    const ref = useRef<HTMLTextAreaElement>(null)
 
     const resize = () => {
         const el = ref.current
@@ -24,7 +38,7 @@ export const AutoTextarea = ({ value, readonly = false, autoFocus = false, onInp
         el.setSelectionRange(end, end)
     }, [])
 
-    const handleInput = e => {
+    const handleInput = (e: JSX.TargetedEvent<HTMLTextAreaElement>) => {
         if (onInput) onInput(e.currentTarget.value)
         resize()
     }
@@ -34,7 +48,7 @@ export const AutoTextarea = ({ value, readonly = false, autoFocus = false, onInp
             ref={ref}
             class="durations-config__textarea"
             value={value}
-            readonly={readonly}
+            readOnly={readonly}
             spellcheck={false}
             rows={1}
             onInput={handleInput}

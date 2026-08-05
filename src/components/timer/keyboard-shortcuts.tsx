@@ -38,7 +38,7 @@ import { cycleSoundSet } from '../../lib/sound-set'
 
 export function KeyboardShortcuts() {
     useEffect(() => {
-        const handleKeyDown = async event => {
+        const handleKeyDown = async (event: KeyboardEvent) => {
             // Escape closes the durations panel — handled before the isEditing
             // guard so it works while the live-editor textarea is focused.
             if (event.key === 'Escape') {
@@ -50,7 +50,9 @@ export function KeyboardShortcuts() {
             }
 
             // Ignore if user is editing or focused on interactive element
-            const activeElement = document.activeElement
+            // Element -> HTMLElement: only tagName/isContentEditable are read below,
+            // both HTMLElement members; document.activeElement stays possibly-null.
+            const activeElement = document.activeElement as HTMLElement | null
             const isEditing =
                 activeElement?.tagName === 'INPUT'
                 || activeElement?.tagName === 'TEXTAREA'

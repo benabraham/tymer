@@ -48,7 +48,9 @@ export const TimerControls = () => {
     // it); pressing Start re-pins to now ("Start now"). A past anchor starts
     // with the gap already elapsed on the first period — label stays plain.
     const isArmed = Schedule.isIdle.value && Schedule.isAnchored.value
-    const isArmedFuture = isArmed && Schedule.timestampAnchor.value > Date.now()
+    // isArmed already implies isAnchored (timestampAnchor non-null); the
+    // fallback is unreachable at runtime and only satisfies the type checker.
+    const isArmedFuture = isArmed && (Schedule.timestampAnchor.value ?? 0) > Date.now()
 
     return (
         <>

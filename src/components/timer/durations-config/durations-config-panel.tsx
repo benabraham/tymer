@@ -45,7 +45,7 @@ const ConfigEditor = () => {
     const active = activeConfig.value
     const isBuiltin = active.readonly
 
-    const handleSelect = id => selectAndApplyConfig(id)
+    const handleSelect = (id: string) => selectAndApplyConfig(id)
 
     const handleAdd = () => {
         addConfig() // becomes the active config
@@ -64,7 +64,7 @@ const ConfigEditor = () => {
         applyActiveConfig()
     }
 
-    const handleInput = text => {
+    const handleInput = (text: string) => {
         updateConfigText(active.id, text)
         applyActiveConfig()
     }

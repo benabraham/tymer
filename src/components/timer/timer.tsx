@@ -60,12 +60,8 @@ export function Timer() {
                 ).toString()
             } else {
                 // Use full hours:minutes format
-                formattedPeriodDurationElapsed = formatTime(period.state.elapsed, true, false)
-                periodUserIntendedDuration = formatTime(
-                    period.config.userIntendedDuration,
-                    true,
-                    false,
-                )
+                formattedPeriodDurationElapsed = formatTime(period.state.elapsed)
+                periodUserIntendedDuration = formatTime(period.config.userIntendedDuration)
             }
 
             const periodTypeInitial = period.config.type.charAt(0).toUpperCase()
