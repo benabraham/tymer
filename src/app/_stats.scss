@@ -3,6 +3,7 @@
 .stats {
     font-weight: 700;
     margin-bottom: 1rem;
+
     /*
     // test data
     --break-original: 100;
@@ -17,6 +18,7 @@
     --work-planned: 100;
     --work-elapsed: 50;
     */
+
     /* calculated */
     --break-max: max(var(--break-original), var(--break-planned));
     --break-percentage: calc(var(--break-elapsed) / var(--break-planned) * 100%);
@@ -31,6 +33,7 @@
 
     --middle-line-left: var(--break-max);
     --middle-line-right: calc(var(--break-max) + var(--fun-max));
+
     // --middle-line: calc(var(--break-max) + var(--fun-max) / 2);
 }
 
@@ -69,17 +72,14 @@
 .stats-bar--fun {
     text-align: center;
     background-color: var(--color-period-fun);
-    grid-column-start: var(--middle-line-left);
-    grid-column-end: var(--middle-line-right);
+    grid-column: var(--middle-line-left) / var(--middle-line-right);
 
     &.stats-bar--original {
-        grid-column-start: calc(var(--middle-line-left) + var(--fun-max) - var(--fun-original));
-        grid-column-end: calc(var(--middle-line-right) - var(--fun-max) + var(--fun-original));
+        grid-column: calc(var(--middle-line-left) + var(--fun-max) - var(--fun-original)) / calc(var(--middle-line-right) - var(--fun-max) + var(--fun-original));
     }
 
     &.stats-bar--current {
-        grid-column-start: calc(var(--middle-line-left) + var(--fun-max) - var(--fun-planned));
-        grid-column-end: calc(var(--middle-line-right) - var(--fun-max) + var(--fun-planned));
+        grid-column: calc(var(--middle-line-left) + var(--fun-max) - var(--fun-planned)) / calc(var(--middle-line-right) - var(--fun-max) + var(--fun-planned));
     }
 }
 

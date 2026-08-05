@@ -35,10 +35,8 @@
   position: relative;
   color: var(--color-text-button);
   border-right: 1px solid var(--color-border-white);
-
   background-color: var(--period-bg, var(--color-text-button));
   grid-column-start: span var(--period-minutes);
-
   display: grid;
   grid-template-columns: subgrid;
   grid-template-rows: subgrid;
@@ -109,7 +107,7 @@
   position: absolute;
   font-size: 0.625rem;
   translate: 0 30%;
-  opacity: 50%;
+  opacity: 0.5;
   top: 100%;
   line-height: 0.95;
   text-align: right;
@@ -125,7 +123,7 @@
 }
 
 .timeline__start-time--pinned {
-  opacity: 90%;
+  opacity: 0.9;
   color: var(--color-current-time);
 }
 
@@ -207,8 +205,7 @@
   grid-row: 1 / 2;
   z-index: -1;
   grid-template-columns: subgrid;
-  grid-column-start: var(--userintended-minutes);
-  grid-column-end: -1;
+  grid-column: var(--userintended-minutes) / -1;
   background-color: var(--color-overrun);
 }
 
@@ -237,8 +234,7 @@
 
 .timeline__edit-row {
   display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
+  flex-flow: row nowrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
@@ -296,7 +292,6 @@ button.button-group-item.button-group-item--active {
 .timeline__edit-duration {
   background: var(--color-input-bg);
   border: 0 none;
-
   padding: 0.375rem 0.5rem;
   color: var(--color-input-text);
 }

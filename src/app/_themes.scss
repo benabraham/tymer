@@ -8,10 +8,10 @@
   --color-bg-body: #242424;
   --color-bg-button: #3d3d3d;
   --color-bg-button-hover: #464646;
-  --color-bg-highlighted: #ff0000;
+  --color-bg-highlighted: #f00;
   --color-bg-blink-start: #800000;
   --color-bg-blink-end: #9f9f00;
-  --color-bg-edit-form: rgba(0, 0, 0, 0.1);
+  --color-bg-edit-form: rgb(0 0 0 / 10%);
 
   // Button group colors
   --color-bg-button-inactive: #999;
@@ -23,11 +23,11 @@
 
   // Button focus/hover highlight
   --color-bg-button-focus: #5c9eff;       // Bright blue for focus/hover
-  --color-text-button-focus: #000000;     // Dark text for contrast
+  --color-text-button-focus: #000;     // Dark text for contrast
 
   // Text colors
-  --color-text-primary: rgba(255, 255, 255, 0.87);
-  --color-text-button: #ffffff;
+  --color-text-primary: rgb(255 255 255 / 87%);
+  --color-text-button: #fff;
   --color-text-button-inactive: #333;
   --color-text-muted: #ccc;
   --color-text-subtle: #aaa;
@@ -40,13 +40,13 @@
   --color-period-work: #4caf50;
   --color-period-break: #00bfff;
   --color-period-fun: #bc9600;
-  --color-text-on-bg: #ffffff;
+  --color-text-on-bg: #fff;
 
   // Border colors
   --color-border: #555;
   --color-border-light: #ddd;
   --color-border-lighter: #eee;
-  --color-border-white: #ffffff;
+  --color-border-white: #fff;
 
   // Accent colors
   --color-accent: #646cff;
@@ -68,7 +68,7 @@
 
   // Timeline specific
   --color-timeline-bg: skyblue;
-  --color-elapsed-overlay: rgba(255, 212, 59, 0.4);  // Semi-transparent current-time color
+  --color-elapsed-overlay: rgb(255 212 59 / 40%);  // Semi-transparent current-time color
   --color-overrun: #ac0000;
   --color-subinterval-a: rgb(0 0 0 / 12%);
   --color-subinterval-b: rgb(0 0 0 / 6%);
@@ -76,20 +76,20 @@
   --color-current-time: #ffd43b;  // Gold/yellow for current time indicator
 
   // Stats specific
-  --color-stats-default: #000000;
-  --color-stats-elapsed: rgba(255, 255, 255, 0.5);
+  --color-stats-default: #000;
+  --color-stats-elapsed: rgb(255 255 255 / 50%);
 
   // Debug specific
-  --color-debug-finished-bg: rgb(0, 70, 0);
+  --color-debug-finished-bg: rgb(0 70 0);
   --color-debug-active-bg: #fff3cd;
   --color-debug-active-outline: #ffeaa7;
 
   // Input colors
-  --color-input-bg: rgba(255, 255, 255, 0.9);
+  --color-input-bg: rgb(255 255 255 / 90%);
   --color-input-text: #333;
 
   // Delete button
-  --color-delete-hover-bg: rgba(255, 0, 0, 0.8);
+  --color-delete-hover-bg: rgb(255 0 0 / 80%);
 }
 
 // Nord theme
@@ -102,7 +102,7 @@
   --color-bg-highlighted: #bf616a; // nord11
   --color-bg-blink-start: #a54e56;
   --color-bg-blink-end: #ebcb8b; // nord13
-  --color-bg-edit-form: rgba(46, 52, 64, 0.5);
+  --color-bg-edit-form: rgb(46 52 64 / 50%);
 
   // Button group colors
   --color-bg-button-inactive: #4c566a; // nord3
@@ -159,28 +159,28 @@
 
   // Timeline specific
   --color-timeline-bg: #5e81ac; // nord10
-  --color-elapsed-overlay: rgba(235, 203, 139, 0.4);  // Semi-transparent nord13
+  --color-elapsed-overlay: rgb(235 203 139 / 40%);  // Semi-transparent nord13
   --color-overrun: #bf616a; // nord11
-  --color-subinterval-a: rgba(46, 52, 64, 0.3);
-  --color-subinterval-b: rgba(46, 52, 64, 0.15);
-  --color-outline-editable: rgba(236, 239, 244, 0.9);
+  --color-subinterval-a: rgb(46 52 64 / 30%);
+  --color-subinterval-b: rgb(46 52 64 / 15%);
+  --color-outline-editable: rgb(236 239 244 / 90%);
   --color-current-time: #ebcb8b;  // nord13 - yellow for current time indicator
 
   // Stats specific
   --color-stats-default: #2e3440; // nord0
-  --color-stats-elapsed: rgba(236, 239, 244, 0.5);
+  --color-stats-elapsed: rgb(236 239 244 / 50%);
 
   // Debug specific
   --color-debug-finished-bg: #4c566a; // nord3
-  --color-debug-active-bg: rgba(235, 203, 139, 0.2); // nord13 with alpha
+  --color-debug-active-bg: rgb(235 203 139 / 20%); // nord13 with alpha
   --color-debug-active-outline: #ebcb8b; // nord13
 
   // Input colors
-  --color-input-bg: rgba(236, 239, 244, 0.9);
+  --color-input-bg: rgb(236 239 244 / 90%);
   --color-input-text: #2e3440; // nord0
 
   // Delete button
-  --color-delete-hover-bg: rgba(191, 97, 106, 0.8); // nord11 with alpha
+  --color-delete-hover-bg: rgb(191 97 106 / 80%); // nord11 with alpha
 }
 
 // Utility classes for status colors (used in JSX)
