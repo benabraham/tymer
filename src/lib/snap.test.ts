@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { getNextMultipleOf3Delta } from './snap'
 
 const min = (m: number): number => m * 60 * 1000

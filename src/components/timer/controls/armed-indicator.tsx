@@ -1,8 +1,8 @@
 import { useSignal } from '@preact/signals'
-import { useEffect } from 'preact/hooks'
 import { format } from 'date-fns'
-import { Schedule } from '../../../lib/schedule.js'
+import { useEffect } from 'preact/hooks'
 import { formatDayMarker } from '../../../lib/format.js'
+import { Schedule } from '../../../lib/schedule.js'
 
 const pad = (n: number) => String(n).padStart(2, '0')
 

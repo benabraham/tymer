@@ -1,12 +1,12 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-    parseCurrentDurationsText,
-    serializeCurrentDurations,
+    formatAnchorToken,
     formatDurationToken,
     formatElapsedToken,
-    parseDurationsAnchor,
     hasAnchorLine,
-    formatAnchorToken,
+    parseCurrentDurationsText,
+    parseDurationsAnchor,
+    serializeCurrentDurations,
 } from './durations-format'
 import type { PeriodData, PeriodType } from './period.js'
 

@@ -1,9 +1,9 @@
 import { execSync } from 'node:child_process'
-import { defineConfig } from 'vite'
 import preact from '@preact/preset-vite'
-import { VitePWA } from 'vite-plugin-pwa'
 import autoprefixer from 'autoprefixer'
 import csso from 'postcss-csso'
+import { defineConfig } from 'vite'
+import { VitePWA } from 'vite-plugin-pwa'
 import { soundPreloadPlugin } from './build-tools/sound-preloader.js'
 
 // Build identity — shown in the build-info tooltip so the running build can be

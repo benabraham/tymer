@@ -1,18 +1,18 @@
 import { useEffect } from 'preact/hooks'
-import { initializeTimer, currentPeriod } from '../../lib/timer'
-import { Schedule } from '../../lib/schedule'
-import { formatTime } from '../../lib/format'
-import { unlockAudio } from '../../lib/sounds'
-import { debugVisible } from '../../lib/debug'
 import { compactMode } from '../../lib/compact'
-import { Timeline } from './timeline/timeline'
-import { TimerControls } from './controls/timer-controls'
-import { DurationsConfigPanel } from './durations-config/durations-config-panel'
-import { PeriodControls } from './controls/period-controls'
-import { Stats } from './stats/stats'
-import { DebuggingInfo } from './debug/debugging-info'
+import { debugVisible } from '../../lib/debug'
+import { formatTime } from '../../lib/format'
+import { Schedule } from '../../lib/schedule'
+import { unlockAudio } from '../../lib/sounds'
+import { currentPeriod, initializeTimer } from '../../lib/timer'
 import { BuildInfo } from '../build-info/build-info'
+import { PeriodControls } from './controls/period-controls'
+import { TimerControls } from './controls/timer-controls'
+import { DebuggingInfo } from './debug/debugging-info'
+import { DurationsConfigPanel } from './durations-config/durations-config-panel'
 import { KeyboardShortcuts } from './keyboard-shortcuts'
+import { Stats } from './stats/stats'
+import { Timeline } from './timeline/timeline'
 
 export function Timer() {
     useEffect(() => {
@@ -48,7 +48,8 @@ export function Timer() {
             const bothUnderOneHour =
                 period.state.remaining < 60 * 60 * 1000 && period.state.duration < 60 * 60 * 1000
 
-            let formattedPeriodDurationElapsed, periodUserIntendedDuration
+            let formattedPeriodDurationElapsed: string
+            let periodUserIntendedDuration: string
 
             if (bothUnderOneHour) {
                 // Show only minutes when both are under 60 minutes

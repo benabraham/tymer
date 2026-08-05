@@ -1,5 +1,5 @@
-import { useRef, useLayoutEffect } from 'preact/hooks'
 import type { JSX } from 'preact'
+import { useLayoutEffect, useRef } from 'preact/hooks'
 
 type AutoTextareaProps = {
     value: string

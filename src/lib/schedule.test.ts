@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
-import { Schedule } from './schedule'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SchedulePhase } from './schedule'
+import { Schedule } from './schedule'
 
 // ---------------------------------------------------------------------------
 // Helpers

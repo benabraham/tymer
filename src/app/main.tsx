@@ -1,7 +1,8 @@
+// biome-ignore lint/suspicious/noDeprecatedImports: only render's third replaceNode parameter is deprecated; unused here
 import { render } from 'preact'
 import './index.scss'
-import { Timer } from '../components/timer/timer'
 import { ThemeSwitcher } from '../components/theme-switcher/theme-switcher'
+import { Timer } from '../components/timer/timer'
 import { initTheme } from '../lib/theme'
 import { registerServiceWorker } from './register-sw'
 import 'preact/debug'

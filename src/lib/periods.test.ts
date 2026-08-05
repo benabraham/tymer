@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { Periods } from './periods'
+import { describe, expect, it } from 'vitest'
 import type { PeriodData } from './period.js'
+import { Periods } from './periods'
 
 // Minimal Period-shaped fixtures. The pure-function tests only assert array
 // shape and currentIndex — Period internals are not inspected here, so the

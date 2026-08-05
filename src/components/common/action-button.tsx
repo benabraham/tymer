@@ -5,8 +5,8 @@
 // It plays no sound: button sounds were switched off deliberately in a76e832.
 // The remaining click sounds live in src/lib/timer.js (start/resume/pause/pin).
 
-import { h } from 'preact'
 import type { ComponentChildren, JSX } from 'preact'
+import { h } from 'preact'
 
 type ActionButtonProps<T extends keyof JSX.IntrinsicElements = 'button'> = {
     onClick?: (e: JSX.TargetedMouseEvent<HTMLElement>) => void

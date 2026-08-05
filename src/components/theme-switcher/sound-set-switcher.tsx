@@ -1,11 +1,11 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faMasksTheater } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
     ALL_SETS,
-    soundSetOptions,
     activeSoundSet,
     cycleSoundSet,
     soundSetLabel,
+    soundSetOptions,
 } from '../../lib/sound-set'
 
 // Cycles through the available voice sets (all + one per pack). Renders every

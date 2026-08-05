@@ -1,5 +1,5 @@
-import { SOUND_SETS } from './sound-manifest.js'
 import { createChoicePreference } from './preference.js'
+import { SOUND_SETS } from './sound-manifest.js'
 
 // The pool-wide option — no filtering, today's behavior.
 export const ALL_SETS = 'all'
@@ -12,7 +12,7 @@ const {
     cycle: cycleSoundSet,
 } = createChoicePreference('soundSet', { options: soundSetOptions, defaultValue: ALL_SETS })
 
-export { activeSoundSet, setSoundSet, cycleSoundSet }
+export { activeSoundSet, cycleSoundSet, setSoundSet }
 
 // Capitalize-first-letter display label, computed rather than a hand-maintained
 // map so a fifth voice promoted later appears with no code edit.

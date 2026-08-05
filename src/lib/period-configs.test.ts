@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { parseConfigText, parseConfigAnchor, BUILTIN_CONFIG } from './period-configs'
+import { describe, expect, it } from 'vitest'
+import { BUILTIN_CONFIG, parseConfigAnchor, parseConfigText } from './period-configs'
 
 const MIN = 60000
 

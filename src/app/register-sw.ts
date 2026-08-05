@@ -18,7 +18,7 @@ export const registerServiceWorker = () => {
         // In autoUpdate mode this replaces the plugin's unconditional
         // window.location.reload(); app-update.js reloads once it is safe.
         onNeedReload: announceUpdate,
-        onRegisteredSW: (swUrl, registration) => {
+        onRegisteredSW: (_swUrl, registration) => {
             if (!registration) return
 
             const check = () => {

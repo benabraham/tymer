@@ -1,4 +1,4 @@
-import { signal, computed, effect, type Signal, type ReadonlySignal } from '@preact/signals'
+import { computed, effect, type ReadonlySignal, type Signal, signal } from '@preact/signals'
 import { PERIOD_CONFIG, type PeriodConfigEntry } from './config.js'
 import type { PeriodType } from './period.js'
 

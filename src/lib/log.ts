@@ -31,19 +31,21 @@ export const log = (
         { color: 'black', background: 'silver' }, // 14
     ]
 
-    if (typeof variant !== 'number' || variant < 0 || variant > variantColors.length - 1)
-        variant = 0
+    const safeVariant =
+        typeof variant !== 'number' || variant < 0 || variant > variantColors.length - 1
+            ? 0
+            : variant
 
     // Check if variable is a timer state object (has timestampStarted and timestampPaused properties)
     if (isTimerStateLike(variable)) {
         console.log(
             `%c${text.padStart(25, ' ')}`,
             `
-          color: ${variantColors[variant].color};
-          background-color: ${variantColors[variant].background};
+          color: ${variantColors[safeVariant].color};
+          background-color: ${variantColors[safeVariant].background};
           padding: 4px;
           font-weight: bold;
-          ${border ? `border: 2px solid ${variantColors[variant].color};` : ''}
+          ${border ? `border: 2px solid ${variantColors[safeVariant].color};` : ''}
           `,
             `      now: ${new Date(Date.now()).toLocaleTimeString('cs-CZ', { second: '2-digit', fractionalSecondDigits: 2 })}`,
             `  started: ${variable.timestampStarted === null ? null : new Date(variable.timestampStarted).toLocaleTimeString('cs-CZ', { second: '2-digit', fractionalSecondDigits: 2 })}`,
@@ -53,11 +55,11 @@ export const log = (
         console.log(
             `%c${text.padStart(25, ' ')}`,
             `
-          color: ${variantColors[variant].color};
-          background-color: ${variantColors[variant].background};
+          color: ${variantColors[safeVariant].color};
+          background-color: ${variantColors[safeVariant].background};
           padding: 4px;
           font-weight: bold;
-          ${border ? `border: 2px solid ${variantColors[variant].color};` : ''}
+          ${border ? `border: 2px solid ${variantColors[safeVariant].color};` : ''}
           `,
             variable,
         )

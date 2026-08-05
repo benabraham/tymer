@@ -45,8 +45,8 @@ export const loadState = <TTimerState extends { periods: PeriodData[] } & Record
 
         const isValidState =
             isRecord(loadedState)
-            && timerKeys.every(prop => Object.prototype.hasOwnProperty.call(loadedState, prop))
-            && scheduleKeys.every(prop => Object.prototype.hasOwnProperty.call(loadedState, prop))
+            && timerKeys.every(prop => Object.hasOwn(loadedState, prop))
+            && scheduleKeys.every(prop => Object.hasOwn(loadedState, prop))
             && Array.isArray(loadedState.periods)
             && loadedState.periods.every(p => {
                 const period = p as { config?: unknown; state?: unknown } | null | undefined
@@ -79,7 +79,7 @@ export const loadState = <TTimerState extends { periods: PeriodData[] } & Record
             log('loaded state was invalid, initial state returned', initialTimerState, 2)
             return { timerState: initialTimerState, scheduleSnapshot: initialScheduleSnapshot }
         }
-    } catch (error) {
+    } catch {
         log('initial state saved (there was an error loading the state)', initialTimerState, 3)
         return { timerState: initialTimerState, scheduleSnapshot: initialScheduleSnapshot }
     }

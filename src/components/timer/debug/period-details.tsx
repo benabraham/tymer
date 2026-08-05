@@ -1,6 +1,6 @@
 import { formatTime } from '../../../lib/format'
-import { timerState } from '../../../lib/timer'
 import { Schedule } from '../../../lib/schedule'
+import { timerState } from '../../../lib/timer'
 
 const getPeriodLifecycle = (index: number, currentPeriodIndex: number | null) => {
     if (currentPeriodIndex === null) return 'Future'

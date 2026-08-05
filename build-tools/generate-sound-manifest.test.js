@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import fs from 'node:fs'
-import path from 'node:path'
 import os from 'node:os'
-import { scanSoundManifest, pickVariant } from './generate-sound-manifest.js'
+import path from 'node:path'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { pickVariant, scanSoundManifest } from './generate-sound-manifest.js'
 
 describe('pickVariant', () => {
     it('always returns index 0 with a single variant', () => {

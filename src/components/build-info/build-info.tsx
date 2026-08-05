@@ -1,4 +1,4 @@
-import { updateReady, applyUpdate } from '../../lib/app-update'
+import { applyUpdate, updateReady } from '../../lib/app-update'
 import './build-info.scss'
 
 export function BuildInfo() {

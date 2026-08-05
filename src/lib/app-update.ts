@@ -12,8 +12,8 @@
 // in the durations panel, so a pending update waits for a quiet moment.
 
 import { computed, effect, signal } from '@preact/signals'
-import { Schedule } from './schedule'
 import { configPanelOpen } from './period-configs'
+import { Schedule } from './schedule'
 
 // A newer build is precached and active in the service worker; this page is not
 // running it yet.

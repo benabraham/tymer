@@ -1,11 +1,11 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCaretLeft, faCaretRight } from '@fortawesome/free-solid-svg-icons'
-import { msToMinutes, formatTime } from '../../../lib/format'
-import { currentPeriod, timerState } from '../../../lib/timer'
-import { clocksVisible } from '../../../lib/clocks'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useSignal } from '@preact/signals'
 import { useEffect } from 'preact/hooks'
+import { clocksVisible } from '../../../lib/clocks'
+import { formatTime, msToMinutes } from '../../../lib/format'
 import type { PeriodData } from '../../../lib/period.js'
+import { currentPeriod, timerState } from '../../../lib/timer'
 
 type TimelineCurrentTimeProps = {
     period: PeriodData

@@ -1,12 +1,12 @@
+import { formatTime, msToMinutes } from '../../../lib/format.js'
+import type { PeriodData, PeriodType } from '../../../lib/period.js'
 import {
     activeConfigPeriods,
-    timerState,
-    timerDuration,
     currentPeriod,
+    timerDuration,
+    timerState,
 } from '../../../lib/timer.js'
-import { msToMinutes, formatTime } from '../../../lib/format.js'
 import { StatsBars } from './stats-bars.js'
-import type { PeriodData, PeriodType } from '../../../lib/period.js'
 
 export type TypeSums = {
     duration: number

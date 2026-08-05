@@ -1,11 +1,11 @@
+import { type Signal, signal } from '@preact/signals'
 import { Howl, Howler } from 'howler'
-import { signal, type Signal } from '@preact/signals'
-import { AVAILABLE_SOUNDS } from './sound-discovery'
-import { SOUND_VARIANTS, type SoundVariant } from './sound-manifest.js'
-import { pickVariant } from './pick-variant.js'
-import { activeSoundSet, ALL_SETS } from './sound-set.js'
 import { log } from './log.js'
 import type { PeriodData, PeriodType } from './period.js'
+import { pickVariant } from './pick-variant.js'
+import { AVAILABLE_SOUNDS } from './sound-discovery'
+import { SOUND_VARIANTS, type SoundVariant } from './sound-manifest.js'
+import { ALL_SETS, activeSoundSet } from './sound-set.js'
 
 // Minimal shape sounds.js reads off `window.__timerModule` (assigned by
 // timer.ts). Kept structural/local rather than importing timer.ts to avoid a
@@ -25,16 +25,12 @@ declare global {
 // Resolves the variants (objects) for a sound key from the generated manifest.
 // A key absent from the manifest resolves to no variants — callers (playByKey,
 // playRandomNotification) already treat an empty list as "sound not found".
-export const getVariants = (key: string): SoundVariant[] => {
-    return SOUND_VARIANTS[key] ?? []
-}
+export const getVariants = (key: string): SoundVariant[] => SOUND_VARIANTS[key] ?? []
 
 // Resolves just the variant paths — consumed by soundConfig (build-time
 // preload export) and by tests that guard the full pool regardless of the
 // active set selection.
-export const getVariantPaths = (key: string): string[] => {
-    return getVariants(key).map(v => v.src)
-}
+export const getVariantPaths = (key: string): string[] => getVariants(key).map(v => v.src)
 
 // Narrows `variants` to the given set. `ALL_SETS` returns everything
 // unchanged — today's behavior. Otherwise, filters to just that set's takes,
@@ -287,7 +283,7 @@ const getPeriodContext = (): PeriodContext | null => {
                 periodIndex: timerModule.Schedule?.currentPeriodIndex.value ?? 0,
             }
         }
-    } catch (e) {
+    } catch {
         // Ignore errors during initialization
     }
     return null
@@ -387,7 +383,7 @@ const playRandomNotification = async (): Promise<boolean> => {
             )
             sound.once(
                 'playerror',
-                (id: number, error: unknown) => {
+                (_id: number, error: unknown) => {
                     log('🔊 Notification error', `${notificationKey}: ${error}`, 2)
                     resolve(false)
                 },
@@ -401,14 +397,10 @@ const playRandomNotification = async (): Promise<boolean> => {
 }
 
 // Legacy function for backwards compatibility with general sounds
-export const playSound = (soundName: string): Promise<boolean> => {
-    return playByKey(soundName)
-}
+export const playSound = (soundName: string): Promise<boolean> => playByKey(soundName)
 
 // Simple timer finished sound function
-export const playTimerFinishedSound = (): Promise<boolean> => {
-    return playByKey('timerFinished')
-}
+export const playTimerFinishedSound = (): Promise<boolean> => playByKey('timerFinished')
 
 // New function to play period-based sounds
 export const playPeriodSound = async (soundKey: string): Promise<boolean> => {

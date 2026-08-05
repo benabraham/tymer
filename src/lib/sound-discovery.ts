@@ -23,9 +23,7 @@ export const AVAILABLE_SOUNDS: AvailableSounds = {
 }
 
 // Helper to get the maximum remaining sound available
-export const getMaxRemainingMinutes = (): number => {
-    return Math.max(...AVAILABLE_SOUNDS.remaining)
-}
+export const getMaxRemainingMinutes = (): number => Math.max(...AVAILABLE_SOUNDS.remaining)
 
 // Helper to discover sounds (future enhancement)
 export const discoverAvailableSounds = (): AvailableSounds => {

@@ -1,4 +1,4 @@
-import { signal, type Signal } from '@preact/signals'
+import { type Signal, signal } from '@preact/signals'
 
 // Creates a localStorage-backed boolean signal with a toggle.
 // When the key has never been set, falls back to `defaultValue`.

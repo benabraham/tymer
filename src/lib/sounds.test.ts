@@ -1,15 +1,15 @@
-import { describe, it, expect } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
+import { describe, expect, it } from 'vitest'
+import { SOUND_SETS, SOUND_VARIANTS } from './sound-manifest.js'
+import { ALL_SETS } from './sound-set.js'
 import {
     getVariantPaths,
-    playSound,
-    soundPlaybackLog,
-    REQUIRED_SOUND_KEYS,
     pickCandidates,
+    playSound,
+    REQUIRED_SOUND_KEYS,
+    soundPlaybackLog,
 } from './sounds.js'
-import { SOUND_VARIANTS, SOUND_SETS } from './sound-manifest.js'
-import { ALL_SETS } from './sound-set.js'
 
 describe('getVariantPaths', () => {
     it('uses the manifest paths when the key is present', () => {

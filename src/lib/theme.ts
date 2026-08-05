@@ -8,12 +8,12 @@ const AVAILABLE_THEMES = ['default', 'nord']
 export const getTheme = (): string => localStorage.getItem(THEME_KEY) || DEFAULT_THEME
 
 export const setTheme = (theme: string): void => {
-    if (!AVAILABLE_THEMES.includes(theme)) {
+    const safeTheme = AVAILABLE_THEMES.includes(theme) ? theme : DEFAULT_THEME
+    if (safeTheme !== theme) {
         console.warn(`Unknown theme: ${theme}, falling back to default`)
-        theme = DEFAULT_THEME
     }
-    document.documentElement.dataset.theme = theme
-    localStorage.setItem(THEME_KEY, theme)
+    document.documentElement.dataset.theme = safeTheme
+    localStorage.setItem(THEME_KEY, safeTheme)
 }
 
 export const initTheme = (): void => {

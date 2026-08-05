@@ -1,11 +1,11 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faXmark } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Schedule } from '../../../lib/schedule'
 import {
-    currentDurationsText,
     applyCurrentDurations,
     closeDurationsPanel,
+    currentDurationsText,
 } from '../../../lib/timer'
-import { Schedule } from '../../../lib/schedule'
 import { AutoTextarea } from './auto-textarea'
 
 // Live editor for the running timeline (timer is paused while this is open).

@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { Period } from './period'
+import { describe, expect, it } from 'vitest'
 import { MIN_PERIOD_MS } from './config'
+import { Period } from './period'
 import type { PeriodData, PeriodType } from './period.js'
 
 // Helper to build a minimal period for tests

@@ -6,7 +6,7 @@
 // Schedule has no knowledge of Periods or period counts; invariants that require
 // knowing the number of periods (e.g. "completed = last index") stay in timer.js.
 
-import { signal, computed, type ReadonlySignal } from '@preact/signals'
+import { computed, type ReadonlySignal, signal } from '@preact/signals'
 
 export type SchedulePhase = 'idle' | 'running' | 'paused' | 'completed'
 

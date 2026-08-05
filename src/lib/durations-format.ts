@@ -14,8 +14,7 @@
 // (one colon) or h:mm:ss (two colons). Elapsed carries seconds, so it is
 // rendered as h:mm:ss; totals are rendered as whole minutes or h:mm.
 
-import type { PeriodType } from './period.js'
-import type { PeriodData } from './period.js'
+import type { PeriodData, PeriodType } from './period.js'
 
 // A single parsed line from the current-durations editor text — the result of
 // `parseCurrentDurationsText`.

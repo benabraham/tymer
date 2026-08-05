@@ -1,20 +1,19 @@
-import { describe, beforeEach, it, expect, vi } from 'vitest'
-import {
-    timerState,
-    initialState,
-    timerDuration,
-    timerDurationElapsed,
-    timerDurationRemaining,
-    timerHasFinished,
-    moveToNextPeriod,
-    handleTimerCompletion,
-    adjustElapsed,
-    adjustableElapsed,
-} from './timer'
-import { getNextMultipleOf3Delta } from './snap'
-import { Schedule } from './schedule'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PERIOD_CONFIG } from './config'
 import type { PeriodData, PeriodStateData } from './period.js'
+import { Schedule } from './schedule'
+import { getNextMultipleOf3Delta } from './snap'
+import {
+    adjustableElapsed,
+    adjustElapsed,
+    handleTimerCompletion,
+    initialState,
+    moveToNextPeriod,
+    timerDuration,
+    timerDurationElapsed,
+    timerHasFinished,
+    timerState,
+} from './timer'
 
 // Mock localStorage
 const localStorageMock = {
@@ -125,7 +124,7 @@ describe('Timer Logic - Simple Tests', () => {
             })
             timerState.value = {
                 ...timerState.value,
-                periods: timerState.value.periods.map((period, index) => ({
+                periods: timerState.value.periods.map((period, _index) => ({
                     ...period,
                     state: {
                         ...period.state,

@@ -3,15 +3,16 @@
  * Uses memoization to avoid unnecessary renders.
  * Defensive against missing/empty periods.
  */
-import { timerDuration, timerState, autoEditIndex } from '../../../lib/timer'
-import { Schedule } from '../../../lib/schedule'
+
+import type { JSX } from 'preact'
+import { useEffect, useMemo, useRef } from 'preact/hooks'
 import { clocksVisible } from '../../../lib/clocks'
 import { compactMode } from '../../../lib/compact'
 import { msToMinutes } from '../../../lib/format'
-import { TimelinePeriod } from './timeline-period'
-import { useMemo, useEffect, useRef } from 'preact/hooks'
+import { Schedule } from '../../../lib/schedule'
+import { autoEditIndex, timerDuration, timerState } from '../../../lib/timer'
 import { getTimelineData } from './timeline-logic'
-import type { JSX } from 'preact'
+import { TimelinePeriod } from './timeline-period'
 
 export const Timeline = () => {
     const timelineRef = useRef<HTMLDivElement>(null)

@@ -1,6 +1,6 @@
-import { describe, beforeEach, afterEach, it, expect, vi } from 'vitest'
-import { calculateEndTimes, calculateStartTime } from './timeline-logic.js'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PeriodData } from '../../../lib/period.js'
+import { calculateEndTimes, calculateStartTime } from './timeline-logic.js'
 
 const MIN = 60 * 1000
 

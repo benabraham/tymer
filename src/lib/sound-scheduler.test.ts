@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { SoundScheduler } from './sound-scheduler'
+import { beforeEach, describe, expect, it } from 'vitest'
 import type { SoundWindow } from './sound-scheduler'
+import { SoundScheduler } from './sound-scheduler'
 
 describe('SoundScheduler', () => {
     let scheduler: SoundScheduler
@@ -231,7 +231,7 @@ describe('SoundScheduler', () => {
         it('handles very short periods (6 minutes)', () => {
             // At 3 minutes (50% mark) in a 6-minute period
             scheduler.checkSounds(3 * 60000 - 1000, 6 * 60000, 'work', false)
-            const sound = scheduler.checkSounds(3 * 60000 + 2001, 6 * 60000, 'work', false)
+            scheduler.checkSounds(3 * 60000 + 2001, 6 * 60000, 'work', false)
 
             // Should not play elapsed sounds after 50%
             const activeWindows = scheduler.getActiveWindows(3 * 60000, 6 * 60000, 'work')

@@ -1,27 +1,27 @@
-import { useState, useRef, useEffect, useCallback } from 'preact/hooks'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCircleMinus, faPlus, faThumbtack } from '@fortawesome/free-solid-svg-icons'
-import { msToMinutes, formatTime } from '../../../lib/format'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import type { JSX } from 'preact'
+import { useCallback, useEffect, useRef, useState } from 'preact/hooks'
+import { clocksVisible } from '../../../lib/clocks'
+import { formatTime, msToMinutes } from '../../../lib/format'
+import { Period } from '../../../lib/period'
+import type { PeriodData, PeriodType } from '../../../lib/period.js'
+import { Schedule } from '../../../lib/schedule'
+import { playSound } from '../../../lib/sounds'
 import {
-    applyToPeriod,
-    pauseForEditing,
-    resumeAfterEditing,
-    timerState,
-    removePeriodByIndex,
     addPeriodAtIndex,
+    applyToPeriod,
     autoEditIndex,
     canTogglePin,
+    pauseForEditing,
+    removePeriodByIndex,
+    resumeAfterEditing,
+    timerState,
     togglePinTimer,
 } from '../../../lib/timer'
-import { Schedule } from '../../../lib/schedule'
-import { Period } from '../../../lib/period'
-import { clocksVisible } from '../../../lib/clocks'
-import { TimelineCurrentTime } from './timeline-current-time'
 import { ActionButton } from '../../common/action-button'
-import { playSound } from '../../../lib/sounds'
-import type { PeriodData, PeriodType } from '../../../lib/period.js'
+import { TimelineCurrentTime } from './timeline-current-time'
 import type { TimelinePeriodProps } from './timeline-logic'
-import type { JSX } from 'preact'
 
 export const TimelinePeriod = ({
     period,

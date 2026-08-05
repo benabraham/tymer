@@ -1,6 +1,6 @@
-import { AVAILABLE_SOUNDS } from './sound-discovery'
-import type { AvailableSounds } from './sound-discovery'
 import type { PeriodType } from './period.js'
+import type { AvailableSounds } from './sound-discovery'
+import { AVAILABLE_SOUNDS } from './sound-discovery'
 
 type SoundWindowType = 'elapsed' | 'remaining' | 'timesup' | 'overtime'
 
@@ -116,7 +116,6 @@ export class SoundScheduler {
         nextPeriodType: PeriodType | 'finish' | null = null,
     ): SoundWindow[] {
         const allWindows = this.getAllPossibleWindows(intendedDuration, periodType, nextPeriodType)
-        const threshold = this.getThreshold(intendedDuration)
         const activeWindows: SoundWindow[] = []
 
         for (const window of allWindows) {

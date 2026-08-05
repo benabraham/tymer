@@ -1,10 +1,10 @@
 import { formatTime } from '../../../lib/format'
-import { currentPeriod, timerState } from '../../../lib/timer'
 import { Schedule } from '../../../lib/schedule'
-import { SoundScheduler } from '../../../lib/sound-scheduler'
-import type { SoundWindow } from '../../../lib/sound-scheduler'
 import { AVAILABLE_SOUNDS } from '../../../lib/sound-discovery'
+import type { SoundWindow } from '../../../lib/sound-scheduler'
+import { SoundScheduler } from '../../../lib/sound-scheduler'
 import { soundPlaybackLog } from '../../../lib/sounds'
+import { currentPeriod, timerState } from '../../../lib/timer'
 
 const soundScheduler = new SoundScheduler(5000, AVAILABLE_SOUNDS)
 
@@ -34,9 +34,7 @@ export const SoundNotificationTable = () => {
     const nextPeriod = timerState.value.periods[nextIndex]
     const nextPeriodType = nextPeriod ? nextPeriod.config.type : 'finish'
 
-    const formatTimeFromMs = (ms: number) => {
-        return formatTime(ms, { debug: true })
-    }
+    const formatTimeFromMs = (ms: number) => formatTime(ms, { debug: true })
 
     // Get all possible windows for this period
     const allWindows = soundScheduler.getAllPossibleWindows(

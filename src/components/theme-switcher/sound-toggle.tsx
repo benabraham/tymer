@@ -1,6 +1,6 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faVolumeHigh, faVolumeXmark } from '@fortawesome/free-solid-svg-icons'
-import { soundEnabled, audioUnlocked, toggleSound, unlockAudio } from '../../lib/sounds'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { audioUnlocked, soundEnabled, toggleSound, unlockAudio } from '../../lib/sounds'
 
 // Mute toggle. Three visual states, matching the other top-controls toggles:
 //   on + audio activated   → active (accent background)

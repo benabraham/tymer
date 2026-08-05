@@ -1,43 +1,43 @@
-import { describe, beforeEach, afterEach, it, expect, vi } from 'vitest'
-import {
-    timerState,
-    initialState,
-    pinTimer,
-    unpinTimer,
-    togglePinTimer,
-    canTogglePin,
-    reconcileToAnchor,
-    timerDurationElapsed,
-    currentPeriod,
-    moveToPreviousPeriod,
-    pauseTimer,
-    resumeTimer,
-    pauseForEditing,
-    resumeAfterEditing,
-    canAdjustElapsed,
-    canAdjustElapsedForward,
-    canAdjustElapsedBackward,
-    canMoveElapsedToPrevious,
-    startTimer,
-    applyCurrentDurations,
-    applyActiveConfig,
-    editingCurrentDurations,
-    currentDurationsText,
-    adjustElapsed,
-    adjustableElapsed,
-    moveElapsedTimeToPreviousPeriod,
-} from './timer'
-import { getNextMultipleOf3Delta } from './snap'
-import { Schedule } from './schedule'
-import { PERIOD_CONFIG, MIN_PERIOD_MS } from './config'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { MIN_PERIOD_MS, PERIOD_CONFIG } from './config'
+import type { PeriodData } from './period.js'
 import {
     addConfig,
-    updateConfigText,
-    selectConfig,
-    deleteConfig,
     BUILTIN_CONFIG,
+    deleteConfig,
+    selectConfig,
+    updateConfigText,
 } from './period-configs'
-import type { PeriodData } from './period.js'
+import { Schedule } from './schedule'
+import { getNextMultipleOf3Delta } from './snap'
+import {
+    adjustableElapsed,
+    adjustElapsed,
+    applyActiveConfig,
+    applyCurrentDurations,
+    canAdjustElapsed,
+    canAdjustElapsedBackward,
+    canAdjustElapsedForward,
+    canMoveElapsedToPrevious,
+    canTogglePin,
+    currentDurationsText,
+    currentPeriod,
+    editingCurrentDurations,
+    initialState,
+    moveElapsedTimeToPreviousPeriod,
+    moveToPreviousPeriod,
+    pauseForEditing,
+    pauseTimer,
+    pinTimer,
+    reconcileToAnchor,
+    resumeAfterEditing,
+    resumeTimer,
+    startTimer,
+    timerDurationElapsed,
+    timerState,
+    togglePinTimer,
+    unpinTimer,
+} from './timer'
 
 // currentPeriod is `PeriodData | undefined` — every call site below runs
 // after a beforeEach/setup that guarantees a current period exists (mirrors

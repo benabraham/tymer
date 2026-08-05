@@ -1,40 +1,40 @@
 import { useEffect } from 'preact/hooks'
-import {
-    pauseTimer,
-    resumeTimer,
-    startTimer,
-    moveToNextPeriod,
-    moveToPreviousPeriod,
-    adjustElapsed,
-    adjustDuration,
-    timerDurationElapsed,
-    adjustableElapsed,
-    currentPeriod,
-    changeType,
-    setCurrentPeriodType,
-    addPeriod,
-    removePeriod,
-    moveElapsedTimeToPreviousPeriod,
-    autoEditIndex,
-    canStartPause,
-    canMoveToNextPeriod,
-    canMoveToPreviousPeriod,
-    canAdjustElapsed,
-    canAdjustDuration,
-    canChangeType,
-    canAddPeriod,
-    canRemovePeriod,
-    canMoveElapsedToPrevious,
-    openDurationsPanel,
-    closeDurationsPanel,
-    canTogglePin,
-    togglePinTimer,
-} from '../../lib/timer'
 import { configPanelOpen } from '../../lib/period-configs'
 import { Schedule } from '../../lib/schedule'
 import { getNextMultipleOf3Delta } from '../../lib/snap'
-import { unlockAudio, toggleSound } from '../../lib/sounds'
 import { cycleSoundSet } from '../../lib/sound-set'
+import { toggleSound, unlockAudio } from '../../lib/sounds'
+import {
+    addPeriod,
+    adjustableElapsed,
+    adjustDuration,
+    adjustElapsed,
+    autoEditIndex,
+    canAddPeriod,
+    canAdjustDuration,
+    canAdjustElapsed,
+    canChangeType,
+    canMoveElapsedToPrevious,
+    canMoveToNextPeriod,
+    canMoveToPreviousPeriod,
+    canRemovePeriod,
+    canStartPause,
+    canTogglePin,
+    changeType,
+    closeDurationsPanel,
+    currentPeriod,
+    moveElapsedTimeToPreviousPeriod,
+    moveToNextPeriod,
+    moveToPreviousPeriod,
+    openDurationsPanel,
+    pauseTimer,
+    removePeriod,
+    resumeTimer,
+    setCurrentPeriodType,
+    startTimer,
+    timerDurationElapsed,
+    togglePinTimer,
+} from '../../lib/timer'
 
 export function KeyboardShortcuts() {
     useEffect(() => {
@@ -67,8 +67,6 @@ export function KeyboardShortcuts() {
             // Unlock audio on keyboard interaction
             await unlockAudio()
 
-            let handled = false
-
             // Space - toggle pause/run
             if (event.key === ' ') {
                 event.preventDefault()
@@ -76,7 +74,6 @@ export function KeyboardShortcuts() {
                     if (Schedule.isRunning.value) pauseTimer()
                     else if (Schedule.isPaused.value) resumeTimer()
                     else startTimer()
-                    handled = true
                 }
             }
 
@@ -85,7 +82,6 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canMoveToNextPeriod.value) {
                     moveToNextPeriod()
-                    handled = true
                 }
             }
 
@@ -94,7 +90,6 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canMoveToPreviousPeriod.value) {
                     moveToPreviousPeriod()
-                    handled = true
                 }
             }
 
@@ -113,7 +108,6 @@ export function KeyboardShortcuts() {
                 })
                 if (canAdjustElapsed(delta)) {
                     adjustElapsed(delta)
-                    handled = true
                 }
             } else if (
                 event.key === 'ArrowLeft'
@@ -128,7 +122,6 @@ export function KeyboardShortcuts() {
                 })
                 if (canAdjustElapsed(delta)) {
                     adjustElapsed(delta)
-                    handled = true
                 }
             }
             // Ctrl + arrows: ±6m
@@ -141,7 +134,6 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canAdjustElapsed(6 * 60 * 1000)) {
                     adjustElapsed(6 * 60 * 1000)
-                    handled = true
                 }
             } else if (
                 event.key === 'ArrowLeft'
@@ -152,7 +144,6 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canAdjustElapsed(-6 * 60 * 1000)) {
                     adjustElapsed(-6 * 60 * 1000)
-                    handled = true
                 }
             }
             // Shift + arrows: ±24m
@@ -165,7 +156,6 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canAdjustElapsed(24 * 60 * 1000)) {
                     adjustElapsed(24 * 60 * 1000)
-                    handled = true
                 }
             } else if (
                 event.key === 'ArrowLeft'
@@ -176,7 +166,6 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canAdjustElapsed(-24 * 60 * 1000)) {
                     adjustElapsed(-24 * 60 * 1000)
-                    handled = true
                 }
             }
             // Alt + arrows: ±1m
@@ -189,7 +178,6 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canAdjustElapsed(1 * 60 * 1000)) {
                     adjustElapsed(1 * 60 * 1000)
-                    handled = true
                 }
             } else if (
                 event.key === 'ArrowLeft'
@@ -200,7 +188,6 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canAdjustElapsed(-1 * 60 * 1000)) {
                     adjustElapsed(-1 * 60 * 1000)
-                    handled = true
                 }
             }
 
@@ -209,7 +196,6 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canAdjustElapsed(-timerDurationElapsed.value)) {
                     adjustElapsed(-timerDurationElapsed.value)
-                    handled = true
                 }
             }
 
@@ -223,7 +209,6 @@ export function KeyboardShortcuts() {
                 const delta = currentDuration - (currentPeriod.value?.state.elapsed || 0)
                 if (canAdjustElapsed(delta)) {
                     adjustElapsed(delta)
-                    handled = true
                 }
             }
 
@@ -243,7 +228,6 @@ export function KeyboardShortcuts() {
                 })
                 if (canAdjustDuration(delta)) {
                     adjustDuration(delta)
-                    handled = true
                 }
             } else if (event.key === '-' && !event.ctrlKey && !event.altKey && !event.shiftKey) {
                 event.preventDefault()
@@ -254,7 +238,6 @@ export function KeyboardShortcuts() {
                 })
                 if (canAdjustDuration(delta)) {
                     adjustDuration(delta)
-                    handled = true
                 }
             }
             // Ctrl + +/-: ±6m
@@ -267,13 +250,11 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canAdjustDuration(6 * 60 * 1000)) {
                     adjustDuration(6 * 60 * 1000)
-                    handled = true
                 }
             } else if (event.key === '-' && event.ctrlKey && !event.altKey && !event.shiftKey) {
                 event.preventDefault()
                 if (canAdjustDuration(-6 * 60 * 1000)) {
                     adjustDuration(-6 * 60 * 1000)
-                    handled = true
                 }
             }
             // Shift + +/-: ±24m
@@ -286,13 +267,11 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canAdjustDuration(24 * 60 * 1000)) {
                     adjustDuration(24 * 60 * 1000)
-                    handled = true
                 }
             } else if (event.key === '-' && event.shiftKey && !event.altKey && !event.ctrlKey) {
                 event.preventDefault()
                 if (canAdjustDuration(-24 * 60 * 1000)) {
                     adjustDuration(-24 * 60 * 1000)
-                    handled = true
                 }
             }
             // Alt + +/-: ±1m
@@ -305,13 +284,11 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canAdjustDuration(1 * 60 * 1000)) {
                     adjustDuration(1 * 60 * 1000)
-                    handled = true
                 }
             } else if (event.key === '-' && event.altKey && !event.shiftKey && !event.ctrlKey) {
                 event.preventDefault()
                 if (canAdjustDuration(-1 * 60 * 1000)) {
                     adjustDuration(-1 * 60 * 1000)
-                    handled = true
                 }
             }
 
@@ -325,7 +302,6 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canChangeType.value) {
                     changeType()
-                    handled = true
                 }
             }
 
@@ -339,7 +315,6 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canChangeType.value) {
                     setCurrentPeriodType('work')
-                    handled = true
                 }
             }
 
@@ -353,7 +328,6 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canChangeType.value) {
                     setCurrentPeriodType('break')
-                    handled = true
                 }
             }
 
@@ -367,7 +341,6 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canChangeType.value) {
                     setCurrentPeriodType('fun')
-                    handled = true
                 }
             }
 
@@ -381,7 +354,6 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canAddPeriod.value) {
                     addPeriod()
-                    handled = true
                 }
             }
 
@@ -395,7 +367,6 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canTogglePin.value) {
                     togglePinTimer()
-                    handled = true
                 }
             }
 
@@ -408,7 +379,6 @@ export function KeyboardShortcuts() {
             ) {
                 event.preventDefault()
                 toggleSound()
-                handled = true
             }
 
             // V - cycle voice set
@@ -420,7 +390,6 @@ export function KeyboardShortcuts() {
             ) {
                 event.preventDefault()
                 cycleSoundSet()
-                handled = true
             }
 
             // E - open the durations panel (Edit current durations)
@@ -433,7 +402,6 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (!configPanelOpen.value) {
                     openDurationsPanel()
-                    handled = true
                 }
             }
 
@@ -447,7 +415,6 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canMoveElapsedToPrevious.value) {
                     moveElapsedTimeToPreviousPeriod()
-                    handled = true
                 }
             }
 
@@ -456,7 +423,6 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (Schedule.currentPeriodIndex.value !== null) {
                     autoEditIndex.value = Schedule.currentPeriodIndex.value
-                    handled = true
                 }
             }
 
@@ -465,7 +431,6 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canAddPeriod.value) {
                     addPeriod()
-                    handled = true
                 }
             }
 
@@ -474,7 +439,6 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canRemovePeriod.value) {
                     removePeriod()
-                    handled = true
                 }
             }
         }

@@ -1,36 +1,36 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
     faArrowRotateLeft,
-    faPlay,
-    faPause,
     faBackwardStep,
-    faForwardStep,
     faFlagCheckered,
+    faForwardStep,
+    faPause,
+    faPlay,
     faSliders,
 } from '@fortawesome/free-solid-svg-icons'
-import {
-    timerOnLastPeriod,
-    shouldGoToNextPeriod,
-    timerHasFinished,
-    canStartPause,
-    canReset,
-    canMoveToNextPeriod,
-    canMoveToPreviousPeriod,
-    canFinishTimer,
-    canConfigureDurations,
-    editingCurrentDurations,
-    toggleDurationsPanel,
-    handleTimerCompletion,
-    pauseTimer,
-    resumeTimer,
-    startTimer,
-    resetTimer,
-    moveToNextPeriod,
-    moveToPreviousPeriod,
-} from '../../../lib/timer'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { activeConfig, configPanelOpen } from '../../../lib/period-configs'
 import { Schedule } from '../../../lib/schedule'
 import { unlockAudio } from '../../../lib/sounds'
-import { activeConfig, configPanelOpen } from '../../../lib/period-configs'
+import {
+    canConfigureDurations,
+    canFinishTimer,
+    canMoveToNextPeriod,
+    canMoveToPreviousPeriod,
+    canReset,
+    canStartPause,
+    editingCurrentDurations,
+    handleTimerCompletion,
+    moveToNextPeriod,
+    moveToPreviousPeriod,
+    pauseTimer,
+    resetTimer,
+    resumeTimer,
+    shouldGoToNextPeriod,
+    startTimer,
+    timerHasFinished,
+    timerOnLastPeriod,
+    toggleDurationsPanel,
+} from '../../../lib/timer'
 import { ActionButton } from '../../common/action-button'
 import { ArmedIndicator } from './armed-indicator'
 

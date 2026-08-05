@@ -1,35 +1,30 @@
-import { signal, effect, computed, batch, type Signal, type ReadonlySignal } from '@preact/signals'
-import { saveState, loadState } from './storage'
-import { playSound, playTimerFinishedSound, playPeriodSound, getSoundKeyFromPath } from './sounds'
-import { log } from './log.js'
+import { batch, computed, effect, type ReadonlySignal, type Signal, signal } from '@preact/signals'
+import { DURATION_TO_ADD_AUTOMATICALLY, MIN_PERIOD_MS, PERIOD_CONFIG } from './config.js'
 import {
-    PERIOD_CONFIG,
-    UI_UPDATE_INTERVAL,
-    DURATION_TO_ADD_AUTOMATICALLY,
-    MIN_PERIOD_MS,
-} from './config.js'
-import { SoundScheduler } from './sound-scheduler'
-import { AVAILABLE_SOUNDS } from './sound-discovery'
-import { Period } from './period'
-import type { PeriodData, PeriodType } from './period.js'
-import { Periods } from './periods'
-import { Schedule } from './schedule'
-import type { ScheduleSnapshot } from './schedule.js'
-import {
-    parseConfigText,
-    parseConfigAnchor,
-    activeConfig,
-    selectConfig,
-    configPanelOpen,
-} from './period-configs'
-import {
+    hasAnchorLine,
     parseCurrentDurationsText,
     parseDurationsAnchor,
-    hasAnchorLine,
     serializeCurrentDurations,
 } from './durations-format'
 import type { ParsedDurationsAnchor } from './durations-format.js'
 import { formatDayMarker } from './format'
+import { log } from './log.js'
+import { Period } from './period'
+import type { PeriodData, PeriodType } from './period.js'
+import {
+    activeConfig,
+    configPanelOpen,
+    parseConfigAnchor,
+    parseConfigText,
+    selectConfig,
+} from './period-configs'
+import { Periods } from './periods'
+import { Schedule } from './schedule'
+import type { ScheduleSnapshot } from './schedule.js'
+import { AVAILABLE_SOUNDS } from './sound-discovery'
+import { SoundScheduler } from './sound-scheduler'
+import { getSoundKeyFromPath, playPeriodSound, playSound, playTimerFinishedSound } from './sounds'
+import { loadState, saveState } from './storage'
 
 // The { periods, types } shape owned by the timerState signal — Schedule owns
 // phase/timestamps/index separately (see ScheduleSnapshot).
@@ -119,7 +114,7 @@ const initWorker = (): Worker => {
         timerWorker = new Worker(new URL('./timer-worker.ts', import.meta.url), {
             type: 'module',
         })
-        timerWorker.onmessage = event => {
+        timerWorker.onmessage = () => {
             // Worker sends timestamp, trigger our tick function
             tick()
         }

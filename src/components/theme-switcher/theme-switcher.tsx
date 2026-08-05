@@ -1,21 +1,21 @@
-import { useState } from 'preact/hooks'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-    faSun,
-    faSnowflake,
     faBug,
     faClock,
-    faThumbtack,
     faCompress,
+    faSnowflake,
+    faSun,
+    faThumbtack,
 } from '@fortawesome/free-solid-svg-icons'
-import { getTheme, cycleTheme } from '../../lib/theme'
-import { debugVisible, toggleDebug } from '../../lib/debug'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { useState } from 'preact/hooks'
 import { clocksVisible, toggleClocks } from '../../lib/clocks'
 import { compactMode, toggleCompact } from '../../lib/compact'
-import { canTogglePin, togglePinTimer } from '../../lib/timer'
+import { debugVisible, toggleDebug } from '../../lib/debug'
 import { Schedule } from '../../lib/schedule'
-import { SoundToggle } from './sound-toggle'
+import { cycleTheme, getTheme } from '../../lib/theme'
+import { canTogglePin, togglePinTimer } from '../../lib/timer'
 import { SoundSetSwitcher } from './sound-set-switcher'
+import { SoundToggle } from './sound-toggle'
 import './theme-switcher.scss'
 
 export const ThemeSwitcher = () => {

@@ -1,23 +1,23 @@
-import { useState } from 'preact/hooks'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faXmark } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { useState } from 'preact/hooks'
 import {
-    allConfigs,
     activeConfig,
     activeConfigId,
-    configPanelOpen,
     addConfig,
-    duplicateConfig,
+    allConfigs,
+    configPanelOpen,
     deleteConfig,
-    updateConfigText,
+    duplicateConfig,
     updateConfigName,
+    updateConfigText,
 } from '../../../lib/period-configs'
 import {
+    applyActiveConfig,
     canConfigureDurations,
+    closeDurationsPanel,
     editingCurrentDurations,
     selectAndApplyConfig,
-    applyActiveConfig,
-    closeDurationsPanel,
 } from '../../../lib/timer'
 import { AutoTextarea } from './auto-textarea'
 import { CurrentDurationsEditor } from './current-durations-editor'
