@@ -1,0 +1,1 @@
+(function(){let e=self,t=null;e.addEventListener(`message`,n=>{n.data===`start`?t=setInterval(()=>{e.postMessage(Date.now())},1e3):n.data===`stop`&&(t&&=(clearInterval(t),null))})})();
