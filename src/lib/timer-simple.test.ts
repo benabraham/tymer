@@ -14,6 +14,7 @@ import {
 import { getNextMultipleOf3Delta } from './snap'
 import { Schedule } from './schedule'
 import { PERIOD_CONFIG } from './config'
+import type { PeriodData, PeriodStateData } from './period.js'
 
 // Mock localStorage
 const localStorageMock = {
@@ -22,7 +23,7 @@ const localStorageMock = {
     removeItem: vi.fn(),
     clear: vi.fn(),
 }
-global.localStorage = localStorageMock
+globalThis.localStorage = localStorageMock as unknown as Storage
 
 // Mock audio
 vi.mock('./sounds', () => ({
@@ -36,7 +37,7 @@ describe('Timer Logic - Simple Tests', () => {
         // Reset timer state before each test
         timerState.value = {
             ...initialState,
-            periods: PERIOD_CONFIG.map(({ duration, type, note = '' }) => ({
+            periods: PERIOD_CONFIG.map(({ duration, type, note = '' }): PeriodData => ({
                 config: { type, note, userIntendedDuration: duration },
                 state: { duration, elapsed: 0, remaining: duration },
             })),
@@ -59,7 +60,11 @@ describe('Timer Logic - Simple Tests', () => {
                 expect(period.state.duration).toBe(PERIOD_CONFIG[index].duration)
                 expect(period.config.type).toBe(PERIOD_CONFIG[index].type)
                 expect(period.state.elapsed).toBe(0)
-                expect(period.state.finished).toBeUndefined()
+                // `finished` was never part of PeriodStateData — this asserts
+                // the legacy field really is absent, not just typed away.
+                expect(
+                    (period.state as PeriodStateData & { finished?: unknown }).finished,
+                ).toBeUndefined()
             })
         })
     })
@@ -164,7 +169,7 @@ describe('Timer Logic - Simple Tests', () => {
 
     describe('plain arrow keys move elapsed on a running clock (unanchored)', () => {
         // The plain ArrowLeft/ArrowRight handler in keyboard-shortcuts.jsx.
-        const pressArrow = direction =>
+        const pressArrow = (direction: 'up' | 'down') =>
             adjustElapsed(
                 getNextMultipleOf3Delta({ currentMs: adjustableElapsed.value, direction }),
             )
@@ -508,8 +513,8 @@ describe('Timer Logic - Simple Tests', () => {
             )
 
             expect(modifiedPeriod).toBeDefined()
-            expect(modifiedPeriod.state.duration).toBe(120000)
-            expect(modifiedPeriod.state.elapsed).toBe(120000)
+            expect(modifiedPeriod?.state.duration).toBe(120000)
+            expect(modifiedPeriod?.state.elapsed).toBe(120000)
 
             // Timer should be in completed state
             expect(Schedule.currentPeriodIndex.value).toBe(null)
@@ -594,8 +599,8 @@ describe('Timer Logic - Simple Tests', () => {
 
             // Period with exactly 1:00 should be kept (>= threshold, not > threshold)
             expect(oneMinutePeriod).toBeDefined()
-            expect(oneMinutePeriod.state.duration).toBe(60000)
-            expect(oneMinutePeriod.state.elapsed).toBe(60000)
+            expect(oneMinutePeriod?.state.duration).toBe(60000)
+            expect(oneMinutePeriod?.state.elapsed).toBe(60000)
 
             // Timer should be in completed state
             expect(Schedule.currentPeriodIndex.value).toBe(null)
@@ -639,8 +644,8 @@ describe('Timer Logic - Simple Tests', () => {
 
             // Period with 1:15 should be rounded down to exactly 1:00 and kept
             expect(oneMinutePeriod).toBeDefined()
-            expect(oneMinutePeriod.state.duration).toBe(60000)
-            expect(oneMinutePeriod.state.elapsed).toBe(60000)
+            expect(oneMinutePeriod?.state.duration).toBe(60000)
+            expect(oneMinutePeriod?.state.elapsed).toBe(60000)
 
             // Timer should be in completed state
             expect(Schedule.currentPeriodIndex.value).toBe(null)
@@ -688,8 +693,8 @@ describe('Timer Logic - Simple Tests', () => {
 
             // Period with 1:59 should be rounded down to exactly 1:00 and kept (59 seconds lost)
             expect(oneMinutePeriod).toBeDefined()
-            expect(oneMinutePeriod.state.duration).toBe(60000)
-            expect(oneMinutePeriod.state.elapsed).toBe(60000)
+            expect(oneMinutePeriod?.state.duration).toBe(60000)
+            expect(oneMinutePeriod?.state.elapsed).toBe(60000)
 
             // Timer should be in completed state
             expect(Schedule.currentPeriodIndex.value).toBe(null)

@@ -37,8 +37,14 @@ import {
     deleteConfig,
     BUILTIN_CONFIG,
 } from './period-configs'
+import type { PeriodData } from './period.js'
 
-const msToMinutesSinceMidnight = ms => {
+// currentPeriod is `PeriodData | undefined` — every call site below runs
+// after a beforeEach/setup that guarantees a current period exists (mirrors
+// the `currentPeriod.value as PeriodData` cast timer.js itself uses).
+const current = (): PeriodData => currentPeriod.value as PeriodData
+
+const msToMinutesSinceMidnight = (ms: number): number => {
     const date = new Date(ms)
     return date.getHours() * 60 + date.getMinutes()
 }
@@ -50,7 +56,7 @@ const localStorageMock = {
     removeItem: vi.fn(),
     clear: vi.fn(),
 }
-global.localStorage = localStorageMock
+globalThis.localStorage = localStorageMock as unknown as Storage
 
 // Mock audio
 vi.mock('./sounds', () => ({
@@ -67,9 +73,9 @@ vi.mock('./sounds', () => ({
 class FakeWorker {
     postMessage() {}
 }
-global.Worker = FakeWorker
+globalThis.Worker = FakeWorker as unknown as typeof Worker
 
-const freshPeriods = () =>
+const freshPeriods = (): PeriodData[] =>
     PERIOD_CONFIG.map(({ duration, type, note = '' }) => ({
         config: { type, note, userIntendedDuration: duration },
         state: { duration, elapsed: 0, remaining: duration },
@@ -309,10 +315,10 @@ describe('Timer anchor lifecycle', () => {
             resumeAfterEditing()
 
             expect(Schedule.currentPeriodIndex.value).toBe(0)
-            expect(currentPeriod.value.state.elapsed).toBe(25 * 60 * 1000)
-            expect(currentPeriod.value.state.duration).toBe(25 * 60 * 1000)
+            expect(current().state.elapsed).toBe(25 * 60 * 1000)
+            expect(current().state.duration).toBe(25 * 60 * 1000)
             // auto-extension leaves the user's intent untouched
-            expect(currentPeriod.value.config.userIntendedDuration).toBe(24 * 60 * 1000)
+            expect(current().config.userIntendedDuration).toBe(24 * 60 * 1000)
             // the successor is not consumed
             expect(timerState.value.periods[1].state.elapsed).toBe(0)
             // invariant: total elapsed across all periods === now - anchor
@@ -336,8 +342,8 @@ describe('Timer anchor lifecycle', () => {
             resumeAfterEditing()
 
             expect(Schedule.currentPeriodIndex.value).toBe(0)
-            expect(currentPeriod.value.state.elapsed).toBe(143 * 60 * 1000)
-            expect(currentPeriod.value.state.duration).toBe(143 * 60 * 1000)
+            expect(current().state.elapsed).toBe(143 * 60 * 1000)
+            expect(current().state.duration).toBe(143 * 60 * 1000)
             expect(timerState.value.periods[1].state.elapsed).toBe(0)
             expect(timerDurationElapsed.value).toBe(Date.now() - anchor)
         })
@@ -374,9 +380,9 @@ describe('Timer anchor lifecycle', () => {
             expect(Schedule.isCompleted.value).toBe(false)
             expect(Schedule.isRunning.value).toBe(true)
             expect(Schedule.currentPeriodIndex.value).toBe(0)
-            expect(currentPeriod.value.state.elapsed).toBe(12 * 60 * 1000)
-            expect(currentPeriod.value.state.duration).toBe(12 * 60 * 1000)
-            expect(currentPeriod.value.config.userIntendedDuration).toBe(5 * 60 * 1000)
+            expect(current().state.elapsed).toBe(12 * 60 * 1000)
+            expect(current().state.duration).toBe(12 * 60 * 1000)
+            expect(current().config.userIntendedDuration).toBe(5 * 60 * 1000)
             // invariant: every wall-clock minute since the anchor is recorded
             expect(timerDurationElapsed.value).toBe(Date.now() - anchor)
         })
@@ -467,7 +473,7 @@ describe('Timer anchor lifecycle', () => {
             expect(Schedule.isAnchored.value).toBe(true)
             expect(Schedule.isRunning.value).toBe(true)
             // elapsed reflects the wall clock: anchor to "now" = 1 + 5 = 6 minutes
-            expect(currentPeriod.value.state.elapsed).toBe(6 * 60 * 1000)
+            expect(current().state.elapsed).toBe(6 * 60 * 1000)
         })
 
         it('resumeAfterEditing extends the current period and keeps running when remaining time ran out while editing', () => {
@@ -531,7 +537,7 @@ describe('Timer anchor lifecycle', () => {
             expect(Schedule.isRunning.value).toBe(true)
             // Plain pause/resume semantics: elapsed stays what it was when paused (1 min),
             // no jump forward for the time spent paused.
-            expect(currentPeriod.value.state.elapsed).toBe(60_000)
+            expect(current().state.elapsed).toBe(60_000)
         })
     })
 
@@ -621,7 +627,7 @@ describe('Timer anchor lifecycle', () => {
             expect(timerState.value.periods[0].state.duration).toBe(20 * 60 * 1000)
             expect(timerState.value.periods[0].state.elapsed).toBe(20 * 60 * 1000)
             expect(timerState.value.periods[0].config.userIntendedDuration).toBe(20 * 60 * 1000)
-            expect(currentPeriod.value.state.elapsed).toBe(10 * 60 * 1000)
+            expect(current().state.elapsed).toBe(10 * 60 * 1000)
             expect(Schedule.timestampAnchor.value).toBe(anchor)
             expect(timerDurationElapsed.value).toBe(30 * 60 * 1000)
         })
@@ -633,7 +639,7 @@ describe('Timer anchor lifecycle', () => {
 
             expect(timerState.value.periods[0].state.duration).toBe(MIN_PERIOD_MS)
             expect(timerState.value.periods[0].state.elapsed).toBe(MIN_PERIOD_MS)
-            expect(currentPeriod.value.state.elapsed).toBe(29 * 60 * 1000)
+            expect(current().state.elapsed).toBe(29 * 60 * 1000)
             expect(Schedule.timestampAnchor.value).toBe(anchor)
             expect(timerDurationElapsed.value).toBe(30 * 60 * 1000)
         })
@@ -645,7 +651,7 @@ describe('Timer anchor lifecycle', () => {
             adjustElapsed(5 * 60 * 1000)
 
             expect(timerState.value.periods[0].state.elapsed).toBe(MIN_PERIOD_MS)
-            expect(currentPeriod.value.state.elapsed).toBe(29 * 60 * 1000)
+            expect(current().state.elapsed).toBe(29 * 60 * 1000)
             expect(Schedule.timestampAnchor.value).toBe(anchor)
         })
 
@@ -657,7 +663,7 @@ describe('Timer anchor lifecycle', () => {
 
             expect(timerState.value.periods[0].state.duration).toBe(30 * 60 * 1000)
             expect(timerState.value.periods[0].state.elapsed).toBe(30 * 60 * 1000)
-            expect(currentPeriod.value.state.elapsed).toBe(0)
+            expect(current().state.elapsed).toBe(0)
             expect(Schedule.timestampAnchor.value).toBe(anchor)
             expect(timerDurationElapsed.value).toBe(30 * 60 * 1000)
         })
@@ -675,11 +681,11 @@ describe('Timer anchor lifecycle', () => {
             })
 
             adjustElapsed(5 * 60 * 1000)
-            expect(currentPeriod.value.state.elapsed).toBe(5 * 60 * 1000)
+            expect(current().state.elapsed).toBe(5 * 60 * 1000)
             expect(Schedule.timestampAnchor.value).toBe(anchor)
 
             adjustElapsed(-2 * 60 * 1000)
-            expect(currentPeriod.value.state.elapsed).toBe(5 * 60 * 1000)
+            expect(current().state.elapsed).toBe(5 * 60 * 1000)
             expect(Schedule.timestampAnchor.value).toBe(anchor)
 
             expect(canAdjustElapsedForward.value).toBe(false)
@@ -691,11 +697,11 @@ describe('Timer anchor lifecycle', () => {
 
             adjustElapsed(10 * 60 * 1000)
 
-            expect(currentPeriod.value.state.elapsed).toBe(10 * 60 * 1000)
-            expect(currentPeriod.value.state.duration).toBe(70 * 60 * 1000)
-            expect(currentPeriod.value.config.userIntendedDuration).toBe(70 * 60 * 1000)
+            expect(current().state.elapsed).toBe(10 * 60 * 1000)
+            expect(current().state.duration).toBe(70 * 60 * 1000)
+            expect(current().config.userIntendedDuration).toBe(70 * 60 * 1000)
             // remaining untouched — only the boundary moved, not the end
-            expect(currentPeriod.value.state.remaining).toBe(60 * 60 * 1000)
+            expect(current().state.remaining).toBe(60 * 60 * 1000)
         })
 
         it('backward shrinks it by the same amount — its end stays put', () => {
@@ -704,22 +710,22 @@ describe('Timer anchor lifecycle', () => {
 
             adjustElapsed(-15 * 60 * 1000)
 
-            expect(currentPeriod.value.state.elapsed).toBe(5 * 60 * 1000)
-            expect(currentPeriod.value.state.duration).toBe(65 * 60 * 1000)
-            expect(currentPeriod.value.config.userIntendedDuration).toBe(65 * 60 * 1000)
-            expect(currentPeriod.value.state.remaining).toBe(60 * 60 * 1000)
+            expect(current().state.elapsed).toBe(5 * 60 * 1000)
+            expect(current().state.duration).toBe(65 * 60 * 1000)
+            expect(current().config.userIntendedDuration).toBe(65 * 60 * 1000)
+            expect(current().state.remaining).toBe(60 * 60 * 1000)
         })
 
         it('a forward/back round trip restores duration and plan exactly', () => {
             setupTwoPeriods()
-            const duration = currentPeriod.value.state.duration
-            const plan = currentPeriod.value.config.userIntendedDuration
+            const duration = current().state.duration
+            const plan = current().config.userIntendedDuration
 
             adjustElapsed(24 * 60 * 1000)
             adjustElapsed(-24 * 60 * 1000)
 
-            expect(currentPeriod.value.state.duration).toBe(duration)
-            expect(currentPeriod.value.config.userIntendedDuration).toBe(plan)
+            expect(current().state.duration).toBe(duration)
+            expect(current().config.userIntendedDuration).toBe(plan)
         })
 
         it('the auto-extension gap between duration and plan survives the move', () => {
@@ -734,8 +740,8 @@ describe('Timer anchor lifecycle', () => {
 
             adjustElapsed(10 * 60 * 1000)
 
-            expect(currentPeriod.value.state.duration).toBe(75 * 60 * 1000)
-            expect(currentPeriod.value.config.userIntendedDuration).toBe(70 * 60 * 1000)
+            expect(current().state.duration).toBe(75 * 60 * 1000)
+            expect(current().config.userIntendedDuration).toBe(70 * 60 * 1000)
         })
 
         it('duration floors at MIN_PERIOD_MS rather than following elapsed below it', () => {
@@ -757,8 +763,8 @@ describe('Timer anchor lifecycle', () => {
 
             adjustElapsed(-20 * 60 * 1000) // would take duration to 20 - 20 = 0
 
-            expect(currentPeriod.value.state.duration).toBe(20 * 60 * 1000)
-            expect(currentPeriod.value.state.duration).toBeGreaterThanOrEqual(MIN_PERIOD_MS)
+            expect(current().state.duration).toBe(20 * 60 * 1000)
+            expect(current().state.duration).toBeGreaterThanOrEqual(MIN_PERIOD_MS)
         })
 
         it('forward then back is lossless — the overrun auto-extension is handed back', () => {
@@ -800,16 +806,16 @@ describe('Timer anchor lifecycle', () => {
             adjustElapsed(-10 * 60 * 1000)
 
             expect(timerState.value.periods[0].state.elapsed).toBe(30 * 60 * 1000)
-            expect(currentPeriod.value.state.elapsed).toBe(46 * 60 * 1000)
-            expect(currentPeriod.value.state.duration).toBe(47 * 60 * 1000)
-            expect(currentPeriod.value.config.userIntendedDuration).toBe(30 * 60 * 1000)
+            expect(current().state.elapsed).toBe(46 * 60 * 1000)
+            expect(current().state.duration).toBe(47 * 60 * 1000)
+            expect(current().config.userIntendedDuration).toBe(30 * 60 * 1000)
             expect(timerDurationElapsed.value).toBe(now - anchor)
         })
 
         it('later periods keep their clock times — the whole tail is unaffected', () => {
             setupTwoPeriods()
             const endOfCurrent = () =>
-                Date.now() + currentPeriod.value.state.duration - currentPeriod.value.state.elapsed
+                Date.now() + current().state.duration - current().state.elapsed
             const before = endOfCurrent()
 
             adjustElapsed(10 * 60 * 1000)
@@ -833,7 +839,7 @@ describe('Timer anchor lifecycle', () => {
 
     describe('adjustElapsed reference while anchored (plain arrow keys)', () => {
         // The plain ArrowLeft/ArrowRight handler in keyboard-shortcuts.jsx.
-        const pressArrow = direction =>
+        const pressArrow = (direction: 'up' | 'down') =>
             adjustElapsed(
                 getNextMultipleOf3Delta({ currentMs: adjustableElapsed.value, direction }),
             )
@@ -920,7 +926,7 @@ describe('Timer anchor lifecycle', () => {
 
             expect(steps).toEqual([3 * M, 3 * M, 3 * M])
             // the current period keeps its clock seconds, on the 3-minute grid
-            expect(currentPeriod.value.state.elapsed % (3 * M)).toBe(24 * S)
+            expect(current().state.elapsed % (3 * M)).toBe(24 * S)
         })
 
         it('ten 1-minute steps back move exactly 10 minutes to the previous period', () => {
@@ -952,7 +958,7 @@ describe('Timer anchor lifecycle', () => {
             expect(Schedule.timestampAnchor.value).toBe(START) // start still 0:00
             expect(timerDurationElapsed.value).toBe(90 * M) // elapsed still 1:30
             expect(prevRecord()).toBe(70 * M) // 1:10 in the previous period
-            expect(currentPeriod.value.state.elapsed).toBe(20 * M) // 20m in the current
+            expect(current().state.elapsed).toBe(20 * M) // 20m in the current
         })
     })
 
@@ -994,13 +1000,13 @@ describe('Timer anchor lifecycle', () => {
             moveElapsedTimeToPreviousPeriod()
 
             expect(timerState.value.periods[0].state.elapsed).toBe(40 * 60 * 1000)
-            expect(currentPeriod.value.state.elapsed).toBe(0)
+            expect(current().state.elapsed).toBe(0)
             // Backspace keeps the current period's LENGTH (unlike the elapsed
             // arrows, which keep its end) — it starts later and so ends later,
             // exactly as it behaves unanchored.
-            expect(currentPeriod.value.state.duration).toBe(60 * 60 * 1000)
-            expect(currentPeriod.value.config.userIntendedDuration).toBe(60 * 60 * 1000)
-            expect(currentPeriod.value.state.remaining).toBe(60 * 60 * 1000)
+            expect(current().state.duration).toBe(60 * 60 * 1000)
+            expect(current().config.userIntendedDuration).toBe(60 * 60 * 1000)
+            expect(current().state.remaining).toBe(60 * 60 * 1000)
             expect(Schedule.timestampAnchor.value).toBe(anchor)
             expect(timerDurationElapsed.value).toBe(40 * 60 * 1000)
         })
@@ -1029,9 +1035,9 @@ describe('Timer anchor lifecycle', () => {
 
             // period 0 (24 min work) absorbs the full 25-min gap, auto-extended
             expect(Schedule.currentPeriodIndex.value).toBe(0)
-            expect(currentPeriod.value.state.elapsed).toBe(25 * 60 * 1000)
-            expect(currentPeriod.value.state.duration).toBe(25 * 60 * 1000)
-            expect(currentPeriod.value.config.userIntendedDuration).toBe(24 * 60 * 1000)
+            expect(current().state.elapsed).toBe(25 * 60 * 1000)
+            expect(current().state.duration).toBe(25 * 60 * 1000)
+            expect(current().config.userIntendedDuration).toBe(24 * 60 * 1000)
             // the successor is untouched
             expect(timerState.value.periods[1].state.elapsed).toBe(0)
         })
@@ -1063,8 +1069,8 @@ describe('Timer anchor lifecycle', () => {
             expect(Schedule.isCompleted.value).toBe(false)
             expect(Schedule.isRunning.value).toBe(true)
             expect(Schedule.currentPeriodIndex.value).toBe(0)
-            expect(currentPeriod.value.state.elapsed).toBe(60 * 60 * 1000)
-            expect(currentPeriod.value.state.duration).toBe(60 * 60 * 1000)
+            expect(current().state.elapsed).toBe(60 * 60 * 1000)
+            expect(current().state.duration).toBe(60 * 60 * 1000)
             expect(timerState.value.periods[1].state.elapsed).toBe(0)
             expect(timerDurationElapsed.value).toBe(60 * 60 * 1000)
         })
@@ -1104,7 +1110,7 @@ describe('Timer anchor lifecycle', () => {
             expect(Schedule.isAnchored.value).toBe(true)
             // anchored elapsed is clock-owned: 30 min since the anchor, the
             // 10-minute pause is NOT subtracted
-            expect(currentPeriod.value.state.elapsed).toBe(30 * 60 * 1000)
+            expect(current().state.elapsed).toBe(30 * 60 * 1000)
         })
 
         it('extends the current period (never advancing) when the clock overran it while paused', () => {
@@ -1137,8 +1143,8 @@ describe('Timer anchor lifecycle', () => {
 
             expect(Schedule.isRunning.value).toBe(true)
             expect(Schedule.currentPeriodIndex.value).toBe(0)
-            expect(currentPeriod.value.state.elapsed).toBe(12 * 60 * 1000)
-            expect(currentPeriod.value.state.duration).toBe(12 * 60 * 1000)
+            expect(current().state.elapsed).toBe(12 * 60 * 1000)
+            expect(current().state.duration).toBe(12 * 60 * 1000)
             expect(timerState.value.periods[1].state.elapsed).toBe(0)
         })
     })
@@ -1223,7 +1229,7 @@ describe('Timer anchor lifecycle', () => {
             applyCurrentDurations('@10:00\nW 5/60 note')
 
             expect(Schedule.isAnchored.value).toBe(true)
-            expect(msToMinutesSinceMidnight(Schedule.timestampAnchor.value)).toBe(10 * 60)
+            expect(msToMinutesSinceMidnight(Schedule.timestampAnchor.value!)).toBe(10 * 60)
             // currentIndex is 0 so elapsedExceptCurrent is 0 -> timestampStarted == anchor
             expect(Schedule.timestampStarted.value).toBe(Schedule.timestampAnchor.value)
         })
@@ -1391,7 +1397,7 @@ describe('Timer anchor lifecycle', () => {
             applyCurrentDurations('@10:00\nW 5/24 note')
 
             expect(Schedule.isAnchored.value).toBe(true)
-            expect(msToMinutesSinceMidnight(Schedule.timestampAnchor.value)).toBe(10 * 60)
+            expect(msToMinutesSinceMidnight(Schedule.timestampAnchor.value!)).toBe(10 * 60)
             expect(Schedule.timestampStarted.value).toBe(Schedule.timestampAnchor.value)
         })
 
@@ -1409,7 +1415,7 @@ describe('Timer anchor lifecycle', () => {
             // still a valid (past) start time and therefore adopted.
             applyCurrentDurations('@9:00\nW 5/24 note')
 
-            expect(msToMinutesSinceMidnight(Schedule.timestampAnchor.value)).toBe(9 * 60)
+            expect(msToMinutesSinceMidnight(Schedule.timestampAnchor.value!)).toBe(9 * 60)
         })
 
         it('a half-edited anchor line keeps the anchor (only a deleted line unpins)', () => {
@@ -1461,7 +1467,7 @@ describe('Timer anchor lifecycle', () => {
             // period's derived elapsed is exactly 0. Boundary case, valid.
             applyCurrentDurations('@9:30\nW 1:00:00/60\nB 10/30')
 
-            expect(msToMinutesSinceMidnight(Schedule.timestampAnchor.value)).toBe(9 * 60 + 30)
+            expect(msToMinutesSinceMidnight(Schedule.timestampAnchor.value!)).toBe(9 * 60 + 30)
             // timestampStarted = anchor + elapsedExceptCurrent = 9:30 + 1h = NOW
             expect(Schedule.timestampStarted.value).toBe(NOW)
         })
@@ -1509,7 +1515,7 @@ describe('Timer anchor lifecycle', () => {
             applyActiveConfig()
 
             expect(Schedule.isAnchored.value).toBe(true)
-            expect(msToMinutesSinceMidnight(Schedule.timestampAnchor.value)).toBe(11 * 60)
+            expect(msToMinutesSinceMidnight(Schedule.timestampAnchor.value!)).toBe(11 * 60)
 
             deleteConfig(config.id)
         })
