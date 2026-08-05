@@ -36,3 +36,6 @@ build-tools/tts/__pycache__/
 build-tools/tts/**/__pycache__/
 build-tools/tts/.pytest_cache/
 build-tools/tts/.staging/
+
+# Claude Code working notes
+plans/
