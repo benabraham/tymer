@@ -2,7 +2,6 @@
  * Timeline component for rendering timer periods visually.
  * Uses memoization to avoid unnecessary renders.
  * Defensive against missing/empty periods.
- * @returns {JSX.Element}
  */
 import { timerDuration, timerState, autoEditIndex } from '../../../lib/timer'
 import { Schedule } from '../../../lib/schedule'
@@ -12,9 +11,10 @@ import { msToMinutes } from '../../../lib/format'
 import { TimelinePeriod } from './timeline-period'
 import { useMemo, useEffect, useRef } from 'preact/hooks'
 import { getTimelineData } from './timeline-logic'
+import type { JSX } from 'preact'
 
 export const Timeline = () => {
-    const timelineRef = useRef(null)
+    const timelineRef = useRef<HTMLDivElement>(null)
 
     // Auto-focus timeline on mount
     useEffect(() => {
@@ -22,7 +22,7 @@ export const Timeline = () => {
     }, [])
 
     // Handle Enter key when timeline is focused
-    const handleKeyDown = event => {
+    const handleKeyDown = (event: JSX.TargetedKeyboardEvent<HTMLDivElement>) => {
         if (event.key === 'Enter' && Schedule.currentPeriodIndex.value !== null) {
             event.preventDefault()
             autoEditIndex.value = Schedule.currentPeriodIndex.value
@@ -40,7 +40,9 @@ export const Timeline = () => {
         [
             timerState.value.periods,
             Schedule.currentPeriodIndex.value,
-            timerState.value.elapsed,
+            // `TimerState` has no `elapsed` field — this dependency is always
+            // `undefined` and never changes. Pre-existing (see report), left as-is.
+            (timerState.value as unknown as { elapsed?: unknown }).elapsed,
             Schedule.timestampAnchor.value,
         ],
     )

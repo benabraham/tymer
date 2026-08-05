@@ -1,11 +1,22 @@
 import { formatTime } from '../../../lib/format'
-import { currentPeriod, timerState, timerDurationElapsed } from '../../../lib/timer'
+import { currentPeriod, timerState } from '../../../lib/timer'
 import { Schedule } from '../../../lib/schedule'
 import { SoundScheduler } from '../../../lib/sound-scheduler'
+import type { SoundWindow } from '../../../lib/sound-scheduler'
 import { AVAILABLE_SOUNDS } from '../../../lib/sound-discovery'
 import { soundPlaybackLog } from '../../../lib/sounds'
 
 const soundScheduler = new SoundScheduler(5000, AVAILABLE_SOUNDS)
+
+type ProcessedGroup = {
+    targetMs: number
+    winner: SoundWindow
+    competitors: SoundWindow[]
+    filteredOut: SoundWindow[]
+    allWindows: SoundWindow[]
+    originalCount: number
+    validCount: number
+}
 
 export const SoundNotificationTable = () => {
     if (!currentPeriod.value) {
@@ -19,11 +30,11 @@ export const SoundNotificationTable = () => {
 
     // Determine next period type for timesup sound
     const currentIndex = Schedule.currentPeriodIndex.value
-    const nextIndex = currentIndex + 1
+    const nextIndex = (currentIndex ?? 0) + 1
     const nextPeriod = timerState.value.periods[nextIndex]
     const nextPeriodType = nextPeriod ? nextPeriod.config.type : 'finish'
 
-    const formatTimeFromMs = ms => {
+    const formatTimeFromMs = (ms: number) => {
         return formatTime(ms, { debug: true })
     }
 
@@ -35,7 +46,7 @@ export const SoundNotificationTable = () => {
     )
 
     // Group windows by their target time ranges (overlapping windows)
-    const groupedWindows = []
+    const groupedWindows: SoundWindow[][] = []
     const threshold = soundScheduler.getThreshold(intendedDuration)
 
     // Group windows that overlap (within window size, not 2x)
@@ -60,7 +71,7 @@ export const SoundNotificationTable = () => {
     // Sort groups by target time and determine winners
     const processedGroups = groupedWindows
         .sort((a, b) => a[0].targetMs - b[0].targetMs)
-        .map(group => {
+        .map((group): ProcessedGroup | null => {
             // Apply threshold filtering to the group
             const validWindows = group.filter(window => {
                 // Use the target time as the reference for threshold filtering
@@ -76,8 +87,10 @@ export const SoundNotificationTable = () => {
 
             if (validWindows.length === 0) return null
 
-            // Select winner using the same logic as SoundScheduler
-            const winner = soundScheduler.selectHighestPriority(validWindows)
+            // Select winner using the same logic as SoundScheduler.
+            // validWindows.length > 0 here (checked above), and
+            // selectHighestPriority only returns null for an empty array.
+            const winner = soundScheduler.selectHighestPriority(validWindows) as SoundWindow
             const competitors = validWindows.filter(w => w !== winner)
             const filteredOut = group.filter(w => !validWindows.includes(w))
 
@@ -91,9 +104,9 @@ export const SoundNotificationTable = () => {
                 validCount: validWindows.length,
             }
         })
-        .filter(Boolean)
+        .filter((group): group is ProcessedGroup => group !== null)
 
-    const getSoundType = window => {
+    const getSoundType = (window: SoundWindow) => {
         if (window.type === 'timesup') return 'timesup'
         if (window.type === 'elapsed') return `elapsed ${window.minutes}min`
         if (window.type === 'remaining') return `remaining ${window.minutes}min`
@@ -101,7 +114,7 @@ export const SoundNotificationTable = () => {
         return window.type
     }
 
-    const getSoundName = window => {
+    const getSoundName = (window: SoundWindow) => {
         if (window.type === 'timesup') {
             const soundType = nextPeriodType === 'finish' ? 'finish' : nextPeriodType
             return `timesup_${soundType}`
@@ -109,7 +122,7 @@ export const SoundNotificationTable = () => {
         return window.key
     }
 
-    const getStatus = (targetMs, elapsedMs) => {
+    const getStatus = (targetMs: number, elapsedMs: number) => {
         const windowSize = 2000 // Same as SoundScheduler
         const timeDiff = elapsedMs - targetMs
 
@@ -122,7 +135,7 @@ export const SoundNotificationTable = () => {
         }
     }
 
-    const getStatusDisplay = status => {
+    const getStatusDisplay = (status: string) => {
         switch (status) {
             case 'future':
                 return { text: '⏳ Future', className: 'status--future' }
@@ -135,13 +148,13 @@ export const SoundNotificationTable = () => {
         }
     }
 
-    const getTimeToNotificationClass = timeToNotification => {
+    const getTimeToNotificationClass = (timeToNotification: number) => {
         if (timeToNotification > 0) return 'status--info'
         if (timeToNotification < -2000) return 'status--inactive'
         return 'status--active'
     }
 
-    const formatTimestamp = timestamp => {
+    const formatTimestamp = (timestamp: number) => {
         const date = new Date(timestamp)
         return date.toLocaleTimeString('en-US', {
             hour12: false,

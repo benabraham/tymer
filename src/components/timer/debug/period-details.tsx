@@ -2,7 +2,7 @@ import { formatTime } from '../../../lib/format'
 import { timerState } from '../../../lib/timer'
 import { Schedule } from '../../../lib/schedule'
 
-const getPeriodLifecycle = (index, currentPeriodIndex) => {
+const getPeriodLifecycle = (index: number, currentPeriodIndex: number | null) => {
     if (currentPeriodIndex === null) return 'Future'
     if (index < currentPeriodIndex) return 'Past'
     if (index === currentPeriodIndex) return 'Current'

@@ -5,8 +5,13 @@ import { currentPeriod, timerState } from '../../../lib/timer'
 import { clocksVisible } from '../../../lib/clocks'
 import { useSignal } from '@preact/signals'
 import { useEffect } from 'preact/hooks'
+import type { PeriodData } from '../../../lib/period.js'
 
-export const TimelineCurrentTime = ({ period }) => {
+type TimelineCurrentTimeProps = {
+    period: PeriodData
+}
+
+export const TimelineCurrentTime = ({ period }: TimelineCurrentTimeProps) => {
     const currentTime = useSignal(new Date())
 
     useEffect(() => {
@@ -16,7 +21,7 @@ export const TimelineCurrentTime = ({ period }) => {
         return () => clearInterval(interval)
     }, [])
 
-    const formatClockTime = date => {
+    const formatClockTime = (date: Date) => {
         const hours = date.getHours().toString().padStart(2, '\u2007') // figure space
         const minutes = date.getMinutes().toString().padStart(2, '0')
         return `${hours} ${minutes}`
@@ -34,13 +39,16 @@ export const TimelineCurrentTime = ({ period }) => {
                 )}
             </span>
             <span class="timeline__elapsed timeline__elapsed--period">
-                {formatTime(currentPeriod.value.state.elapsed, { mode: 'elapsed' })}
+                {/* Non-null: this component only renders when `isActive` is true
+                    (see timeline-period.tsx), which means currentPeriod.value
+                    is the very period being rendered here. */}
+                {formatTime(currentPeriod.value!.state.elapsed, { mode: 'elapsed' })}
                 <span class="timeline__symbol">
                     {' '}
                     <FontAwesomeIcon icon={faCaretLeft} />
                     <FontAwesomeIcon icon={faCaretRight} />{' '}
                 </span>
-                {formatTime(currentPeriod.value.state.remaining, { mode: 'remaining' })}
+                {formatTime(currentPeriod.value!.state.remaining, { mode: 'remaining' })}
             </span>
             {clocksVisible.value && (
                 <span class="timeline__elapsed timeline__elapsed--clock">

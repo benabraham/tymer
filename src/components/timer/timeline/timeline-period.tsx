@@ -19,13 +19,22 @@ import { clocksVisible } from '../../../lib/clocks'
 import { TimelineCurrentTime } from './timeline-current-time'
 import { ActionButton } from '../../common/action-button'
 import { playSound } from '../../../lib/sounds'
+import type { PeriodData, PeriodType } from '../../../lib/period.js'
+import type { TimelinePeriodProps } from './timeline-logic'
+import type { JSX } from 'preact'
 
-export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) => {
+export const TimelinePeriod = ({
+    period,
+    isActive,
+    endTime,
+    startTime,
+    index,
+}: TimelinePeriodProps) => {
     const [isEditing, setIsEditing] = useState(false)
     const [wasTimerRunning, setWasTimerRunning] = useState(false)
-    const [originalPeriod, setOriginalPeriod] = useState(null)
-    const editRef = useRef()
-    const noteInputRef = useRef()
+    const [originalPeriod, setOriginalPeriod] = useState<PeriodData | null>(null)
+    const editRef = useRef<HTMLDivElement>(null)
+    const noteInputRef = useRef<HTMLInputElement>(null)
 
     // Focus/blur note input when editing state changes
     useEffect(() => {
@@ -36,7 +45,7 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
         }
     }, [isEditing])
 
-    const availableTypes = ['work', 'break', 'fun']
+    const availableTypes: PeriodType[] = ['work', 'break', 'fun']
 
     const handleClickOnPeriod = async () => {
         await playSound('button')
@@ -82,11 +91,11 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
     }, [originalPeriod, index, wasTimerRunning])
 
     // Update timer state immediately when values change
-    const handleTypeChange = newType => {
+    const handleTypeChange = (newType: PeriodType) => {
         applyToPeriod(index, p => Period.setType(p, newType))
     }
 
-    const handleDurationChange = newDuration => {
+    const handleDurationChange = (newDuration: number) => {
         const durationMs = newDuration * 60 * 1000
         const currentPeriodIndex = Schedule.currentPeriodIndex.value
         const isPast = currentPeriodIndex !== null && index < currentPeriodIndex
@@ -97,7 +106,7 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
         )
     }
 
-    const handleNoteChange = newNote => {
+    const handleNoteChange = (newNote: string) => {
         applyToPeriod(index, p => Period.setNote(p, newNote))
     }
 
@@ -116,7 +125,7 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
         }
     }
 
-    const handleAddPeriod = event => {
+    const handleAddPeriod = (event: JSX.TargetedMouseEvent<HTMLElement>) => {
         event.stopPropagation()
         addPeriodAtIndex(index)
         // The new period at index + 1 will automatically open for editing
@@ -135,14 +144,14 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
     useEffect(() => {
         if (!isEditing) return
 
-        const handleClickOutside = async event => {
-            if (editRef.current && !editRef.current.contains(event.target)) {
+        const handleClickOutside = async (event: MouseEvent) => {
+            if (editRef.current && !editRef.current.contains(event.target as Node)) {
                 await playSound('button')
                 handleSave()
             }
         }
 
-        const handleKeyDown = async event => {
+        const handleKeyDown = async (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
                 await playSound('button')
                 handleCancel()
@@ -210,9 +219,9 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                             type="number"
                             tabIndex={4}
                             value={Math.round(period.state.duration / (60 * 1000))}
-                            onChange={e =>
+                            onChange={(e: JSX.TargetedEvent<HTMLInputElement>) =>
                                 handleDurationChange(
-                                    parseInt(e.target.value)
+                                    parseInt(e.currentTarget.value)
                                         || Math.max(
                                             1,
                                             Math.round(period.state.elapsed / (60 * 1000)),
@@ -305,7 +314,9 @@ export const TimelinePeriod = ({ period, isActive, endTime, startTime, index }) 
                             type="text"
                             tabIndex={5}
                             value={period.config.note || ''}
-                            onChange={e => handleNoteChange(e.target.value)}
+                            onChange={(e: JSX.TargetedEvent<HTMLInputElement>) =>
+                                handleNoteChange(e.currentTarget.value)
+                            }
                             placeholder="Note…"
                             class="timeline__edit-note"
                         />
