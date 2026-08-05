@@ -1,9 +1,11 @@
 import { describe, beforeEach, afterEach, it, expect, vi } from 'vitest'
-import { calculateEndTimes, calculateStartTime } from './timeline-logic'
+import { calculateEndTimes, calculateStartTime } from './timeline-logic.js'
+import type { PeriodData } from '../../../lib/period.js'
 
 const MIN = 60 * 1000
 
-const period = (duration, elapsed = 0) => ({
+const period = (duration: number, elapsed = 0): PeriodData => ({
+    config: { type: 'work', note: '', userIntendedDuration: duration },
     state: { duration, elapsed, remaining: Math.max(0, duration - elapsed) },
 })
 

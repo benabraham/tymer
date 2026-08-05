@@ -12,10 +12,13 @@ initTheme()
 // Picks up new deploys and reloads when the session is idle
 registerServiceWorker()
 
+const appRoot = document.getElementById('app')
+if (!appRoot) throw new Error('#app root element missing — check index.html')
+
 render(
     <>
         <ThemeSwitcher />
         <Timer />
     </>,
-    document.getElementById('app'),
+    appRoot,
 )

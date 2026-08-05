@@ -1,7 +1,16 @@
-import { formatTime } from '../../../lib/format'
+import { formatTime } from '../../../lib/format.js'
+import type { PeriodType } from '../../../lib/period.js'
+import type { PeriodSums } from './stats.js'
 
-export const StatsBars = ({ periodSums, workProjectedMs }) => {
-    const renderStatBar = (type, variant) => {
+type StatsBarsProps = {
+    periodSums: PeriodSums
+    workProjectedMs: number | null
+}
+
+type Variant = 'original' | 'current'
+
+export const StatsBars = ({ periodSums, workProjectedMs }: StatsBarsProps) => {
+    const renderStatBar = (type: PeriodType, variant: Variant) => {
         const periodData = periodSums[type][variant]
         const isElapsed = variant === 'current'
         const showElapsed = isElapsed && periodData.duration !== periodData.durationElapsed

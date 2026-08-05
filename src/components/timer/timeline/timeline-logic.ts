@@ -5,21 +5,24 @@
  * Modern JS, Baseline 2023 compatible.
  */
 import { format } from 'date-fns'
-import { formatDayMarker } from '../../../lib/format'
+import { formatDayMarker } from '../../../lib/format.js'
+import type { PeriodData } from '../../../lib/period.js'
 
 /**
  * Calculate formatted end times for all periods.
- * @param {Object} params
- * @param {Array} params.periods - List of timer periods
- * @param {number|null} params.currentPeriodIndex - Active period index
- * @returns {string[]} Array of formatted end times
  */
-export const calculateEndTimes = ({ periods, currentPeriodIndex }) => {
+export const calculateEndTimes = ({
+    periods,
+    currentPeriodIndex,
+}: {
+    periods: PeriodData[]
+    currentPeriodIndex: number | null
+}): string[] => {
     if (!Array.isArray(periods) || !periods.length) return []
     const now = Date.now()
     const totalElapsed = periods.reduce((acc, period) => acc + (period.state.elapsed || 0), 0)
     let sumPeriodDurations = 0
-    let prevEnd = null
+    let prevEnd: number | null = null
     return periods.map((period, idx) => {
         if (currentPeriodIndex == null) {
             // No active period: idle (nothing elapsed) projects the schedule
@@ -49,14 +52,17 @@ export const calculateEndTimes = ({ periods, currentPeriodIndex }) => {
 
 /**
  * Calculate formatted start time for the timeline.
- * @param {Object} params
- * @param {Array} params.periods - List of timer periods
- * @param {number|null} [params.anchorMs] - When set (session is pinned), the
- *   start time is formatted from this stable timestamp instead of
- *   `now - totalElapsed`, avoiding per-second recompute jitter.
- * @returns {string} Formatted start time
+ * `anchorMs` — when set (session is pinned), the start time is formatted
+ * from this stable timestamp instead of `now - totalElapsed`, avoiding
+ * per-second recompute jitter.
  */
-export const calculateStartTime = ({ periods, anchorMs = null }) => {
+export const calculateStartTime = ({
+    periods,
+    anchorMs = null,
+}: {
+    periods: PeriodData[]
+    anchorMs?: number | null
+}): string => {
     if (!Array.isArray(periods) || !periods.length) return ''
     const now = Date.now()
     const totalElapsed = periods.reduce((acc, p) => acc + (p.state.elapsed || 0), 0)
@@ -68,20 +74,33 @@ export const calculateStartTime = ({ periods, anchorMs = null }) => {
     return dayMarker ? `${dayMarker}<br>${time}` : time
 }
 
+export type TimelinePeriodProps = {
+    key: number
+    period: PeriodData
+    isActive: boolean
+    endTime: string
+    startTime: string | undefined
+    index: number
+}
+
 /**
  * Get all props for TimelinePeriod components.
- * @param {Object} params
- * @param {Array} params.periods
- * @param {number|null} params.currentPeriodIndex
- * @returns {Array<Object>} Array of props for TimelinePeriod
  */
-export const getTimelineData = ({ periods, currentPeriodIndex, anchorMs = null }) => {
+export const getTimelineData = ({
+    periods,
+    currentPeriodIndex,
+    anchorMs = null,
+}: {
+    periods: PeriodData[]
+    currentPeriodIndex: number | null
+    anchorMs?: number | null
+}): TimelinePeriodProps[] => {
     if (!Array.isArray(periods) || !periods.length) return []
 
     const endTimes = calculateEndTimes({ periods, currentPeriodIndex })
     const startTime = calculateStartTime({ periods, anchorMs })
 
-    const createPeriodProps = (period, index) => ({
+    const createPeriodProps = (period: PeriodData, index: number): TimelinePeriodProps => ({
         key: index,
         period,
         isActive: index === currentPeriodIndex,

@@ -1,13 +1,13 @@
 import { useSignal } from '@preact/signals'
 import { useEffect } from 'preact/hooks'
 import { format } from 'date-fns'
-import { Schedule } from '../../../lib/schedule'
-import { formatDayMarker } from '../../../lib/format'
+import { Schedule } from '../../../lib/schedule.js'
+import { formatDayMarker } from '../../../lib/format.js'
 
-const pad = n => String(n).padStart(2, '0')
+const pad = (n: number) => String(n).padStart(2, '0')
 
 // mm:ss countdown, floor(0) at most
-const formatCountdown = ms => {
+const formatCountdown = (ms: number) => {
     const totalSeconds = Math.max(0, Math.ceil(ms / 1000))
     const minutes = Math.floor(totalSeconds / 60)
     const seconds = totalSeconds % 60

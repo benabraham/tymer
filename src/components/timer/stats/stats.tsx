@@ -1,10 +1,30 @@
-import { activeConfigPeriods, timerState, timerDuration, currentPeriod } from '../../../lib/timer'
-import { msToMinutes, formatTime } from '../../../lib/format'
-import { StatsBars } from './stats-bars'
+import {
+    activeConfigPeriods,
+    timerState,
+    timerDuration,
+    currentPeriod,
+} from '../../../lib/timer.js'
+import { msToMinutes, formatTime } from '../../../lib/format.js'
+import { StatsBars } from './stats-bars.js'
+import type { PeriodData, PeriodType } from '../../../lib/period.js'
+
+export type TypeSums = {
+    duration: number
+    durationElapsed: number
+    durationRemaining: number
+}
+
+export type PeriodSums = Record<PeriodType, { original: TypeSums; current: TypeSums }>
 
 export const Stats = () => {
-    const calculateTypeSums = ({ periods, type }) => {
-        const sumByKey = key =>
+    const calculateTypeSums = ({
+        periods,
+        type,
+    }: {
+        periods: PeriodData[]
+        type: PeriodType
+    }): TypeSums => {
+        const sumByKey = (key: keyof PeriodData['state']) =>
             periods.reduce(
                 (sum, period) => (period.config.type === type ? sum + period.state[key] : sum),
                 0,
@@ -17,8 +37,15 @@ export const Stats = () => {
         }
     }
 
-    const calculatePeriodSums = ({ initialPeriods, currentPeriods }) => {
-        const calculateFor = periods => type => calculateTypeSums({ periods, type })
+    const calculatePeriodSums = ({
+        initialPeriods,
+        currentPeriods,
+    }: {
+        initialPeriods: PeriodData[]
+        currentPeriods: PeriodData[]
+    }): PeriodSums => {
+        const calculateFor = (periods: PeriodData[]) => (type: PeriodType) =>
+            calculateTypeSums({ periods, type })
 
         const types = timerState.value.types
         return types.reduce(
@@ -29,7 +56,7 @@ export const Stats = () => {
                     current: calculateFor(currentPeriods)(type),
                 },
             }),
-            {},
+            {} as PeriodSums,
         )
     }
 
