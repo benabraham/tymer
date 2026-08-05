@@ -40,4 +40,4 @@ echo "Source WAV files preserved in src/assets/sounds/"
 echo "Optimized Opus files generated in public/sounds/"
 
 node build-tools/generate-sound-manifest.js
-echo "Regenerated src/lib/sound-manifest.js from public/sounds/"
+echo "Regenerated src/lib/sound-manifest.ts from public/sounds/"

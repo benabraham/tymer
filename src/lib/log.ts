@@ -1,4 +1,17 @@
-export const log = (text, variable, variant = 0, border = false) => {
+type TimerStateLike = { timestampStarted: number | null; timestampPaused: number | null }
+
+const isTimerStateLike = (value: unknown): value is TimerStateLike =>
+    typeof value === 'object'
+    && value !== null
+    && 'timestampStarted' in value
+    && 'timestampPaused' in value
+
+export const log = (
+    text: string,
+    variable: unknown,
+    variant: number = 0,
+    border: boolean = false,
+): void => {
     // check if variant is a number and within range and default to 0 if not
     const variantColors = [
         { color: 'black', background: 'white' }, // 0
@@ -22,13 +35,7 @@ export const log = (text, variable, variant = 0, border = false) => {
         variant = 0
 
     // Check if variable is a timer state object (has timestampStarted and timestampPaused properties)
-    const isTimerState =
-        variable
-        && typeof variable === 'object'
-        && 'timestampStarted' in variable
-        && 'timestampPaused' in variable
-
-    if (isTimerState) {
+    if (isTimerStateLike(variable)) {
         console.log(
             `%c${text.padStart(25, ' ')}`,
             `

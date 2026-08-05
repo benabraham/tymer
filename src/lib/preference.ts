@@ -1,8 +1,11 @@
-import { signal } from '@preact/signals'
+import { signal, type Signal } from '@preact/signals'
 
 // Creates a localStorage-backed boolean signal with a toggle.
 // When the key has never been set, falls back to `defaultValue`.
-export const createTogglePreference = (key, defaultValue) => {
+export const createTogglePreference = (
+    key: string,
+    defaultValue: boolean,
+): { value: Signal<boolean>; toggle: () => void } => {
     const stored = localStorage.getItem(key)
     const initial = stored === null ? defaultValue : stored === 'true'
     const value = signal(initial)
@@ -16,11 +19,16 @@ export const createTogglePreference = (key, defaultValue) => {
 // Creates a localStorage-backed signal restricted to a fixed set of options.
 // A stored value outside `options` (e.g. removed at the source) falls back
 // to `defaultValue` rather than leaving the app on a dead value.
-export const createChoicePreference = (key, { options, defaultValue }) => {
-    const loadInitial = () => {
+export const createChoicePreference = <T extends string>(
+    key: string,
+    { options, defaultValue }: { options: T[]; defaultValue: T },
+): { value: Signal<T>; set: (next: T) => void; cycle: () => void } => {
+    const loadInitial = (): T => {
         try {
             const stored = localStorage.getItem(key)
-            return options.includes(stored) ? stored : defaultValue
+            return stored !== null && (options as string[]).includes(stored)
+                ? (stored as T)
+                : defaultValue
         } catch {
             return defaultValue
         }
@@ -28,7 +36,7 @@ export const createChoicePreference = (key, { options, defaultValue }) => {
 
     const value = signal(loadInitial())
 
-    const set = next => {
+    const set = (next: T) => {
         if (!options.includes(next)) return
         value.value = next
         try {

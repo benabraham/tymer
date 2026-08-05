@@ -106,7 +106,7 @@ const initWorker = () => {
     if (!timerWorker) {
         // Bundled through Vite so the worker gets a content hash — a copy in
         // public/ kept its filename across builds and went stale in the cache.
-        timerWorker = new Worker(new URL('./timer-worker.js', import.meta.url), {
+        timerWorker = new Worker(new URL('./timer-worker.ts', import.meta.url), {
             type: 'module',
         })
         timerWorker.onmessage = event => {

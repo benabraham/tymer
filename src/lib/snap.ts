@@ -1,6 +1,12 @@
 // Compute the delta needed to snap currentMs to the next multiple-of-3 minute boundary.
 // This is UI input math (keyboard shortcuts only) — not timer logic.
-export const getNextMultipleOf3Delta = ({ currentMs, direction }) => {
+export const getNextMultipleOf3Delta = ({
+    currentMs,
+    direction,
+}: {
+    currentMs: number
+    direction: 'up' | 'down'
+}) => {
     const currentMinutes = Math.floor(currentMs / (60 * 1000))
     const onBoundary = currentMs % (3 * 60 * 1000) === 0
     const target =

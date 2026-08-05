@@ -1,7 +1,17 @@
 import { differenceInCalendarDays, format } from 'date-fns'
 
+type FormatTimeOptions = {
+    mode?: 'elapsed' | 'remaining'
+    debug?: boolean
+    compact?: boolean
+    figureSpace?: boolean
+}
+
 // converts milliseconds to human-readable format
-export const formatTime = (ms, { mode, debug, compact, figureSpace } = {}) => {
+export const formatTime = (
+    ms: number | null | undefined,
+    { mode, debug, compact, figureSpace }: FormatTimeOptions = {},
+): string => {
     // handle null/undefined input
     if (ms == null) return '––:––'
 
@@ -11,13 +21,14 @@ export const formatTime = (ms, { mode, debug, compact, figureSpace } = {}) => {
         const hours = Math.floor(totalSeconds / 3600)
         const minutes = Math.floor((totalSeconds % 3600) / 60)
         const seconds = totalSeconds % 60
-        const pad = (num, places = 2, fillChar = '0') => num.toString().padStart(places, fillChar)
+        const pad = (num: number, places: number = 2, fillChar: string = '0') =>
+            num.toString().padStart(places, fillChar)
         return `${pad(hours)}:${pad(minutes)}:${pad(seconds)} ${pad(ms, 6, ' ')} ms`
     }
 
     // For non-debug mode, round at the minute level for proper display
     // elapsed time should round down, remaining time should round up
-    let totalMinutes
+    let totalMinutes: number
     if (mode === 'elapsed') {
         // Floor for elapsed time
         totalMinutes = Math.floor(ms / (60 * 1000))
@@ -32,7 +43,8 @@ export const formatTime = (ms, { mode, debug, compact, figureSpace } = {}) => {
     const hours = Math.floor(totalMinutes / 60)
     const minutes = totalMinutes % 60
 
-    const pad = (num, places = 2, fillChar = '0') => num.toString().padStart(places, fillChar)
+    const pad = (num: number, places: number = 2, fillChar: string = '0') =>
+        num.toString().padStart(places, fillChar)
 
     // Compact mode: show just minutes if under 1 hour
     if (compact && hours === 0) {
@@ -49,13 +61,13 @@ export const formatTime = (ms, { mode, debug, compact, figureSpace } = {}) => {
 }
 
 // converts milliseconds to minutes (rounding down by milliseconds)
-export const msToMinutes = ms => Math.floor(ms / 60000)
+export const msToMinutes = (ms: number): number => Math.floor(ms / 60000)
 
 // Day qualifier for a wall-clock timestamp relative to now: '' when today,
 // 'yesterday' when one calendar day back, a short date ('30 Dec') when older.
 // Used wherever a session start time may lie before the current day
 // (sessions crossing midnight, sessions reloaded days later).
-export const formatDayMarker = (ms, now = Date.now()) => {
+export const formatDayMarker = (ms: number, now: number = Date.now()): string => {
     const daysAgo = differenceInCalendarDays(now, ms)
     if (daysAgo <= 0) return ''
     if (daysAgo === 1) return 'yesterday'

@@ -16,4 +16,4 @@ export { activeSoundSet, setSoundSet, cycleSoundSet }
 
 // Capitalize-first-letter display label, computed rather than a hand-maintained
 // map so a fifth voice promoted later appears with no code edit.
-export const soundSetLabel = name => name.charAt(0).toUpperCase() + name.slice(1)
+export const soundSetLabel = (name: string): string => name.charAt(0).toUpperCase() + name.slice(1)
