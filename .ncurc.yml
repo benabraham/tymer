@@ -1,0 +1,17 @@
+# npm-check-updates policy, read by every `ncu` invocation in this repo so the
+# flags live here once instead of on each command line.
+
+# Supply-chain cooldown: ignore versions published less than this ago. Mirrors
+# pnpm's own minimumReleaseAge (7 days by default, configured globally) — keep the
+# two in step, or `ncu -u` proposes bumps that `pnpm install` then refuses with
+# ERR_PNPM_NO_MATURE_MATCHING_VERSION.
+cooldown: 7d
+
+# ncu's default target set also includes `packageManager`. Excluded on purpose:
+# that pin is a deliberate, smoke-tested choice, and ncu knows only publish dates
+# — letting it rewrite the field can pin a pnpm release that turned out to be
+# broken, which then breaks every subsequent `pnpm` call in the repo.
+dep:
+  - prod
+  - dev
+  - optional

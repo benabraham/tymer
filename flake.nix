@@ -3,17 +3,27 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = import nixpkgs { inherit system; };
-      in {
-        devShells.default = pkgs.mkShell {
+  outputs = { self, nixpkgs }:
+    let
+      lib = nixpkgs.lib;
+
+      # SSOT: the Node major comes from .nvmrc, which CI also reads via
+      # actions/setup-node's `node-version-file`. One file to bump, and the Nix
+      # shell can't silently drift from CI.
+      #   .nvmrc "24" -> pkgs.nodejs_24
+      nodeMajor = lib.removeSuffix "\n" (lib.fileContents ./.nvmrc);
+
+      forAllSystems = f:
+        lib.genAttrs lib.systems.flakeExposed
+          (system: f nixpkgs.legacyPackages.${system});
+    in
+    {
+      devShells = forAllSystems (pkgs: {
+        default = pkgs.mkShell {
           buildInputs = [
-            pkgs.nodejs_24
+            pkgs."nodejs_${nodeMajor}"
             pkgs.pnpm
           ];
 
@@ -23,6 +33,6 @@
             echo "pnpm: $(pnpm --version)"
           '';
         };
-      }
-    );
+      });
+    };
 }

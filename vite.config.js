@@ -18,25 +18,41 @@ const buildCommit = (() => {
 // UTC — builds run on CI, so a local timezone would be misleading
 const buildTime = `${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC`
 
+// FNV-1a — tiny, dependency-free 32-bit hash, good enough to spread short
+// commit SHAs across the avatar ranges below without pulling in node:crypto.
+const fnv1a = str => {
+  let hash = 0x811c9dc5
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i)
+    hash = Math.imul(hash, 0x01000193)
+  }
+  return hash >>> 0
+}
+
+// Derived from buildCommit (not random) so the same commit always produces
+// the same avatar — two builds of the same source are then reproducible.
+const buildAvatar = (() => {
+  const ranges = [
+    [0x1f32a, 0x1f50d],
+    [0x1f56f, 0x1f5fa],
+    [0x1f687, 0x1f6f3],
+    [0x1f300, 0x1f31f],
+    [0x1f330, 0x1f393],
+    [0x1f400, 0x1f4ff],
+  ]
+  const hash = fnv1a(buildCommit)
+  // Split the hash into two independent halves so the range and the offset
+  // within it vary independently across commits.
+  const rangeIndex = (hash >>> 16) % ranges.length
+  const [start, end] = ranges[rangeIndex]
+  const offset = (hash & 0xffff) % (end - start + 1)
+  return String.fromCodePoint(start + offset)
+})()
+
 // https://vitejs.dev/config/
 export default defineConfig({
   define: {
-    __BUILD_AVATAR__: JSON.stringify(
-      String.fromCodePoint(
-        (() => {
-          const ranges = [
-            [0x1f32a, 0x1f50d],
-            [0x1f56f, 0x1f5fa],
-            [0x1f687, 0x1f6f3],
-            [0x1f300, 0x1f31f],
-            [0x1f330, 0x1f393],
-            [0x1f400, 0x1f4ff],
-          ]
-          const [start, end] = ranges[Math.floor(Math.random() * ranges.length)]
-          return Math.floor(Math.random() * (end - start + 1)) + start
-        })(),
-      ),
-    ),
+    __BUILD_AVATAR__: JSON.stringify(buildAvatar),
     __BUILD_COMMIT__: JSON.stringify(buildCommit),
     __BUILD_TIME__: JSON.stringify(buildTime),
   },
