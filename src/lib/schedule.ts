@@ -6,18 +6,33 @@
 // Schedule has no knowledge of Periods or period counts; invariants that require
 // knowing the number of periods (e.g. "completed = last index") stay in timer.js.
 
-import { signal, computed } from '@preact/signals'
+import { signal, computed, type ReadonlySignal } from '@preact/signals'
+
+export type SchedulePhase = 'idle' | 'running' | 'paused' | 'completed'
+
+type ScheduleState = {
+    phase: SchedulePhase
+    currentPeriodIndex: number | null
+    timestampStarted: number | null
+    timestampPaused: number | null
+    timestampAnchor: number | null // epoch ms | null — set when the session is pinned to a wall-clock time
+}
+
+// The four-field (plus anchor) shape persisted by storage.ts's loadState/saveState
+// — see CLAUDE.md's note that storage.ts's generics are wired up to this in a
+// later phase.
+export type ScheduleSnapshot = ScheduleState
 
 // ---------------------------------------------------------------------------
 // Private state — NOT exported
 // ---------------------------------------------------------------------------
 
-const state = signal({
-    phase: 'idle', // 'idle' | 'running' | 'paused' | 'completed'
+const state = signal<ScheduleState>({
+    phase: 'idle',
     currentPeriodIndex: null,
     timestampStarted: null,
     timestampPaused: null,
-    timestampAnchor: null, // epoch ms | null — set when the session is pinned to a wall-clock time
+    timestampAnchor: null,
 })
 
 // ---------------------------------------------------------------------------
@@ -26,7 +41,7 @@ const state = signal({
 
 // idle → running. Sets currentPeriodIndex=0, timestampStarted=now (or the
 // anchor, when pinned), clears timestampPaused. No-op if not idle.
-const start = () => {
+const start = (): void => {
     if (state.value.phase !== 'idle') return
 
     state.value = {
@@ -40,17 +55,17 @@ const start = () => {
 
 // Pins the session to a wall-clock timestamp. No phase restrictions — callers
 // guard as needed.
-const pin = timestampMs => {
+const pin = (timestampMs: number): void => {
     state.value = { ...state.value, timestampAnchor: timestampMs }
 }
 
 // Clears the anchor.
-const unpin = () => {
+const unpin = (): void => {
     state.value = { ...state.value, timestampAnchor: null }
 }
 
 // running → paused. Records timestampPaused=now. No-op if not running.
-const pause = () => {
+const pause = (): void => {
     if (state.value.phase !== 'running') return
 
     state.value = {
@@ -62,21 +77,24 @@ const pause = () => {
 
 // paused → running. Shifts timestampStarted forward by the pause duration so
 // elapsed arithmetic is seamless. Clears timestampPaused. No-op if not paused.
-const resume = () => {
+const resume = (): void => {
     if (state.value.phase !== 'paused') return
 
-    const durationPaused = Date.now() - state.value.timestampPaused
+    // state.value.timestampPaused is non-null here — this branch is only
+    // reached in the 'paused' phase, which is only ever entered by pause()
+    // setting it.
+    const durationPaused = Date.now() - (state.value.timestampPaused as number)
 
     state.value = {
         ...state.value,
         phase: 'running',
         timestampPaused: null,
-        timestampStarted: state.value.timestampStarted + durationPaused,
+        timestampStarted: (state.value.timestampStarted as number) + durationPaused,
     }
 }
 
 // any → idle. Clears all fields to initial values (including the anchor).
-const reset = () => {
+const reset = (): void => {
     state.value = {
         phase: 'idle',
         currentPeriodIndex: null,
@@ -90,7 +108,7 @@ const reset = () => {
 // timestampAnchor (a finished timer has no anchor). currentPeriodIndex is kept
 // — the caller (Timer composer) decides what index to preserve since Schedule
 // cannot see periods.length.
-const complete = () => {
+const complete = (): void => {
     const { phase } = state.value
     if (phase !== 'running' && phase !== 'paused') return
 
@@ -114,16 +132,24 @@ const complete = () => {
 // timestampPaused is intentionally NOT cleared when paused (timer.js preserves
 // it; the brief suggested clearing it, but that would break elapsed math).
 //
-// @param {number} remainderMs        Sub-minute remainder from Period.complete —
-//                                    unclaimed time that carries into the new period.
-// @param {number} nextPeriodElapsedMs Pre-existing elapsed on the incoming period
-//                                    (e.g. a period that was visited before).
-const advance = ({ remainderMs, nextPeriodElapsedMs }) => {
+// @param remainderMs        Sub-minute remainder from Period.complete —
+//                            unclaimed time that carries into the new period.
+// @param nextPeriodElapsedMs Pre-existing elapsed on the incoming period
+//                             (e.g. a period that was visited before).
+const advance = ({
+    remainderMs,
+    nextPeriodElapsedMs,
+}: {
+    remainderMs: number
+    nextPeriodElapsedMs: number
+}): void => {
     const referenceNow = state.value.timestampPaused ?? Date.now()
 
     state.value = {
         ...state.value,
-        currentPeriodIndex: state.value.currentPeriodIndex + 1,
+        // currentPeriodIndex is non-null here — advance() is only ever called
+        // once the session is running/paused, which sets it to a number.
+        currentPeriodIndex: (state.value.currentPeriodIndex as number) + 1,
         timestampStarted: referenceNow - nextPeriodElapsedMs - remainderMs,
         // timestampPaused deliberately left unchanged (see comment above)
     }
@@ -142,16 +168,28 @@ const advance = ({ remainderMs, nextPeriodElapsedMs }) => {
 // into the elapsed/timestamp math, only into the Period's state.duration.
 // timestampPaused is not modified (matching timer.js).
 //
-// @param {number} extensionMs       Duration added to the previous period (not
-//                                   used in timestamp math — see above note).
-// @param {number} prevElapsedMs     Elapsed on the period we're rewinding to.
-// @param {number} currentElapsedMs  Elapsed on the period we're leaving.
-const rewind = ({ extensionMs: _extensionMs, prevElapsedMs, currentElapsedMs }) => {
-    const newTimestampStarted = state.value.timestampStarted - prevElapsedMs + currentElapsedMs
+// @param extensionMs       Duration added to the previous period (not
+//                           used in timestamp math — see above note).
+// @param prevElapsedMs     Elapsed on the period we're rewinding to.
+// @param currentElapsedMs  Elapsed on the period we're leaving.
+const rewind = ({
+    extensionMs: _extensionMs,
+    prevElapsedMs,
+    currentElapsedMs,
+}: {
+    extensionMs: number
+    prevElapsedMs: number
+    currentElapsedMs: number
+}): void => {
+    // timestampStarted is non-null here — rewind() is only ever called once
+    // the session is running/paused, which sets it to a number.
+    const newTimestampStarted =
+        (state.value.timestampStarted as number) - prevElapsedMs + currentElapsedMs
 
     state.value = {
         ...state.value,
-        currentPeriodIndex: state.value.currentPeriodIndex - 1,
+        // currentPeriodIndex is non-null here for the same reason as above.
+        currentPeriodIndex: (state.value.currentPeriodIndex as number) - 1,
         timestampStarted: newTimestampStarted,
         // timestampPaused deliberately left unchanged (matching timer.js)
     }
@@ -159,7 +197,7 @@ const rewind = ({ extensionMs: _extensionMs, prevElapsedMs, currentElapsedMs }) 
 
 // Shift timestampStarted by deltaMs (positive = forward, negative = backward).
 // Used for elapsed adjustments. No-op if timestampStarted is null.
-const shiftStartedAt = deltaMs => {
+const shiftStartedAt = (deltaMs: number): void => {
     if (state.value.timestampStarted === null) return
 
     state.value = {
@@ -169,7 +207,7 @@ const shiftStartedAt = deltaMs => {
 }
 
 // Escape hatch: directly set currentPeriodIndex (e.g. after period array mutations).
-const setIndex = index => {
+const setIndex = (index: number | null): void => {
     state.value = {
         ...state.value,
         currentPeriodIndex: index,
@@ -186,14 +224,20 @@ const setSnapshot = ({
     timestampStarted,
     timestampPaused,
     timestampAnchor = null,
-}) => {
+}: {
+    phase: SchedulePhase
+    currentPeriodIndex: number | null
+    timestampStarted: number | null
+    timestampPaused: number | null
+    timestampAnchor?: number | null
+}): void => {
     state.value = { phase, currentPeriodIndex, timestampStarted, timestampPaused, timestampAnchor }
 }
 
 // Reset timestampStarted to (timestampPaused ?? Date.now()).
 // Used by addPeriod when a new period is inserted before the current one and
 // must begin with zero elapsed. No-op if timestampStarted is already null.
-const restartCurrentPeriod = () => {
+const restartCurrentPeriod = (): void => {
     if (state.value.timestampStarted === null) return
 
     state.value = {
@@ -206,27 +250,29 @@ const restartCurrentPeriod = () => {
 // Field computeds — read-only projections of the private state
 // ---------------------------------------------------------------------------
 
-const phase = computed(() => state.value.phase)
-const currentPeriodIndex = computed(() => state.value.currentPeriodIndex)
-const timestampStarted = computed(() => state.value.timestampStarted)
-const timestampPaused = computed(() => state.value.timestampPaused)
-const timestampAnchor = computed(() => state.value.timestampAnchor)
+const phase: ReadonlySignal<SchedulePhase> = computed(() => state.value.phase)
+const currentPeriodIndex: ReadonlySignal<number | null> = computed(
+    () => state.value.currentPeriodIndex,
+)
+const timestampStarted: ReadonlySignal<number | null> = computed(() => state.value.timestampStarted)
+const timestampPaused: ReadonlySignal<number | null> = computed(() => state.value.timestampPaused)
+const timestampAnchor: ReadonlySignal<number | null> = computed(() => state.value.timestampAnchor)
 
 // ---------------------------------------------------------------------------
 // Predicate computeds
 // ---------------------------------------------------------------------------
 
-const isRunning = computed(() => state.value.phase === 'running')
-const isPaused = computed(() => state.value.phase === 'paused')
-const isIdle = computed(() => state.value.phase === 'idle')
-const isCompleted = computed(() => state.value.phase === 'completed')
-const isAnchored = computed(() => state.value.timestampAnchor != null)
+const isRunning: ReadonlySignal<boolean> = computed(() => state.value.phase === 'running')
+const isPaused: ReadonlySignal<boolean> = computed(() => state.value.phase === 'paused')
+const isIdle: ReadonlySignal<boolean> = computed(() => state.value.phase === 'idle')
+const isCompleted: ReadonlySignal<boolean> = computed(() => state.value.phase === 'completed')
+const isAnchored: ReadonlySignal<boolean> = computed(() => state.value.timestampAnchor != null)
 
 // ---------------------------------------------------------------------------
 // Snapshot computed — four-field object for storage effect() subscriptions
 // ---------------------------------------------------------------------------
 
-const snapshot = computed(() => ({
+const snapshot: ReadonlySignal<ScheduleSnapshot> = computed(() => ({
     phase: state.value.phase,
     currentPeriodIndex: state.value.currentPeriodIndex,
     timestampStarted: state.value.timestampStarted,

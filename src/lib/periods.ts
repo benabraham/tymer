@@ -1,13 +1,27 @@
 // Pure functions for Periods list operations.
 // Owns the index-shift formulas for inserting and removing items from the
 // Timer's ordered Periods list while keeping currentPeriodIndex coherent.
-// No imports from signals, storage, sounds, schedule, or timer — fully mockless in tests.
+// No imports from signals, storage, sounds, or timer — fully mockless in tests.
+
+import type { PeriodData } from './period.js'
+
+type IndexedPeriods = { periods: PeriodData[]; currentIndex: number | null }
 
 // Insert `period` at `atIndex` in `periods`, preserving the conceptual Current Period.
 // The inserted period ends up AT atIndex; entries from atIndex onward shift right.
 // If atIndex <= currentIndex, shifts currentIndex +1 so the same Period stays current.
 // currentIndex === null → returned currentIndex is null (timer not yet started).
-const insert = ({ periods, currentIndex, atIndex, period }) => {
+const insert = ({
+    periods,
+    currentIndex,
+    atIndex,
+    period,
+}: {
+    periods: PeriodData[]
+    currentIndex: number | null
+    atIndex: number
+    period: PeriodData
+}): IndexedPeriods => {
     const newPeriods = [...periods]
     newPeriods.splice(atIndex, 0, period)
 
@@ -23,7 +37,17 @@ const insert = ({ periods, currentIndex, atIndex, period }) => {
 // currentIndex is always set to atIndex regardless of the input currentIndex.
 // Caller is responsible for ensuring this is only used when taking over the Current slot
 // is the intended semantic (e.g. addPeriod's <60s branch in timer.js).
-const insertMakingCurrent = ({ periods, currentIndex: _, atIndex, period }) => {
+const insertMakingCurrent = ({
+    periods,
+    currentIndex: _,
+    atIndex,
+    period,
+}: {
+    periods: PeriodData[]
+    currentIndex: number | null
+    atIndex: number
+    period: PeriodData
+}): IndexedPeriods => {
     const newPeriods = [...periods]
     newPeriods.splice(atIndex, 0, period)
 
@@ -35,7 +59,15 @@ const insertMakingCurrent = ({ periods, currentIndex: _, atIndex, period }) => {
 // currentIndex === null → returned currentIndex is null.
 // Precondition (NOT enforced — trust the caller): indexToRemove !== currentIndex.
 // Removing the Current Period requires pre-navigation; that is the caller's responsibility.
-const remove = ({ periods, currentIndex, indexToRemove }) => {
+const remove = ({
+    periods,
+    currentIndex,
+    indexToRemove,
+}: {
+    periods: PeriodData[]
+    currentIndex: number | null
+    indexToRemove: number
+}): IndexedPeriods => {
     const newPeriods = periods.filter((_, i) => i !== indexToRemove)
 
     let newCurrentIndex = currentIndex

@@ -1,5 +1,6 @@
-import { signal, computed, effect } from '@preact/signals'
-import { PERIOD_CONFIG } from './config.js'
+import { signal, computed, effect, type Signal, type ReadonlySignal } from '@preact/signals'
+import { PERIOD_CONFIG, type PeriodConfigEntry } from './config.js'
+import type { PeriodType } from './period.js'
 
 // ============================================================================
 // Period-configuration store
@@ -16,12 +17,27 @@ import { PERIOD_CONFIG } from './config.js'
 // the reset button can restore it (see timer.js).
 // ============================================================================
 
-const TYPE_TO_CHAR = { work: 'W', break: 'B', fun: 'F' }
-const CHAR_TO_TYPE = { W: 'work', B: 'break', F: 'fun' }
+// A single parsed line from a config's text — the result of `parseConfigText`.
+export type ParsedConfigLine = {
+    type: PeriodType
+    durationMs: number
+    note: string
+}
+
+// A named, editable period-config definition (persisted, or the built-in one).
+export type NamedPeriodConfig = {
+    id: string
+    name: string
+    text: string
+    readonly?: boolean
+}
+
+const TYPE_TO_CHAR: Record<PeriodType, string> = { work: 'W', break: 'B', fun: 'F' }
+const CHAR_TO_TYPE: Record<string, PeriodType | undefined> = { W: 'work', B: 'break', F: 'fun' }
 
 // --- serialization (Period config object → text line) ----------------------
 
-const msToDurationToken = ms => {
+const msToDurationToken = (ms: number): string => {
     const totalMinutes = Math.round(ms / 60000)
     if (totalMinutes < 60) return String(totalMinutes)
     const hours = Math.floor(totalMinutes / 60)
@@ -29,12 +45,12 @@ const msToDurationToken = ms => {
     return `${hours}:${String(minutes).padStart(2, '0')}`
 }
 
-const periodConfigToLine = ({ type, duration, note }) =>
+const periodConfigToLine = ({ type, duration, note }: PeriodConfigEntry): string =>
     `${TYPE_TO_CHAR[type]} ${msToDurationToken(duration)}${note ? ` ${note}` : ''}`
 
 // --- parsing (text → [{ type, durationMs, note }]) -------------------------
 
-const parseDurationToken = token => {
+const parseDurationToken = (token: string): number | null => {
     if (token.includes(':')) {
         const parts = token.split(':')
         if (parts.length !== 2) return null
@@ -46,7 +62,7 @@ const parseDurationToken = token => {
     return parseInt(token, 10) * 60000
 }
 
-const parseLine = line => {
+const parseLine = (line: string): ParsedConfigLine | null => {
     const match = line.trim().match(/^(\S+)\s+(\S+)(?:\s+(.*))?$/)
     if (!match) return null
     const type = CHAR_TO_TYPE[match[1].toUpperCase()]
@@ -56,13 +72,17 @@ const parseLine = line => {
     return { type, durationMs, note: (match[3] || '').trim() }
 }
 
-export const parseConfigText = text => text.split('\n').map(parseLine).filter(Boolean)
+export const parseConfigText = (text: string): ParsedConfigLine[] =>
+    text
+        .split('\n')
+        .map(parseLine)
+        .filter((line): line is ParsedConfigLine => line !== null)
 
 // --- anchor header line (@h:mm — pins session start to a wall-clock time) --
 
 const ANCHOR_RE = /^@\s*(\d{1,2}):(\d{1,2})$/
 
-export const parseConfigAnchor = text => {
+export const parseConfigAnchor = (text: string): number | null => {
     for (const line of text.split('\n')) {
         const match = line.trim().match(ANCHOR_RE)
         if (!match) continue
@@ -78,7 +98,7 @@ export const parseConfigAnchor = text => {
 
 const BUILTIN_TEXT = PERIOD_CONFIG.map(periodConfigToLine).join('\n')
 
-export const BUILTIN_CONFIG = {
+export const BUILTIN_CONFIG: NamedPeriodConfig = {
     id: 'builtin',
     name: 'Default',
     text: BUILTIN_TEXT,
@@ -91,31 +111,36 @@ const STORAGE_KEY = 'periodConfigs'
 const ACTIVE_KEY = 'activeConfigId'
 const NEW_CONFIG_TEXT = 'F 3'
 
-const loadConfigs = () => {
+const loadConfigs = (): NamedPeriodConfig[] => {
     try {
-        const stored = JSON.parse(localStorage.getItem(STORAGE_KEY))
-        return Array.isArray(stored) ? stored : []
+        const stored: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) as string)
+        return Array.isArray(stored) ? (stored as NamedPeriodConfig[]) : []
     } catch {
         return []
     }
 }
 
-export const configs = signal(loadConfigs())
-export const activeConfigId = signal(localStorage.getItem(ACTIVE_KEY) || BUILTIN_CONFIG.id)
+export const configs: Signal<NamedPeriodConfig[]> = signal(loadConfigs())
+export const activeConfigId: Signal<string> = signal(
+    localStorage.getItem(ACTIVE_KEY) || BUILTIN_CONFIG.id,
+)
 
 effect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(configs.value)))
 effect(() => localStorage.setItem(ACTIVE_KEY, activeConfigId.value))
 
-export const allConfigs = computed(() => [BUILTIN_CONFIG, ...configs.value])
+export const allConfigs: ReadonlySignal<NamedPeriodConfig[]> = computed(() => [
+    BUILTIN_CONFIG,
+    ...configs.value,
+])
 
-export const activeConfig = computed(
+export const activeConfig: ReadonlySignal<NamedPeriodConfig> = computed(
     () => allConfigs.value.find(config => config.id === activeConfigId.value) || BUILTIN_CONFIG,
 )
 
 // --- panel visibility ------------------------------------------------------
 
-export const configPanelOpen = signal(false)
-export const toggleConfigPanel = () => {
+export const configPanelOpen: Signal<boolean> = signal(false)
+export const toggleConfigPanel = (): void => {
     configPanelOpen.value = !configPanelOpen.value
 }
 
@@ -123,28 +148,28 @@ export const toggleConfigPanel = () => {
 
 // Autogenerate "Config N" using the highest existing N + 1 so deletions never
 // cause a name collision.
-const nextConfigName = () => {
+const nextConfigName = (): string => {
     const numbers = configs.value
         .map(config => config.name.match(/^Config (\d+)$/))
-        .filter(Boolean)
+        .filter((match): match is RegExpMatchArray => match !== null)
         .map(match => parseInt(match[1], 10))
     const next = numbers.length ? Math.max(...numbers) + 1 : 1
     return `Config ${next}`
 }
 
-const createId = () =>
+const createId = (): string =>
     typeof crypto !== 'undefined' && crypto.randomUUID
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`
 
-export const addConfig = () => {
+export const addConfig = (): NamedPeriodConfig => {
     const config = { id: createId(), name: nextConfigName(), text: NEW_CONFIG_TEXT }
     configs.value = [...configs.value, config]
     activeConfigId.value = config.id
     return config
 }
 
-export const duplicateConfig = id => {
+export const duplicateConfig = (id: string): NamedPeriodConfig => {
     const source = allConfigs.value.find(config => config.id === id) || activeConfig.value
     const config = { id: createId(), name: nextConfigName(), text: source.text }
     configs.value = [...configs.value, config]
@@ -152,19 +177,19 @@ export const duplicateConfig = id => {
     return config
 }
 
-export const deleteConfig = id => {
+export const deleteConfig = (id: string): void => {
     configs.value = configs.value.filter(config => config.id !== id)
     if (activeConfigId.value === id) activeConfigId.value = BUILTIN_CONFIG.id
 }
 
-export const updateConfigText = (id, text) => {
+export const updateConfigText = (id: string, text: string): void => {
     configs.value = configs.value.map(config => (config.id === id ? { ...config, text } : config))
 }
 
-export const updateConfigName = (id, name) => {
+export const updateConfigName = (id: string, name: string): void => {
     configs.value = configs.value.map(config => (config.id === id ? { ...config, name } : config))
 }
 
-export const selectConfig = id => {
+export const selectConfig = (id: string): void => {
     activeConfigId.value = id
 }

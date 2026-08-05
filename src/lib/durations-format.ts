@@ -14,13 +14,35 @@
 // (one colon) or h:mm:ss (two colons). Elapsed carries seconds, so it is
 // rendered as h:mm:ss; totals are rendered as whole minutes or h:mm.
 
-const TYPE_TO_CHAR = { work: 'W', break: 'B', fun: 'F' }
-const CHAR_TO_TYPE = { W: 'work', B: 'break', F: 'fun' }
+import type { PeriodType } from './period.js'
+import type { PeriodData } from './period.js'
 
-const pad = n => String(n).padStart(2, '0')
+// A single parsed line from the current-durations editor text — the result of
+// `parseCurrentDurationsText`.
+export type ParsedCurrentDurationsLine = {
+    type: PeriodType
+    elapsedMs: number
+    durationMs: number
+    note: string
+}
+
+// The day qualifier resolved from an "@..." anchor header line — see
+// `parseDurationsAnchor`. `null` means a plain "@h:mm" (today); resolving
+// day+minutes to a timestamp is the caller's job.
+export type DurationsAnchorDay = 'yesterday' | { day: number; monthIndex: number } | null
+
+export type ParsedDurationsAnchor = {
+    minutes: number
+    day: DurationsAnchorDay
+}
+
+const TYPE_TO_CHAR: Record<PeriodType, string> = { work: 'W', break: 'B', fun: 'F' }
+const CHAR_TO_TYPE: Record<string, PeriodType | undefined> = { W: 'work', B: 'break', F: 'fun' }
+
+const pad = (n: number): string => String(n).padStart(2, '0')
 
 // Parse one time token → ms. No colon = minutes; h:m; or h:m:s.
-const parseTimeToken = token => {
+const parseTimeToken = (token: string): number | null => {
     if (!token) return null
     if (token.includes(':')) {
         const parts = token.split(':')
@@ -34,7 +56,7 @@ const parseTimeToken = token => {
 }
 
 // "elapsed/total" or just "total" → { elapsedMs, durationMs } | null
-const parseDurationField = field => {
+const parseDurationField = (field: string): { elapsedMs: number; durationMs: number } | null => {
     if (field.includes('/')) {
         const parts = field.split('/')
         if (parts.length !== 2) return null
@@ -48,7 +70,7 @@ const parseDurationField = field => {
     return { elapsedMs: 0, durationMs }
 }
 
-const parseLine = line => {
+const parseLine = (line: string): ParsedCurrentDurationsLine | null => {
     const match = line.trim().match(/^(\S+)\s+(\S+)(?:\s+(.*))?$/)
     if (!match) return null
     const type = CHAR_TO_TYPE[match[1].toUpperCase()]
@@ -63,7 +85,11 @@ const parseLine = line => {
     }
 }
 
-export const parseCurrentDurationsText = text => text.split('\n').map(parseLine).filter(Boolean)
+export const parseCurrentDurationsText = (text: string): ParsedCurrentDurationsLine[] =>
+    text
+        .split('\n')
+        .map(parseLine)
+        .filter((line): line is ParsedCurrentDurationsLine => line !== null)
 
 // Anchor header line — pins session start to a wall-clock time. Only the first
 // valid anchor line in the text counts. Forms (day qualifier optional):
@@ -83,7 +109,7 @@ const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', '
 // → { minutes, day } | null, where day is null (plain time), 'yesterday', or
 // { day, monthIndex }. Resolving day+minutes to a timestamp is the caller's
 // job (it needs a reference "now").
-export const parseDurationsAnchor = text => {
+export const parseDurationsAnchor = (text: string): ParsedDurationsAnchor | null => {
     for (const line of text.split('\n')) {
         const match = line.trim().match(ANCHOR_RE)
         if (!match) continue
@@ -106,20 +132,21 @@ export const parseDurationsAnchor = text => {
 // True when any line declares anchor INTENT (starts with '@'), whether or not
 // it parses. A half-edited anchor line must read as "leave the anchor alone",
 // not as "no anchor" — only a fully absent line means unpin.
-export const hasAnchorLine = text => text.split('\n').some(line => line.trim().startsWith('@'))
+export const hasAnchorLine = (text: string): boolean =>
+    text.split('\n').some(line => line.trim().startsWith('@'))
 
-export const formatAnchorToken = (minutes, dayMarker = '') =>
+export const formatAnchorToken = (minutes: number, dayMarker = ''): string =>
     `@${dayMarker ? `${dayMarker} ` : ''}${Math.floor(minutes / 60)}:${pad(minutes % 60)}`
 
 // total/duration token: whole minutes, or h:mm when >= 1 hour
-export const formatDurationToken = ms => {
+export const formatDurationToken = (ms: number): string => {
     const totalMinutes = Math.round(ms / 60000)
     if (totalMinutes < 60) return String(totalMinutes)
     return `${Math.floor(totalMinutes / 60)}:${pad(totalMinutes % 60)}`
 }
 
 // elapsed token: h:mm:ss (elapsed tracks seconds)
-export const formatElapsedToken = ms => {
+export const formatElapsedToken = (ms: number): string => {
     const totalSeconds = Math.floor(ms / 1000)
     const h = Math.floor(totalSeconds / 3600)
     const m = Math.floor((totalSeconds % 3600) / 60)
@@ -132,9 +159,12 @@ export const formatElapsedToken = ms => {
 // with the day qualifier (e.g. "yesterday", "30 Dec") when anchorDayMarker is
 // non-empty, so anchors from before today survive the round-trip exactly.
 export const serializeCurrentDurations = (
-    periods,
-    { anchorMinutes = null, anchorDayMarker = '' } = {},
-) => {
+    periods: PeriodData[],
+    {
+        anchorMinutes = null,
+        anchorDayMarker = '',
+    }: { anchorMinutes?: number | null; anchorDayMarker?: string } = {},
+): string => {
     const lines = periods
         .map(period => {
             const char = TYPE_TO_CHAR[period.config.type]
