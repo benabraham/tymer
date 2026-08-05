@@ -1,10 +1,29 @@
 import { AVAILABLE_SOUNDS } from './sound-discovery'
+import type { AvailableSounds } from './sound-discovery'
+import type { PeriodType } from './period.js'
+
+type SoundWindowType = 'elapsed' | 'remaining' | 'timesup' | 'overtime'
+
+export type SoundWindow = {
+    type: SoundWindowType
+    minutes?: number
+    targetMs: number
+    soundPath: string
+    key: string
+    priority: number
+}
 
 export class SoundScheduler {
-    constructor(windowSize = 2000, availableSounds = null) {
+    WINDOW_SIZE: number
+    overlappingGroup: Map<string, SoundWindow> // Maps sound key to window object
+    activeWindows: Set<string> // Set of window keys currently active
+    availableSounds: AvailableSounds
+    maxRemainingMinutes: number
+
+    constructor(windowSize: number = 2000, availableSounds: AvailableSounds | null = null) {
         this.WINDOW_SIZE = windowSize
-        this.overlappingGroup = new Map() // Maps sound key to window object
-        this.activeWindows = new Set() // Set of window keys currently active
+        this.overlappingGroup = new Map()
+        this.activeWindows = new Set()
 
         // Use provided sounds or default configuration
         this.availableSounds = availableSounds || AVAILABLE_SOUNDS
@@ -14,15 +33,19 @@ export class SoundScheduler {
     }
 
     // Calculate the threshold for switching from elapsed to remaining sounds
-    getThreshold(intendedDuration) {
+    getThreshold(intendedDuration: number): number {
         // Dynamic threshold based on largest available remaining sound
         const remainingThreshold = intendedDuration - this.maxRemainingMinutes * 60000
         return Math.max(intendedDuration / 2, remainingThreshold)
     }
 
     // Get all possible sound windows for a given period
-    getAllPossibleWindows(intendedDuration, periodType, nextPeriodType = null) {
-        const windows = []
+    getAllPossibleWindows(
+        intendedDuration: number,
+        periodType: PeriodType,
+        nextPeriodType: PeriodType | 'finish' | null = null,
+    ): SoundWindow[] {
+        const windows: SoundWindow[] = []
 
         // Add elapsed sound windows
         this.availableSounds.elapsed.forEach(minutes => {
@@ -86,10 +109,15 @@ export class SoundScheduler {
     }
 
     // Get currently active windows based on elapsed time
-    getActiveWindows(elapsedMs, intendedDuration, periodType, nextPeriodType = null) {
+    getActiveWindows(
+        elapsedMs: number,
+        intendedDuration: number,
+        periodType: PeriodType,
+        nextPeriodType: PeriodType | 'finish' | null = null,
+    ): SoundWindow[] {
         const allWindows = this.getAllPossibleWindows(intendedDuration, periodType, nextPeriodType)
         const threshold = this.getThreshold(intendedDuration)
-        const activeWindows = []
+        const activeWindows: SoundWindow[] = []
 
         for (const window of allWindows) {
             // Check if we're in this window
@@ -106,7 +134,13 @@ export class SoundScheduler {
     }
 
     // Main function to check what sound should play
-    checkSounds(elapsedMs, intendedDuration, periodType, isPaused, nextPeriodType = null) {
+    checkSounds(
+        elapsedMs: number,
+        intendedDuration: number,
+        periodType: PeriodType,
+        isPaused: boolean,
+        nextPeriodType: PeriodType | 'finish' | null = null,
+    ): SoundWindow | null {
         if (isPaused) {
             this.clearState()
             return null
@@ -130,8 +164,8 @@ export class SoundScheduler {
         })
 
         // Check if any windows from overlapping group have ended
-        const stillActiveInGroup = []
-        const endedWindows = []
+        const stillActiveInGroup: SoundWindow[] = []
+        const endedWindows: SoundWindow[] = []
 
         for (const [key, window] of this.overlappingGroup) {
             if (currentActiveKeys.has(key)) {
@@ -168,7 +202,7 @@ export class SoundScheduler {
     }
 
     // Select the highest priority sound from competing windows
-    selectHighestPriority(windows) {
+    selectHighestPriority(windows: SoundWindow[]): SoundWindow | null {
         if (windows.length === 0) return null
 
         // Create a copy to avoid mutating the original array
@@ -186,27 +220,27 @@ export class SoundScheduler {
     }
 
     // Check if a given time is within a window
-    _isInWindow(targetMs, currentMs) {
+    _isInWindow(targetMs: number, currentMs: number): boolean {
         return Math.abs(currentMs - targetMs) <= this.WINDOW_SIZE
     }
 
     // State management methods
-    onPeriodChange() {
+    onPeriodChange(): void {
         this.clearState()
     }
 
-    onDurationChange() {
+    onDurationChange(): void {
         this.clearState()
     }
 
-    onElapsedAdjustment(newElapsed, oldElapsed) {
+    onElapsedAdjustment(newElapsed: number, oldElapsed: number): void {
         // Clear state when going backwards in time
         if (newElapsed < oldElapsed) {
             this.clearState()
         }
     }
 
-    clearState() {
+    clearState(): void {
         this.overlappingGroup.clear()
         this.activeWindows.clear()
     }

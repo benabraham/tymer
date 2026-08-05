@@ -1,4 +1,4 @@
-import { soundConfig } from '../src/lib/sounds.js'
+import { soundConfig } from '../src/lib/sounds.ts'
 
 /**
  * Extracts sound file paths from soundConfig and generates preload HTML links

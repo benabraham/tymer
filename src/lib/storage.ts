@@ -1,12 +1,17 @@
 import { log } from './log.js'
+import type { PeriodData } from './period.js'
+import type { ScheduleSnapshot } from './schedule.js'
 
 // Function to save the timer state to localStorage
-export const saveState = <T>(state: T): T => {
+export const saveState = <T extends Record<string, unknown>>(state: T): T => {
     // Convert the state object to a JSON string and store it in localStorage
     localStorage.setItem('timerState', JSON.stringify(state))
     //log('state saved', state, 0)
     return state
 }
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null
 
 // Function to load the timer state from localStorage.
 //
@@ -21,19 +26,17 @@ export const saveState = <T>(state: T): T => {
 //
 // Falls back to defaults for the entire blob if any required key is missing or
 // if the Period shape is stale (no backward-compat migration — just reset).
-export const loadState = <
-    TTimerState extends Record<string, unknown>,
-    TScheduleSnapshot extends Record<string, unknown>,
->(
+export const loadState = <TTimerState extends { periods: PeriodData[] } & Record<string, unknown>>(
     initialTimerState: TTimerState,
-    initialScheduleSnapshot: TScheduleSnapshot,
-): { timerState: TTimerState; scheduleSnapshot: TScheduleSnapshot } => {
+    initialScheduleSnapshot: ScheduleSnapshot,
+): { timerState: TTimerState; scheduleSnapshot: ScheduleSnapshot } => {
     try {
-        // Attempt to retrieve and parse the state from localStorage
-        const loadedState = JSON.parse(localStorage.getItem('timerState') as string) as Record<
-            string,
-            unknown
-        >
+        // localStorage genuinely returns string | null (key absent), and the
+        // persisted blob genuinely may be malformed JSON — both fall through to
+        // the catch block below (or fail isValidState), matching the original
+        // behavior of JSON.parse(null) coercing to the JS value `null`.
+        const raw = localStorage.getItem('timerState')
+        const loadedState: unknown = raw === null ? null : JSON.parse(raw)
 
         // Validate timer-state keys
         const timerKeys = Object.keys(initialTimerState)
@@ -41,16 +44,20 @@ export const loadState = <
         const scheduleKeys = Object.keys(initialScheduleSnapshot)
 
         const isValidState =
-            timerKeys.every(prop => loadedState.hasOwnProperty(prop))
-            && scheduleKeys.every(prop => loadedState.hasOwnProperty(prop))
+            isRecord(loadedState)
+            && timerKeys.every(prop => Object.prototype.hasOwnProperty.call(loadedState, prop))
+            && scheduleKeys.every(prop => Object.prototype.hasOwnProperty.call(loadedState, prop))
             && Array.isArray(loadedState.periods)
-            && (loadedState.periods as unknown[]).every(p => {
+            && loadedState.periods.every(p => {
                 const period = p as { config?: unknown; state?: unknown } | null | undefined
                 return Boolean(period?.config && period?.state)
             })
 
-        if (isValidState) {
-            // Extract each slice from the flat persisted blob
+        if (isValidState && isRecord(loadedState)) {
+            // Extract each slice from the flat persisted blob. isValidState is
+            // what actually guarantees the required keys (and the Period shape)
+            // are present — the compiler can't verify the key-subset reduce
+            // against TTimerState / ScheduleSnapshot structurally, hence the casts.
             const timerState = timerKeys.reduce(
                 (acc, key) => {
                     acc[key] = loadedState[key]
@@ -64,7 +71,7 @@ export const loadState = <
                     return acc
                 },
                 {} as Record<string, unknown>,
-            ) as TScheduleSnapshot
+            ) as ScheduleSnapshot
 
             log('state loaded successfully', loadedState, 1)
             return { timerState, scheduleSnapshot }

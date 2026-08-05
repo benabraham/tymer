@@ -1,22 +1,38 @@
 import { Howl, Howler } from 'howler'
-import { signal } from '@preact/signals'
+import { signal, type Signal } from '@preact/signals'
 import { AVAILABLE_SOUNDS } from './sound-discovery'
-import { SOUND_VARIANTS } from './sound-manifest.js'
+import { SOUND_VARIANTS, type SoundVariant } from './sound-manifest.js'
 import { pickVariant } from './pick-variant.js'
 import { activeSoundSet, ALL_SETS } from './sound-set.js'
 import { log } from './log.js'
+import type { PeriodData, PeriodType } from './period.js'
+
+// Minimal shape sounds.js reads off `window.__timerModule` (assigned by
+// timer.ts). Kept structural/local rather than importing timer.ts to avoid a
+// circular dependency (timer.ts imports this module).
+type TimerModuleGlobal = {
+    timerState?: unknown
+    currentPeriod?: { value: PeriodData | undefined }
+    Schedule?: { currentPeriodIndex: { value: number | null } }
+}
+
+declare global {
+    interface Window {
+        __timerModule?: TimerModuleGlobal
+    }
+}
 
 // Resolves the variants (objects) for a sound key from the generated manifest.
 // A key absent from the manifest resolves to no variants — callers (playByKey,
 // playRandomNotification) already treat an empty list as "sound not found".
-export const getVariants = key => {
+export const getVariants = (key: string): SoundVariant[] => {
     return SOUND_VARIANTS[key] ?? []
 }
 
 // Resolves just the variant paths — consumed by soundConfig (build-time
 // preload export) and by tests that guard the full pool regardless of the
 // active set selection.
-export const getVariantPaths = key => {
+export const getVariantPaths = (key: string): string[] => {
     return getVariants(key).map(v => v.src)
 }
 
@@ -27,7 +43,13 @@ export const getVariantPaths = key => {
 // must keep playing under every selection, and a half-generated set degrades
 // to the full pool instead of going silent — the exact silent-404-Howl trap
 // CLAUDE.md documents from the old hardcoded-fallback bug.
-export const pickCandidates = ({ variants, set }) => {
+export const pickCandidates = <T extends { set: string | null }>({
+    variants,
+    set,
+}: {
+    variants: T[]
+    set: string
+}): T[] => {
     if (set === ALL_SETS) return variants
 
     const filtered = variants.filter(v => v.set === set)
@@ -36,7 +58,7 @@ export const pickCandidates = ({ variants, set }) => {
 
 // The complete set of sound keys the app needs, derived from the discovery
 // config rather than hand-written so it can never drift from it.
-export const REQUIRED_SOUND_KEYS = [
+export const REQUIRED_SOUND_KEYS: string[] = [
     ...AVAILABLE_SOUNDS.elapsed.map(min => `elapsed_${min}`),
     ...AVAILABLE_SOUNDS.remaining.map(min => `remaining_${min}`),
     ...AVAILABLE_SOUNDS.overtime.map(min => `overtime_${min}`),
@@ -52,12 +74,12 @@ export const REQUIRED_SOUND_KEYS = [
 
 // Audio context unlock state — a signal so the UI can flag "audio not activated
 // yet" (browsers block playback until the first user gesture).
-export const audioUnlocked = signal(false)
+export const audioUnlocked: Signal<boolean> = signal(false)
 
 // User mute toggle, persisted. Default: sound on.
 const SOUND_ENABLED_KEY = 'soundEnabled'
 
-const loadSoundEnabled = () => {
+const loadSoundEnabled = (): boolean => {
     try {
         return localStorage.getItem(SOUND_ENABLED_KEY) !== 'false'
     } catch {
@@ -65,9 +87,9 @@ const loadSoundEnabled = () => {
     }
 }
 
-export const soundEnabled = signal(loadSoundEnabled())
+export const soundEnabled: Signal<boolean> = signal(loadSoundEnabled())
 
-export const toggleSound = () => {
+export const toggleSound = (): void => {
     soundEnabled.value = !soundEnabled.value
     try {
         localStorage.setItem(SOUND_ENABLED_KEY, String(soundEnabled.value))
@@ -78,22 +100,54 @@ export const toggleSound = () => {
     if (!soundEnabled.value) Howler.stop()
 }
 
+// Period context captured at play time, mirroring the currently-playing
+// period's timing — used only for the debug playback log.
+type PeriodContext = {
+    periodType: PeriodType
+    periodDuration: number
+    elapsed: number
+    remaining: number
+    overtime: number
+    periodIndex: number
+}
+
+type SoundLogEntry = {
+    timestamp: number
+    soundKey: string
+    success: boolean
+    error: string | null
+    retry: boolean
+    periodContext: PeriodContext | null
+}
+
 // Sound playback tracking for debug table
-export const soundPlaybackLog = []
+export const soundPlaybackLog: SoundLogEntry[] = []
 const MAX_LOG_ENTRIES = 50
 
+// Extracts a display message from an unknown thrown value the same way
+// `error?.message || null` did: any object carrying a (possibly falsy)
+// `message` property resolves that property (falling back to null when it is
+// falsy), everything else (including non-object throws) resolves to null.
+const getErrorMessage = (error: unknown): string | null => {
+    if (error !== null && typeof error === 'object' && 'message' in error) {
+        const message = (error as { message: unknown }).message
+        return (message as string | undefined) || null
+    }
+    return null
+}
+
 const addSoundLog = (
-    soundKey,
-    success,
-    error = null,
-    retryAttempt = false,
-    periodContext = null,
-) => {
-    const logEntry = {
+    soundKey: string,
+    success: boolean,
+    error: unknown = null,
+    retryAttempt: boolean = false,
+    periodContext: PeriodContext | null = null,
+): void => {
+    const logEntry: SoundLogEntry = {
         timestamp: Date.now(),
         soundKey,
         success,
-        error: error?.message || null,
+        error: getErrorMessage(error),
         retry: retryAttempt,
         periodContext,
     }
@@ -105,7 +159,7 @@ const addSoundLog = (
 }
 
 // Function to unlock audio context on user interaction
-export const unlockAudio = async () => {
+export const unlockAudio = async (): Promise<boolean> => {
     if (audioUnlocked.value) return true
 
     try {
@@ -133,15 +187,18 @@ export const unlockAudio = async () => {
     }
 }
 
+type SoundEntry = { set: string | null; howl: Howl }
+type SoundConfigMap = Record<string, SoundEntry[]>
+
 // Build sound configuration dynamically based on available sounds
-const buildSoundConfig = () => {
+const buildSoundConfig = (): SoundConfigMap => {
     // Skip if we're in a Node.js build environment (no window object)
     if (typeof window === 'undefined') {
         return {}
     }
 
-    const missing = []
-    const config = {}
+    const missing: string[] = []
+    const config: SoundConfigMap = {}
 
     REQUIRED_SOUND_KEYS.forEach(key => {
         const variants = getVariants(key)
@@ -160,21 +217,21 @@ const buildSoundConfig = () => {
 }
 
 // Create all sound instances (each key holds an array of Howls, one per variant)
-const sounds = buildSoundConfig()
+const sounds: SoundConfigMap = buildSoundConfig()
 
 // Bookkeeping only, never rendered — the last variant index played per sound
 // key, so consecutive plays of a 2+ variant key don't repeat the same take.
-const lastVariantIndex = new Map()
+const lastVariantIndex = new Map<string, number>()
 
 // Export sound variant paths for build-time preloading. Each leaf is an
 // array of variant paths (one per interchangeable take), so a preload
 // consumer gets every variant of every event.
 export const soundConfig = {
-    elapsed: AVAILABLE_SOUNDS.elapsed.reduce((acc, min) => {
+    elapsed: AVAILABLE_SOUNDS.elapsed.reduce<Record<string, string[]>>((acc, min) => {
         acc[`${min}min`] = getVariantPaths(`elapsed_${min}`)
         return acc
     }, {}),
-    remaining: AVAILABLE_SOUNDS.remaining.reduce((acc, min) => {
+    remaining: AVAILABLE_SOUNDS.remaining.reduce<Record<string, string[]>>((acc, min) => {
         acc[`${min}min`] = getVariantPaths(`remaining_${min}`)
         return acc
     }, {}),
@@ -184,11 +241,11 @@ export const soundConfig = {
         fun: getVariantPaths('timesup_fun'),
         finish: getVariantPaths('timesup_finish'),
     },
-    overtime: AVAILABLE_SOUNDS.overtime.reduce((acc, min) => {
+    overtime: AVAILABLE_SOUNDS.overtime.reduce<Record<string, string[]>>((acc, min) => {
         acc[`${min}min`] = getVariantPaths(`overtime_${min}`)
         return acc
     }, {}),
-    overtimeBreak: AVAILABLE_SOUNDS.overtimeBreak.reduce((acc, min) => {
+    overtimeBreak: AVAILABLE_SOUNDS.overtimeBreak.reduce<Record<string, string[]>>((acc, min) => {
         acc[`${min}min`] = getVariantPaths(`overtime_break_${min}`)
         return acc
     }, {}),
@@ -199,11 +256,11 @@ export const soundConfig = {
 }
 
 // Get period context for logging
-const getPeriodContext = () => {
+const getPeriodContext = (): PeriodContext | null => {
     try {
         // Use require to get current timer module state synchronously
         // This avoids circular dependency issues
-        const getTimerState = () => {
+        const getTimerState = (): TimerModuleGlobal | null => {
             if (typeof window !== 'undefined' && window.__timerModule) {
                 return window.__timerModule
             }
@@ -237,7 +294,7 @@ const getPeriodContext = () => {
 }
 
 // Play any sound by its key
-const playByKey = async soundKey => {
+const playByKey = async (soundKey: string): Promise<boolean> => {
     if (!soundEnabled.value) return false
 
     const allVariants = sounds[soundKey]
@@ -273,7 +330,7 @@ const playByKey = async soundKey => {
         addSoundLog(soundKey, true, null, false, periodContext)
         return true
     } catch (error) {
-        log('🔊 Sound play failed', `${soundKey}: ${error.message}`, 2)
+        log('🔊 Sound play failed', `${soundKey}: ${getErrorMessage(error)}`, 2)
         addSoundLog(soundKey, false, error, false, periodContext)
 
         // Try to re-unlock and retry once
@@ -284,7 +341,7 @@ const playByKey = async soundKey => {
             addSoundLog(soundKey, true, null, true, periodContext)
             return true
         } catch (retryError) {
-            log('🔊 Sound retry failed', `${soundKey}: ${retryError.message}`, 1)
+            log('🔊 Sound retry failed', `${soundKey}: ${getErrorMessage(retryError)}`, 1)
             addSoundLog(soundKey, false, retryError, true, periodContext)
             return false
         }
@@ -292,7 +349,7 @@ const playByKey = async soundKey => {
 }
 
 // Play a random notification sound (1-63)
-const playRandomNotification = async () => {
+const playRandomNotification = async (): Promise<boolean> => {
     if (!soundEnabled.value) return false
 
     const randomNum = Math.floor(Math.random() * 63) + 1 // 1-63
@@ -317,7 +374,7 @@ const playRandomNotification = async () => {
         if (!audioUnlocked.value) await unlockAudio()
 
         // Play notification and wait for it to complete
-        return new Promise(resolve => {
+        return new Promise<boolean>(resolve => {
             const soundId = sound.play()
             log('🔊 Notification started', `${notificationKey} (ID: ${soundId})`, 10)
             sound.once(
@@ -330,7 +387,7 @@ const playRandomNotification = async () => {
             )
             sound.once(
                 'playerror',
-                (id, error) => {
+                (id: number, error: unknown) => {
                     log('🔊 Notification error', `${notificationKey}: ${error}`, 2)
                     resolve(false)
                 },
@@ -338,30 +395,30 @@ const playRandomNotification = async () => {
             )
         })
     } catch (error) {
-        log('🔊 Notification play failed', `${notificationKey}: ${error.message}`, 2)
+        log('🔊 Notification play failed', `${notificationKey}: ${getErrorMessage(error)}`, 2)
         return false
     }
 }
 
 // Legacy function for backwards compatibility with general sounds
-export const playSound = soundName => {
+export const playSound = (soundName: string): Promise<boolean> => {
     return playByKey(soundName)
 }
 
 // Simple timer finished sound function
-export const playTimerFinishedSound = () => {
+export const playTimerFinishedSound = (): Promise<boolean> => {
     return playByKey('timerFinished')
 }
 
 // New function to play period-based sounds
-export const playPeriodSound = async soundKey => {
+export const playPeriodSound = async (soundKey: string): Promise<boolean> => {
     await playRandomNotification()
     log('🔊 Playing period sound', soundKey, 10)
     return playByKey(soundKey)
 }
 
 // Helper to get sound key from sound path (for SoundScheduler integration)
-export const getSoundKeyFromPath = soundPath => {
+export const getSoundKeyFromPath = (soundPath: string): string => {
     // Convert path like 'sounds/elapsed/006.webm' to key like 'elapsed_6'
     const pathParts = soundPath.split('/')
     const filename = pathParts[pathParts.length - 1] // '006.webm'

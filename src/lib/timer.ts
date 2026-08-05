@@ -1,4 +1,4 @@
-import { signal, effect, computed, batch } from '@preact/signals'
+import { signal, effect, computed, batch, type Signal, type ReadonlySignal } from '@preact/signals'
 import { saveState, loadState } from './storage'
 import { playSound, playTimerFinishedSound, playPeriodSound, getSoundKeyFromPath } from './sounds'
 import { log } from './log.js'
@@ -11,8 +11,10 @@ import {
 import { SoundScheduler } from './sound-scheduler'
 import { AVAILABLE_SOUNDS } from './sound-discovery'
 import { Period } from './period'
+import type { PeriodData, PeriodType } from './period.js'
 import { Periods } from './periods'
 import { Schedule } from './schedule'
+import type { ScheduleSnapshot } from './schedule.js'
 import {
     parseConfigText,
     parseConfigAnchor,
@@ -26,17 +28,25 @@ import {
     hasAnchorLine,
     serializeCurrentDurations,
 } from './durations-format'
+import type { ParsedDurationsAnchor } from './durations-format.js'
 import { formatDayMarker } from './format'
+
+// The { periods, types } shape owned by the timerState signal — Schedule owns
+// phase/timestamps/index separately (see ScheduleSnapshot).
+type TimerState = {
+    types: PeriodType[]
+    periods: PeriodData[]
+}
 
 // Local helpers: convert between epoch ms and "minutes since local midnight".
 // Used by the `@h:mm` anchor line (live editor + configs).
-const todayAtMinutes = minutes => {
+const todayAtMinutes = (minutes: number): number => {
     const date = new Date()
     date.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0)
     return date.getTime()
 }
 
-const msToMinutesSinceMidnight = ms => {
+const msToMinutesSinceMidnight = (ms: number): number => {
     const date = new Date(ms)
     return date.getHours() * 60 + date.getMinutes()
 }
@@ -51,7 +61,7 @@ const msToMinutesSinceMidnight = ms => {
 // fields atomically, avoiding intermediate month-length overflow. Whether the
 // result is actually usable (lies far enough in the past) is the caller's
 // validity check.
-const resolveTypedAnchor = ({ minutes, day }, reference) => {
+const resolveTypedAnchor = ({ minutes, day }: ParsedDurationsAnchor, reference: number): number => {
     if (day === 'yesterday') {
         const date = new Date(reference)
         date.setDate(date.getDate() - 1)
@@ -71,14 +81,14 @@ const resolveTypedAnchor = ({ minutes, day }, reference) => {
 }
 
 // default timer configuration — periods and types only; Schedule owns phase/timestamps/index
-export const initialState = {
+export const initialState: TimerState = {
     types: ['work', 'break', 'fun'],
     periods: PERIOD_CONFIG.map(({ duration, type, note }) =>
         Period.create({ type, note, durationMs: duration }),
     ),
 }
 
-const initialScheduleSnapshot = {
+const initialScheduleSnapshot: ScheduleSnapshot = {
     phase: 'idle',
     currentPeriodIndex: null,
     timestampStarted: null,
@@ -88,7 +98,7 @@ const initialScheduleSnapshot = {
 
 // Boot: load persisted state (or fall back to defaults), hydrate both signals
 const loaded = loadState(initialState, initialScheduleSnapshot)
-export const timerState = signal(loaded.timerState)
+export const timerState: Signal<TimerState> = signal(loaded.timerState)
 Schedule.setSnapshot(loaded.scheduleSnapshot)
 
 // Helper: build a log-friendly snapshot that includes the Schedule fields so
@@ -99,10 +109,10 @@ const logSnapshot = () => ({ ...timerState.value, ...Schedule.snapshot.value })
 const soundScheduler = new SoundScheduler(5000, AVAILABLE_SOUNDS)
 
 // Timer worker for accurate timing even when tab is backgrounded
-let timerWorker = null
+let timerWorker: Worker | null = null
 
 // Initialize worker
-const initWorker = () => {
+const initWorker = (): Worker => {
     if (!timerWorker) {
         // Bundled through Vite so the worker gets a content hash — a copy in
         // public/ kept its filename across builds and went stale in the cache.
@@ -119,29 +129,35 @@ const initWorker = () => {
 
 // Build Period objects from a config's text definition (active config drives
 // reset and the modified-from-config comparison).
-const buildPeriods = text =>
+const buildPeriods = (text: string): PeriodData[] =>
     parseConfigText(text).map(({ type, durationMs, note }) =>
         Period.create({ type, note, durationMs }),
     )
 
-export const activeConfigPeriods = computed(() => buildPeriods(activeConfig.value.text))
+export const activeConfigPeriods: ReadonlySignal<PeriodData[]> = computed(() =>
+    buildPeriods(activeConfig.value.text),
+)
 
 // computed signals
-export const timerHasFinished = computed(() => Schedule.isCompleted.value)
-export const currentPeriod = computed(
-    () => timerState.value.periods[Schedule.currentPeriodIndex.value],
-)
+export const timerHasFinished: ReadonlySignal<boolean> = computed(() => Schedule.isCompleted.value)
+export const currentPeriod: ReadonlySignal<PeriodData | undefined> = computed(() => {
+    const index = Schedule.currentPeriodIndex.value
+    // periods[null] is `undefined` at runtime too (no "null" property) —
+    // spelled out so the array index type-checks.
+    return index === null ? undefined : timerState.value.periods[index]
+})
 // computed signals for timer.jsx
-export const timerOnLastPeriod = computed(
-    () => Schedule.currentPeriodIndex.value + 1 >= timerState.value.periods.length,
+export const timerOnLastPeriod: ReadonlySignal<boolean> = computed(
+    // Number(null) === 0, matching the original `null + 1` coercion when idle.
+    () => Number(Schedule.currentPeriodIndex.value) + 1 >= timerState.value.periods.length,
 )
-export const timerDuration = computed(() =>
+export const timerDuration: ReadonlySignal<number> = computed(() =>
     timerState.value.periods.reduce((sum, period) => sum + period.state.duration, 0),
 )
-export const timerDurationElapsed = computed(() =>
+export const timerDurationElapsed: ReadonlySignal<number> = computed(() =>
     timerState.value.periods.reduce((sum, period) => sum + period.state.elapsed, 0),
 )
-export const timerDurationRemaining = computed(() =>
+export const timerDurationRemaining: ReadonlySignal<number> = computed(() =>
     timerState.value.periods.reduce((sum, period) => sum + period.state.remaining, 0),
 )
 // The elapsed value an `adjustElapsed` delta must be measured against — whatever
@@ -159,21 +175,21 @@ export const timerDurationRemaining = computed(() =>
 // on a live clock the arrows would only ever shave off the seconds the next tick
 // re-adds, and the elapsed could never actually step. Flooring makes every step
 // a whole number of minutes and leaves the sub-minute remainder untouched.
-export const adjustableElapsed = computed(() => {
+export const adjustableElapsed: ReadonlySignal<number> = computed(() => {
     const reference = Schedule.isAnchored.value
         ? (currentPeriod.value?.state.elapsed ?? 0)
         : timerDurationElapsed.value
     return Math.floor(reference / (60 * 1000)) * 60 * 1000
 })
 
-export const shouldGoToNextPeriod = computed(
+export const shouldGoToNextPeriod: ReadonlySignal<boolean | undefined> = computed(
     () =>
         currentPeriod.value
         && currentPeriod.value.state.duration !== currentPeriod.value.config.userIntendedDuration,
 )
 
 // check if periods have been modified from the active config
-const periodsModifiedFromConfig = computed(() => {
+const periodsModifiedFromConfig: ReadonlySignal<boolean> = computed(() => {
     const currentPeriods = timerState.value.periods
     const configPeriods = activeConfigPeriods.value
 
@@ -194,11 +210,11 @@ const periodsModifiedFromConfig = computed(() => {
 // ============================================================================
 
 // Computed signals for simple boolean checks (no parameters)
-export const canStartPause = computed(
+export const canStartPause: ReadonlySignal<boolean> = computed(
     () => !timerHasFinished.value && timerDurationRemaining.value > 0,
 )
 
-export const canReset = computed(
+export const canReset: ReadonlySignal<boolean> = computed(
     () =>
         !(
             (!periodsModifiedFromConfig.value
@@ -210,21 +226,21 @@ export const canReset = computed(
         ),
 )
 
-export const canMoveToNextPeriod = computed(
+export const canMoveToNextPeriod: ReadonlySignal<boolean> = computed(
     () =>
         !timerHasFinished.value
         && Schedule.currentPeriodIndex.value !== null
         && !timerOnLastPeriod.value,
 )
 
-export const canMoveToPreviousPeriod = computed(
+export const canMoveToPreviousPeriod: ReadonlySignal<boolean> = computed(
     () =>
         !timerHasFinished.value
         && Schedule.currentPeriodIndex.value !== null
         && Schedule.currentPeriodIndex.value > 0,
 )
 
-export const canFinishTimer = computed(
+export const canFinishTimer: ReadonlySignal<boolean> = computed(
     () =>
         !timerHasFinished.value
         && Schedule.currentPeriodIndex.value !== null
@@ -233,9 +249,9 @@ export const canFinishTimer = computed(
 
 // Editing the durations config is only allowed before any meaningful time has
 // elapsed — i.e. while the Finish button is disabled.
-export const canConfigureDurations = computed(() => !canFinishTimer.value)
+export const canConfigureDurations: ReadonlySignal<boolean> = computed(() => !canFinishTimer.value)
 
-export const canAdjustElapsedForward = computed(() => {
+export const canAdjustElapsedForward: ReadonlySignal<boolean> = computed(() => {
     if (Schedule.currentPeriodIndex.value === null) return false
     if (Schedule.isAnchored.value) {
         const currentIndex = Schedule.currentPeriodIndex.value
@@ -246,29 +262,35 @@ export const canAdjustElapsedForward = computed(() => {
     return true
 })
 
-export const canAdjustElapsedBackward = computed(() => {
+export const canAdjustElapsedBackward: ReadonlySignal<boolean> = computed(() => {
     if (Schedule.currentPeriodIndex.value === null) return false
     if (Schedule.isAnchored.value) {
         const currentIndex = Schedule.currentPeriodIndex.value
         if (currentIndex === 0) return false
-        return currentPeriod.value.state.elapsed > 0
+        // currentPeriodIndex !== null (checked above) implies a period exists
+        // at that index.
+        return (currentPeriod.value as PeriodData).state.elapsed > 0
     }
     return timerDurationElapsed.value > 0
 })
 
-export const canAdjustDurationForward = computed(
+export const canAdjustDurationForward: ReadonlySignal<boolean> = computed(
     () => !timerHasFinished.value && Schedule.currentPeriodIndex.value !== null,
 )
 
-export const canChangeType = computed(() => Schedule.currentPeriodIndex.value !== null)
+export const canChangeType: ReadonlySignal<boolean> = computed(
+    () => Schedule.currentPeriodIndex.value !== null,
+)
 
-export const canAddPeriod = computed(() => Schedule.currentPeriodIndex.value !== null)
+export const canAddPeriod: ReadonlySignal<boolean> = computed(
+    () => Schedule.currentPeriodIndex.value !== null,
+)
 
-export const canRemovePeriod = computed(
+export const canRemovePeriod: ReadonlySignal<boolean> = computed(
     () => Schedule.currentPeriodIndex.value !== null && timerState.value.periods.length > 1,
 )
 
-export const canMoveElapsedToPrevious = computed(
+export const canMoveElapsedToPrevious: ReadonlySignal<boolean> = computed(
     () =>
         Schedule.currentPeriodIndex.value !== null
         && timerDurationElapsed.value > 0
@@ -276,7 +298,7 @@ export const canMoveElapsedToPrevious = computed(
 )
 
 // Validation functions for parameterized checks
-export const canAdjustElapsed = amount => {
+export const canAdjustElapsed = (amount: number): boolean => {
     if (Schedule.currentPeriodIndex.value === null) return false
     if (Schedule.isAnchored.value) {
         return amount < 0 ? canAdjustElapsedBackward.value : canAdjustElapsedForward.value
@@ -285,18 +307,20 @@ export const canAdjustElapsed = amount => {
     return true
 }
 
-export const canAdjustDuration = amount => {
+export const canAdjustDuration = (amount: number): boolean => {
     if (timerHasFinished.value || Schedule.currentPeriodIndex.value === null) {
         return false
     }
+    // currentPeriodIndex !== null (checked above) implies a period exists.
+    const current = currentPeriod.value as PeriodData
     if (amount < 0) {
         if (!timerState.value.periods.some(p => p.state.remaining > 0)) {
             return false
         }
-        if (currentPeriod.value.state.remaining < Math.abs(amount)) {
+        if (current.state.remaining < Math.abs(amount)) {
             return false
         }
-        return currentPeriod.value.state.duration - Math.abs(amount) >= MIN_PERIOD_MS
+        return current.state.duration - Math.abs(amount) >= MIN_PERIOD_MS
     }
     return true
 }
@@ -304,7 +328,7 @@ export const canAdjustDuration = amount => {
 // ============================================================================
 
 // prepares timer for use, continuing an running timer or prepare a new one
-export const initializeTimer = () => {
+export const initializeTimer = (): void => {
     console.clear()
     log('initializeTimer', logSnapshot(), 2)
 
@@ -322,7 +346,7 @@ export const initializeTimer = () => {
 }
 
 // initialize timer state preserving period customizations but resetting runtime state
-const initializeTimerState = () => {
+const initializeTimerState = (): void => {
     stopTick()
 
     // Reset only runtime properties, preserve existing periods
@@ -333,20 +357,20 @@ const initializeTimerState = () => {
 }
 
 // starts repeating the tick function using worker to update UI periodically
-const startTick = () => {
+const startTick = (): void => {
     const worker = initWorker()
     worker.postMessage('start')
 }
 
 // stops repeating the tick function
-const stopTick = () => {
+const stopTick = (): void => {
     if (timerWorker) {
         timerWorker.postMessage('stop')
     }
 }
 
 // starts the timer
-export const startTimer = () => {
+export const startTimer = (): void => {
     if (timerHasFinished.value) return // do nothing if timer has finished (needs reset)
 
     playSound('button')
@@ -356,7 +380,7 @@ export const startTimer = () => {
 
     // A future anchor means the user pressed Start before the scheduled time —
     // "start now" re-anchors to the present instead of waiting.
-    if (Schedule.isAnchored.value && Schedule.timestampAnchor.value > Date.now()) {
+    if (Schedule.isAnchored.value && (Schedule.timestampAnchor.value as number) > Date.now()) {
         Schedule.pin(Date.now())
     }
 
@@ -370,7 +394,7 @@ export const startTimer = () => {
 }
 
 // resumes the timer after it was paused
-export const resumeTimer = () => {
+export const resumeTimer = (): void => {
     if (timerHasFinished.value) return // do nothing if timer has finished (needs reset)
 
     playSound('button')
@@ -390,7 +414,7 @@ export const resumeTimer = () => {
 }
 
 // pauses the timer (user-facing — breaks the anchor, if any)
-export const pauseTimer = () => {
+export const pauseTimer = (): void => {
     if (timerHasFinished.value) return // do nothing if timer has finished (needs reset)
 
     playSound('button')
@@ -411,12 +435,12 @@ export const pauseTimer = () => {
 // period absorbs the time the editor was open, auto-extending if it overran;
 // the anchor keeps "ticking" through the edit pause. When not anchored these
 // are plain pause/resume — behavior stays byte-identical to before this feature.
-export const pauseForEditing = () => {
+export const pauseForEditing = (): void => {
     Schedule.pause()
     stopTick()
 }
 
-export const resumeAfterEditing = () => {
+export const resumeAfterEditing = (): void => {
     Schedule.resume()
     if (Schedule.isAnchored.value) reconcileToAnchor()
     updateCurrentPeriod()
@@ -427,14 +451,16 @@ export const resumeAfterEditing = () => {
 // Anchored start — pin the session to a wall-clock timestamp.
 // ============================================================================
 
-export const canTogglePin = computed(() => !Schedule.isCompleted.value && !Schedule.isPaused.value)
+export const canTogglePin: ReadonlySignal<boolean> = computed(
+    () => !Schedule.isCompleted.value && !Schedule.isPaused.value,
+)
 
 // Pins the timer to a wall-clock timestamp.
 // - completed or paused: no-op.
 // - running: freezes the CURRENT derived start (anchorMs param ignored — v1
 //   only supports pinning to "now, minus however much has already elapsed").
 // - idle: pins to anchorMs (defaults to now).
-export const pinTimer = (anchorMs = null) => {
+export const pinTimer = (anchorMs: number | null = null): void => {
     if (Schedule.isCompleted.value || Schedule.isPaused.value) return
 
     if (Schedule.isRunning.value) {
@@ -449,11 +475,11 @@ export const pinTimer = (anchorMs = null) => {
     Schedule.pin(anchorMs ?? Date.now())
 }
 
-export const unpinTimer = () => {
+export const unpinTimer = (): void => {
     Schedule.unpin()
 }
 
-export const togglePinTimer = () => {
+export const togglePinTimer = (): void => {
     playSound('button')
     if (Schedule.isAnchored.value) unpinTimer()
     else pinTimer()
@@ -462,7 +488,7 @@ export const togglePinTimer = () => {
 // Realigns timestampStarted so the current period's elapsed matches what the
 // anchor dictates: timestampAnchor + Σ elapsed of all periods except current.
 // No-op when not anchored, or when there's no current period.
-export const reconcileToAnchor = () => {
+export const reconcileToAnchor = (): void => {
     if (!Schedule.isAnchored.value || Schedule.currentPeriodIndex.value === null) return
 
     const currentIndex = Schedule.currentPeriodIndex.value
@@ -470,8 +496,11 @@ export const reconcileToAnchor = () => {
         (sum, period, i) => (i === currentIndex ? sum : sum + period.state.elapsed),
         0,
     )
-    const desiredTS = Schedule.timestampAnchor.value + elapsedExceptCurrent
-    Schedule.shiftStartedAt(desiredTS - Schedule.timestampStarted.value)
+    // isAnchored (checked above) implies timestampAnchor is set; currentPeriodIndex
+    // !== null (checked above) implies the session is running/paused, which sets
+    // timestampStarted.
+    const desiredTS = (Schedule.timestampAnchor.value as number) + elapsedExceptCurrent
+    Schedule.shiftStartedAt(desiredTS - (Schedule.timestampStarted.value as number))
 }
 
 // Replace the timeline's periods with a fresh build and reset the schedule.
@@ -479,7 +508,7 @@ export const reconcileToAnchor = () => {
 // the active config's text has an `@h:mm` header, re-arm the anchor for the
 // fresh timeline (a future anchor arms auto-start, a past one just sits until
 // Start is pressed). Never runs at boot — only from explicit apply/reset calls.
-const setPeriodsFromConfig = periods => {
+const setPeriodsFromConfig = (periods: PeriodData[]): void => {
     stopTick()
     batch(() => {
         Schedule.reset()
@@ -492,18 +521,18 @@ const setPeriodsFromConfig = periods => {
 
 // Rebuild the timeline from the currently active config without logging/clearing
 // (used for live edits while the config panel is open).
-export const applyActiveConfig = () => {
+export const applyActiveConfig = (): void => {
     setPeriodsFromConfig(activeConfigPeriods.value)
 }
 
 // Select a config and apply it to the timeline.
-export const selectAndApplyConfig = id => {
+export const selectAndApplyConfig = (id: string): void => {
     selectConfig(id)
     applyActiveConfig()
 }
 
 // resets timer to the active config
-export const resetTimer = () => {
+export const resetTimer = (): void => {
     setPeriodsFromConfig(activeConfigPeriods.value)
 
     console.clear()
@@ -516,10 +545,10 @@ export const resetTimer = () => {
 // (only if it had been running) when editing ends.
 // ============================================================================
 
-export const editingCurrentDurations = signal(false)
+export const editingCurrentDurations: Signal<boolean> = signal(false)
 // Source of truth for the live-editor textarea. Held here (not in the component)
 // so external mutations can write back into it via the effect below.
-export const currentDurationsText = signal('')
+export const currentDurationsText: Signal<string> = signal('')
 let wasRunningBeforeEdit = false
 // True only while applyCurrentDurations is writing — lets the write-back effect
 // skip editor-originated changes so typing isn't reformatted under the cursor.
@@ -529,15 +558,16 @@ let editorIsApplying = false
 // day qualifier ('' when the anchor is from today) — anchors from before today
 // serialize with their day (e.g. "@yesterday 23:50") so re-parsing the
 // mirrored text resolves to the exact same day.
-const anchorForSerialization = () =>
+const anchorForSerialization = (): { anchorMinutes: number | null; anchorDayMarker: string } =>
     Schedule.isAnchored.value
         ? {
-              anchorMinutes: msToMinutesSinceMidnight(Schedule.timestampAnchor.value),
-              anchorDayMarker: formatDayMarker(Schedule.timestampAnchor.value),
+              // isAnchored implies timestampAnchor is set.
+              anchorMinutes: msToMinutesSinceMidnight(Schedule.timestampAnchor.value as number),
+              anchorDayMarker: formatDayMarker(Schedule.timestampAnchor.value as number),
           }
         : { anchorMinutes: null, anchorDayMarker: '' }
 
-const beginEditCurrentDurations = () => {
+const beginEditCurrentDurations = (): void => {
     wasRunningBeforeEdit = Schedule.isRunning.value
     if (Schedule.isRunning.value) {
         pauseForEditing()
@@ -551,7 +581,7 @@ const beginEditCurrentDurations = () => {
     editingCurrentDurations.value = true
 }
 
-const endEditCurrentDurations = () => {
+const endEditCurrentDurations = (): void => {
     editingCurrentDurations.value = false
     if (wasRunningBeforeEdit && Schedule.isPaused.value) {
         resumeAfterEditing()
@@ -562,11 +592,11 @@ const endEditCurrentDurations = () => {
 // Apply edited "current durations" text to the live timeline. Past/future
 // periods take their elapsed straight from state; the current period's elapsed
 // is reconciled by shifting the schedule's start timestamp.
-export const applyCurrentDurations = text => {
+export const applyCurrentDurations = (text: string): void => {
     const parsed = parseCurrentDurationsText(text)
     if (!parsed.length) return // ignore empty / all-invalid input
 
-    const periods = parsed.map(({ type, elapsedMs, durationMs, note }) => {
+    const periods: PeriodData[] = parsed.map(({ type, elapsedMs, durationMs, note }) => {
         const elapsed = Math.max(0, elapsedMs)
         const userIntendedDuration = Math.max(MIN_PERIOD_MS, durationMs)
         const duration = Math.max(userIntendedDuration, elapsed)
@@ -603,7 +633,10 @@ export const applyCurrentDurations = text => {
     const keepExistingAnchor =
         anchorIsValid
         && Schedule.isAnchored.value
-        && Math.floor(Schedule.timestampAnchor.value / 60000) === Math.floor(typedAnchorMs / 60000)
+        // anchorIsValid implies typedAnchorMs is non-null; Schedule.isAnchored
+        // implies timestampAnchor is set.
+        && Math.floor((Schedule.timestampAnchor.value as number) / 60000)
+            === Math.floor((typedAnchorMs as number) / 60000)
 
     editorIsApplying = true
     batch(() => {
@@ -611,7 +644,8 @@ export const applyCurrentDurations = text => {
         Schedule.setIndex(clampedIndex)
 
         if (anchorIsValid && !keepExistingAnchor) {
-            Schedule.pin(typedAnchorMs)
+            // anchorIsValid implies typedAnchorMs is non-null.
+            Schedule.pin(typedAnchorMs as number)
         } else if (!hasAnchorLine(text) && Schedule.isAnchored.value) {
             unpinTimer()
         }
@@ -647,23 +681,23 @@ effect(() => {
 // "current durations" mode opening pauses the timer and closing resumes it.
 // ----------------------------------------------------------------------------
 
-export const openDurationsPanel = () => {
+export const openDurationsPanel = (): void => {
     if (!canConfigureDurations.value) beginEditCurrentDurations()
     configPanelOpen.value = true
 }
 
-export const closeDurationsPanel = () => {
+export const closeDurationsPanel = (): void => {
     if (editingCurrentDurations.value) endEditCurrentDurations()
     configPanelOpen.value = false
 }
 
-export const toggleDurationsPanel = () => {
+export const toggleDurationsPanel = (): void => {
     if (configPanelOpen.value) closeDurationsPanel()
     else openDurationsPanel()
 }
 
 // adjusts the duration of period (user-driven manual edit)
-export const adjustDuration = durationDelta => {
+export const adjustDuration = (durationDelta: number): void => {
     // nothing to do if timer has finished or there is no current period
     if (timerHasFinished.value || Schedule.currentPeriodIndex.value === null) return
 
@@ -686,7 +720,10 @@ export const adjustDuration = durationDelta => {
 //     therefore ends, later. This is what the same button does unanchored.
 // Ignored when not anchored: there the current period's duration is never
 // touched, only timestampStarted moves.
-export const adjustElapsed = (elapsedDelta, { keepDuration = false } = {}) => {
+export const adjustElapsed = (
+    elapsedDelta: number,
+    { keepDuration = false }: { keepDuration?: boolean } = {},
+): void => {
     // nothing to do if timer has finished or there is no current period
     if (Schedule.currentPeriodIndex.value === null) return
 
@@ -697,14 +734,16 @@ export const adjustElapsed = (elapsedDelta, { keepDuration = false } = {}) => {
         if (currentIndex === 0) return
 
         const prev = timerState.value.periods[currentIndex - 1]
+        // currentPeriodIndex !== null (checked above) implies a period exists.
+        const current = currentPeriod.value as PeriodData
         const clamped =
             elapsedDelta > 0
                 ? Math.min(elapsedDelta, prev.state.elapsed - MIN_PERIOD_MS)
-                : Math.max(elapsedDelta, -currentPeriod.value.state.elapsed)
+                : Math.max(elapsedDelta, -current.state.elapsed)
 
         if (clamped === 0 || (elapsedDelta > 0 && clamped < 0)) return
 
-        const oldElapsed = currentPeriod.value.state.elapsed
+        const oldElapsed = current.state.elapsed
 
         batch(() => {
             applyToPeriod(currentIndex - 1, p =>
@@ -725,17 +764,19 @@ export const adjustElapsed = (elapsedDelta, { keepDuration = false } = {}) => {
         // above, in both directions.
         updateCurrentPeriod({ relax: keepDuration && clamped < 0 })
 
-        const newElapsed = currentPeriod.value.state.elapsed
+        // currentPeriodIndex !== null (checked above) implies a period exists.
+        const newElapsed = (currentPeriod.value as PeriodData).state.elapsed
         soundScheduler.onElapsedAdjustment(newElapsed, oldElapsed)
 
         log('time adjusted (anchored transfer)', logSnapshot(), 6)
         return
     }
 
+    // currentPeriodIndex !== null (checked above) implies a period exists.
     Schedule.shiftStartedAt(
         Math.min(
             // prevents elapsed to go negative
-            currentPeriod.value.state.elapsed,
+            (currentPeriod.value as PeriodData).state.elapsed,
             -elapsedDelta,
         ),
     )
@@ -743,7 +784,7 @@ export const adjustElapsed = (elapsedDelta, { keepDuration = false } = {}) => {
     updateCurrentPeriod({ relax: elapsedDelta < 0 })
 
     // Notify sound scheduler of elapsed time change
-    const newElapsed = currentPeriod.value.state.elapsed
+    const newElapsed = (currentPeriod.value as PeriodData).state.elapsed
     const oldElapsed = newElapsed - elapsedDelta
     soundScheduler.onElapsedAdjustment(newElapsed, oldElapsed)
 
@@ -753,7 +794,11 @@ export const adjustElapsed = (elapsedDelta, { keepDuration = false } = {}) => {
 // update (recalculate) period related values
 
 // calculate elapsed and remaining time for the current period
-const calculatePeriodTimes = (timestampStarted, timestampPaused, periodDuration) => {
+const calculatePeriodTimes = (
+    timestampStarted: number,
+    timestampPaused: number | null,
+    periodDuration: number,
+): { periodDurationElapsed: number; periodDurationRemaining: number } => {
     const timeToCalculateWith = timestampPaused || Date.now()
     const periodDurationElapsed = Math.max(0, timeToCalculateWith - timestampStarted)
     const periodDurationRemaining = Math.max(0, periodDuration - periodDurationElapsed)
@@ -765,13 +810,17 @@ const calculatePeriodTimes = (timestampStarted, timestampPaused, periodDuration)
 }
 
 // check if the period has elapsed
-const hasPeriodReachedCompletion = (periodDurationElapsed, periodDuration) =>
-    periodDurationElapsed > 0 && periodDurationElapsed >= periodDuration
+const hasPeriodReachedCompletion = (
+    periodDurationElapsed: number,
+    periodDuration: number,
+): boolean => periodDurationElapsed > 0 && periodDurationElapsed >= periodDuration
 
 // handle actions when a period is completed
-const handlePeriodElapsed = () => {
+const handlePeriodElapsed = (): void => {
     // auto-extend state.duration only; config.userIntendedDuration is intentionally preserved
-    applyToPeriod(Schedule.currentPeriodIndex.value, p =>
+    // Called only from updateCurrentPeriod after currentPeriod.value was confirmed
+    // truthy, which implies currentPeriodIndex is non-null.
+    applyToPeriod(Schedule.currentPeriodIndex.value as number, p =>
         Period.autoExtendDuration(p, DURATION_TO_ADD_AUTOMATICALLY),
     )
 
@@ -784,13 +833,18 @@ const handlePeriodElapsed = () => {
 // otherwise outlive the elapsed that justified it, permanently inflating the
 // period's duration and pushing every projected clock time out. Off by default
 // so the 1 Hz tick keeps auto-extension's whole-minute grace.
-const updateCurrentPeriod = ({ relax = false } = {}) => {
+const updateCurrentPeriod = ({ relax = false }: { relax?: boolean } = {}): void => {
     // guard clause for no current period
     if (!currentPeriod.value) return
 
+    // currentPeriod.value truthy implies the session is running/paused, which
+    // sets timestampStarted and currentPeriodIndex.
+    const timestampStarted = Schedule.timestampStarted.value as number
+    const currentIndex = Schedule.currentPeriodIndex.value as number
+
     // calculate period times
     const { periodDurationElapsed } = calculatePeriodTimes(
-        Schedule.timestampStarted.value,
+        timestampStarted,
         Schedule.timestampPaused.value,
         currentPeriod.value.state.duration,
     )
@@ -798,26 +852,30 @@ const updateCurrentPeriod = ({ relax = false } = {}) => {
     // Write fresh elapsed/remaining first so handlePeriodElapsed sees the
     // real elapsed when it auto-extends (otherwise duration cannot clamp
     // to elapsed and the elapsed bar can overflow the period block).
-    applyToPeriod(Schedule.currentPeriodIndex.value, p =>
-        Period.applyElapsed(p, periodDurationElapsed),
-    )
+    applyToPeriod(currentIndex, p => Period.applyElapsed(p, periodDurationElapsed))
 
     // Fresh elapsed is in the signal, so relaxing reads the value it must
     // respect — and running before the completion check below lets a still
     // overrunning period re-extend in the same pass.
-    if (relax) applyToPeriod(Schedule.currentPeriodIndex.value, p => Period.relaxAutoExtension(p))
+    if (relax) applyToPeriod(currentIndex, p => Period.relaxAutoExtension(p))
 
     // Anchored or not, an overrun period auto-extends and later periods just
     // shift — the anchor only fixes the session start and the completed
     // periods' record, so an anchored session never self-finishes and any
     // clock gap (late start, sleep/reload, editor open) lands on the current
     // period.
-    if (hasPeriodReachedCompletion(periodDurationElapsed, currentPeriod.value.state.duration))
+    if (
+        hasPeriodReachedCompletion(
+            periodDurationElapsed,
+            // Re-read: applyElapsed / relaxAutoExtension above may have changed duration.
+            (currentPeriod.value as PeriodData).state.duration,
+        )
+    )
         handlePeriodElapsed()
 }
 
 // jump to the next period
-export const moveToNextPeriod = () => {
+export const moveToNextPeriod = (): void => {
     if (Schedule.currentPeriodIndex.value === null) return
 
     // Ensure elapsed is fresh before Period.complete reads it (a tick may not
@@ -827,10 +885,11 @@ export const moveToNextPeriod = () => {
     const nextPeriodIndex = Schedule.currentPeriodIndex.value + 1
     const nextPeriod = timerState.value.periods[nextPeriodIndex]
 
-    const { period: completed, remainder } = Period.complete(currentPeriod.value)
+    // currentPeriodIndex !== null (checked above) implies a period exists.
+    const { period: completed, remainder } = Period.complete(currentPeriod.value as PeriodData)
 
     batch(() => {
-        applyToPeriod(Schedule.currentPeriodIndex.value, () => completed)
+        applyToPeriod(Schedule.currentPeriodIndex.value as number, () => completed)
 
         Schedule.advance({ remainderMs: remainder, nextPeriodElapsedMs: nextPeriod.state.elapsed })
     })
@@ -842,7 +901,7 @@ export const moveToNextPeriod = () => {
 }
 
 // jump to the previous period
-export const moveToPreviousPeriod = () => {
+export const moveToPreviousPeriod = (): void => {
     if (Schedule.currentPeriodIndex.value === null || Schedule.currentPeriodIndex.value === 0)
         return
 
@@ -860,7 +919,8 @@ export const moveToPreviousPeriod = () => {
         Schedule.rewind({
             extensionMs: DURATION_TO_ADD_AUTOMATICALLY,
             prevElapsedMs: previousPeriod.state.elapsed,
-            currentElapsedMs: currentPeriod.value.state.elapsed,
+            // currentPeriodIndex !== null (checked above) implies a period exists.
+            currentElapsedMs: (currentPeriod.value as PeriodData).state.elapsed,
         })
     })
 
@@ -870,15 +930,17 @@ export const moveToPreviousPeriod = () => {
 }
 
 // add time elapsed in the current period to previous and remove it from current
-export const moveElapsedTimeToPreviousPeriod = () => {
+export const moveElapsedTimeToPreviousPeriod = (): void => {
     log('move time back', logSnapshot(), 2)
-    const elapsed = currentPeriod.value.state.elapsed
+    // Only ever invoked when canMoveElapsedToPrevious is true, i.e. a current
+    // period at index > 0 exists.
+    const elapsed = (currentPeriod.value as PeriodData).state.elapsed
 
     // While anchored, adjustElapsed's anchored branch already absorbs the
     // transferred time into the previous period (via amendRecordedDuration) —
     // absorbing it here too would double-count it.
     if (!Schedule.isAnchored.value) {
-        const previousPeriodIndex = Schedule.currentPeriodIndex.value - 1
+        const previousPeriodIndex = (Schedule.currentPeriodIndex.value as number) - 1
         applyToPeriod(previousPeriodIndex, p => Period.absorbAsCompleted(p, elapsed))
     }
 
@@ -892,30 +954,40 @@ export const moveElapsedTimeToPreviousPeriod = () => {
 }
 
 // change work type
-export const changeType = () => {
+export const changeType = (): void => {
     const types = timerState.value.types
-    const currentType = currentPeriod.value.config.type
+    // Only ever invoked when canChangeType is true, i.e. a current period exists.
+    const current = currentPeriod.value as PeriodData
+    const currentType = current.config.type
     const currentIndex = types.indexOf(currentType) // Find the index of the current type
     const nextIndex = (currentIndex + 1) % types.length // Calculate the next index (with wrap-around)
 
-    applyToPeriod(Schedule.currentPeriodIndex.value, p => Period.setType(p, types[nextIndex]))
+    applyToPeriod(Schedule.currentPeriodIndex.value as number, p =>
+        Period.setType(p, types[nextIndex]),
+    )
     log('changed current type', logSnapshot(), 8)
 }
 
 // set current period to a specific type
-export const setCurrentPeriodType = type => {
+export const setCurrentPeriodType = (type: PeriodType): void => {
     const types = timerState.value.types
     if (!types.includes(type)) {
         log(`Invalid type: ${type}. Valid types are: ${types.join(', ')}`, 2)
         return
     }
 
-    applyToPeriod(Schedule.currentPeriodIndex.value, p => Period.setType(p, type))
+    applyToPeriod(Schedule.currentPeriodIndex.value as number, p => Period.setType(p, type))
     log(`set current period type to ${type}`, logSnapshot(), 8)
 }
 
 // Private helper: write a Periods.X result tuple atomically into timerState + Schedule.
-const writePeriodsState = ({ periods, currentIndex }) => {
+const writePeriodsState = ({
+    periods,
+    currentIndex,
+}: {
+    periods: PeriodData[]
+    currentIndex: number | null
+}): void => {
     batch(() => {
         timerState.value = { ...timerState.value, periods }
         Schedule.setIndex(currentIndex)
@@ -923,13 +995,15 @@ const writePeriodsState = ({ periods, currentIndex }) => {
 }
 
 // add a new period after the current one
-export const addPeriod = () => {
+export const addPeriod = (): void => {
     if (Schedule.currentPeriodIndex.value === null) return
 
     const newPeriod = Period.create({ type: 'fun', note: '', durationMs: 24 * 60 * 1000 })
 
     const currentIndex = Schedule.currentPeriodIndex.value
-    const hasElapsedMoreThan60Seconds = currentPeriod.value.state.elapsed > 60 * 1000
+    // currentPeriodIndex !== null (checked above) implies a period exists.
+    const current = currentPeriod.value as PeriodData
+    const hasElapsedMoreThan60Seconds = current.state.elapsed > 60 * 1000
 
     if (hasElapsedMoreThan60Seconds) {
         // Insert after current period and move to it.
@@ -947,7 +1021,7 @@ export const addPeriod = () => {
         // Insert before current period and make it current.
         // Capture the displaced period's config before mutating the array so
         // Period.unstarted can use config.userIntendedDuration as the fresh duration.
-        const displacedConfig = currentPeriod.value.config
+        const displacedConfig = current.config
 
         const result = Periods.insertMakingCurrent({
             periods: timerState.value.periods,
@@ -975,7 +1049,7 @@ export const addPeriod = () => {
 }
 
 // remove the current period and move to next period (or previous if on last period)
-export const removePeriod = () => {
+export const removePeriod = (): void => {
     if (Schedule.currentPeriodIndex.value === null) return
     if (timerState.value.periods.length <= 1) return // Prevent removing the last period
 
@@ -1002,7 +1076,7 @@ export const removePeriod = () => {
 }
 
 // the whole timer completion
-export const handleTimerCompletion = () => {
+export const handleTimerCompletion = (): void => {
     stopTick()
 
     // Ensure elapsed is fresh before Period.complete reads it (a tick may not
@@ -1011,8 +1085,9 @@ export const handleTimerCompletion = () => {
 
     // updates are not combined because they need to be run sequentially
 
-    const { period: completed } = Period.complete(currentPeriod.value)
-    applyToPeriod(Schedule.currentPeriodIndex.value, () => completed)
+    // Only ever invoked when a current period exists.
+    const { period: completed } = Period.complete(currentPeriod.value as PeriodData)
+    applyToPeriod(Schedule.currentPeriodIndex.value as number, () => completed)
 
     const filteredPeriods = timerState.value.periods.filter(
         period => period.state.elapsed >= DURATION_TO_ADD_AUTOMATICALLY,
@@ -1029,7 +1104,7 @@ export const handleTimerCompletion = () => {
 }
 
 // remove a specific period by index
-export const removePeriodByIndex = periodIndex => {
+export const removePeriodByIndex = (periodIndex: number): void => {
     if (timerState.value.periods.length <= 1) return // Prevent removing the last period
     if (periodIndex < 0 || periodIndex >= timerState.value.periods.length) return // Invalid index
 
@@ -1061,13 +1136,17 @@ export const removePeriodByIndex = periodIndex => {
 }
 
 // Signal to track which period should auto-open for editing
-export const autoEditIndex = signal(null)
+export const autoEditIndex: Signal<number | null> = signal(null)
 
 // add a new period at a specific index
 export const addPeriodAtIndex = (
-    afterIndex,
-    periodConfig = { duration: 24 * 60 * 1000, type: 'fun', note: '' },
-) => {
+    afterIndex: number,
+    periodConfig: { duration: number; type: PeriodType; note: string } = {
+        duration: 24 * 60 * 1000,
+        type: 'fun',
+        note: '',
+    },
+): void => {
     const newPeriod = Period.create({
         type: periodConfig.type,
         note: periodConfig.note,
@@ -1094,7 +1173,7 @@ export const addPeriodAtIndex = (
 
 // Apply a Period → Period op to the period at the given index.
 // Out-of-range index produces a no-op write. Index validation is the caller's responsibility.
-export const applyToPeriod = (index, op) => {
+export const applyToPeriod = (index: number, op: (period: PeriodData) => PeriodData): void => {
     timerState.value = {
         ...timerState.value,
         periods: timerState.value.periods.map((period, i) => (i === index ? op(period) : period)),
@@ -1102,7 +1181,7 @@ export const applyToPeriod = (index, op) => {
 }
 
 // update function called by interval timer
-const tick = () => {
+const tick = (): void => {
     updateCurrentPeriod()
 
     // Check for period-based sounds
@@ -1113,7 +1192,8 @@ const tick = () => {
         const isPaused = Schedule.isPaused.value
 
         // Determine next period type for timesup sound selection
-        const currentIndex = Schedule.currentPeriodIndex.value
+        // currentPeriod.value truthy implies currentPeriodIndex is non-null.
+        const currentIndex = Schedule.currentPeriodIndex.value as number
         const nextIndex = currentIndex + 1
         const nextPeriod = timerState.value.periods[nextIndex]
         const nextPeriodType = nextPeriod ? nextPeriod.config.type : 'finish'
@@ -1150,7 +1230,7 @@ effect(() => {
 // reloaded after the moment already passed) does NOT auto-start — the user
 // must press Start explicitly; the first period then absorbs the whole gap
 // since the anchor (see startTimer).
-let armedStartTimeoutId = null
+let armedStartTimeoutId: ReturnType<typeof setTimeout> | null = null
 effect(() => {
     const idle = Schedule.isIdle.value
     const anchor = Schedule.timestampAnchor.value
