@@ -23,10 +23,11 @@ dependencies = [
 dev = [
     "pytest",
     # Pinned exactly, like every npm devDependency (.pnpmrc sets save-exact).
-    # Ruff's DEFAULT rule set moves between releases — 0.16 starts reporting
-    # I001 where 0.15 does not — so a floating version would quietly change what
-    # CI rejects. The explicit `select` below exists for the same reason.
-    "ruff==0.15.22",
+    # Ruff's DEFAULT rule set moves between releases — 0.16 started reporting
+    # I001 where 0.15 did not — so a floating version would quietly change what
+    # CI rejects. The explicit `select` below exists for the same reason, and is
+    # why crossing that 0.15 → 0.16 boundary landed as a no-op diff.
+    "ruff==0.16.1",
 ]
 
 [tool.pytest.ini_options]
