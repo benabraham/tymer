@@ -3,7 +3,7 @@ import re
 
 import pytest
 
-from generate_audio import PROMPTS_DIR, load_api_keys, resolve_set_file, default_name_from_text, compose_prompt, parse_set_file, select_blocks
+from sounds import PROMPTS_DIR, load_api_keys, resolve_set_file, default_name_from_text, compose_prompt, parse_set_file, select_blocks
 
 
 def set_path(name):
@@ -328,7 +328,7 @@ def test_explicit_name_directive_wins(tmp_path):
 
 def test_resolve_output_filename_overwrite_vs_accumulate(tmp_path):
     """Without --overwrite repeat runs accumulate takes; with it, a set replaces its own."""
-    from generate_audio import resolve_output_filename
+    from sounds import resolve_output_filename
 
     folder = str(tmp_path)
     first = resolve_output_filename('brisk', '.wav', folder)
@@ -387,7 +387,7 @@ def _fake_block(path, name='brisk'):
 
 def test_missing_blocks_drives_resume(tmp_path):
     """A resumed run must only cover clips that do not exist yet."""
-    from generate_audio import expected_file, missing_blocks
+    from sounds import expected_file, missing_blocks
 
     blocks = [_fake_block('elapsed/006'), _fake_block('elapsed/012'), _fake_block('timesup/work')]
     base = str(tmp_path)
@@ -409,7 +409,7 @@ def test_missing_blocks_drives_resume(tmp_path):
 
 
 def test_staging_dir_is_per_set():
-    from generate_audio import TOOL_DIR, staging_dir_for
+    from sounds import TOOL_DIR, staging_dir_for
 
     a = staging_dir_for('/anywhere/sound-prompts/tymer-gacrux.txt')
     b = staging_dir_for('tymer-gacrux-brisk')
@@ -421,7 +421,7 @@ def test_staging_dir_is_per_set():
 
 
 def test_promote_staging_copies_tree(tmp_path):
-    from generate_audio import promote_staging
+    from sounds import promote_staging
 
     staging = tmp_path / 'staging'
     (staging / 'elapsed' / '006').mkdir(parents=True)
@@ -439,7 +439,7 @@ def test_promote_staging_copies_tree(tmp_path):
 
 def test_promote_merges_sets_as_alternatives(tmp_path):
     """Promoting a second set beside the first must add takes, never overwrite them."""
-    from generate_audio import promote_staging
+    from sounds import promote_staging
 
     destination = tmp_path / 'assets'
     event = destination / 'elapsed' / '006'
@@ -460,7 +460,7 @@ def test_promote_merges_sets_as_alternatives(tmp_path):
 
 def test_promote_is_idempotent_for_the_same_set(tmp_path):
     """Re-promoting an unchanged set must not pile up duplicate takes."""
-    from generate_audio import promote_staging
+    from sounds import promote_staging
 
     staging = tmp_path / 'staging'
     (staging / 'elapsed' / '006').mkdir(parents=True)
@@ -477,7 +477,7 @@ def test_promote_is_idempotent_for_the_same_set(tmp_path):
 
 
 def test_next_free_take_skips_occupied_numbers(tmp_path):
-    from generate_audio import next_free_take
+    from sounds import next_free_take
 
     event = tmp_path / 'elapsed' / '006'
     event.mkdir(parents=True)
@@ -492,7 +492,7 @@ def test_next_free_take_skips_occupied_numbers(tmp_path):
 
 
 def test_key_pool_round_robins_across_keys():
-    from generate_audio import KeyPool
+    from sounds import KeyPool
 
     pool = KeyPool(['a', 'b', 'c'])
     assert [pool.next_key() for _ in range(7)] == ['a', 'b', 'c', 'a', 'b', 'c', 'a']
@@ -500,7 +500,7 @@ def test_key_pool_round_robins_across_keys():
 
 
 def test_key_pool_retires_after_three_rate_limits():
-    from generate_audio import KeyPool
+    from sounds import KeyPool
 
     pool = KeyPool(['a', 'b'])
     assert pool.record_rate_limit('a', daily=False) is False
@@ -517,7 +517,7 @@ def test_key_pool_retires_after_three_rate_limits():
 
 
 def test_key_pool_retires_immediately_on_daily_quota():
-    from generate_audio import KeyPool
+    from sounds import KeyPool
 
     pool = KeyPool(['a', 'b'])
     assert pool.record_rate_limit('a', daily=True) is True
@@ -526,7 +526,7 @@ def test_key_pool_retires_immediately_on_daily_quota():
 
 
 def test_key_pool_reports_when_everything_is_exhausted():
-    from generate_audio import KeyPool
+    from sounds import KeyPool
 
     pool = KeyPool(['a', 'b'])
     assert pool.all_exhausted() is False
@@ -543,7 +543,7 @@ def test_key_pool_reports_when_everything_is_exhausted():
 
 
 def test_key_pool_summary_marks_survivors():
-    from generate_audio import KeyPool
+    from sounds import KeyPool
 
     pool = KeyPool(['aaaaaaaaaaaa', 'bbbbbbbbbbbb'])
     pool.next_key()
@@ -554,28 +554,38 @@ def test_key_pool_summary_marks_survivors():
     assert 'still available' in summary[1]
 
 
-def test_invocation_hint_names_the_package_script_when_run_through_pnpm():
-    from generate_audio import REPO_ROOT, invocation_hint
+def test_command_hint_names_the_package_script_when_run_through_pnpm():
+    from sounds import REPO_ROOT, command_hint
 
     env = {'INIT_CWD': REPO_ROOT, 'npm_lifecycle_event': 'sounds:generate'}
-    assert invocation_hint(env) == 'pnpm run sounds:generate'
+    assert command_hint(env, 'promote') == 'pnpm run sounds:promote'
 
 
-def test_invocation_hint_from_the_tools_own_directory():
-    from generate_audio import TOOL_DIR, invocation_hint
+def test_command_hint_falls_back_to_the_passthrough_script():
+    """Only generate and promote have a script of their own; the rest go through
+    `pnpm run sounds <subcommand>`, which pnpm forwards as an argument."""
+    from sounds import REPO_ROOT, command_hint
 
-    assert invocation_hint({'INIT_CWD': TOOL_DIR}) == 'uv run generate_audio.py'
+    env = {'INIT_CWD': REPO_ROOT, 'npm_lifecycle_event': 'sounds:generate'}
+    assert command_hint(env, 'audition') == 'pnpm run sounds audition'
+    assert command_hint(env, 'regenerate') == 'pnpm run sounds regenerate'
 
 
-def test_invocation_hint_from_anywhere_else_spells_out_the_directory():
-    from generate_audio import TOOL_DIR, invocation_hint
+def test_command_hint_from_the_tools_own_directory():
+    from sounds import TOOL_DIR, command_hint
 
-    hint = invocation_hint({'INIT_CWD': '/somewhere/unrelated'})
-    assert hint == f'uv run --directory {TOOL_DIR} generate_audio.py'
+    assert command_hint({'INIT_CWD': TOOL_DIR}, 'promote') == 'uv run sounds.py promote'
+
+
+def test_command_hint_from_anywhere_else_spells_out_the_directory():
+    from sounds import TOOL_DIR, command_hint
+
+    hint = command_hint({'INIT_CWD': '/somewhere/unrelated'}, 'generate')
+    assert hint == f'uv run --directory {TOOL_DIR} sounds.py generate'
 
 
 def test_normalize_hint_is_relative_inside_the_repo_absolute_outside():
-    from generate_audio import REPO_ROOT, TOOL_DIR, normalize_hint
+    from sounds import REPO_ROOT, TOOL_DIR, normalize_hint
 
     assert normalize_hint({'INIT_CWD': REPO_ROOT}) == './normalize_audio.sh'
     assert normalize_hint({'INIT_CWD': TOOL_DIR}) == '../../normalize_audio.sh'
@@ -585,7 +595,7 @@ def test_normalize_hint_is_relative_inside_the_repo_absolute_outside():
 def test_shell_cwd_prefers_init_cwd_because_the_launchers_chdir(tmp_path, monkeypatch):
     """pnpm/uv both chdir into the tool dir, so os.getcwd() is not where the
     user is. INIT_CWD is what carries that across."""
-    from generate_audio import TOOL_DIR, shell_cwd
+    from sounds import TOOL_DIR, shell_cwd
 
     monkeypatch.chdir(TOOL_DIR)
     assert shell_cwd({'INIT_CWD': str(tmp_path)}) == os.path.realpath(str(tmp_path))

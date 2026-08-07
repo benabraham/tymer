@@ -125,7 +125,9 @@ A session can be pinned to a wall-clock time (`Schedule.pin`/`unpin`/`isAnchored
 
 Sources are WAV files in `src/assets/sounds/`; `./normalize_audio.sh` converts them to
 `public/sounds/**/*.webm` (Opus, −18 LUFS) — the app only ever loads the `.webm` copies, via
-absolute `/tymer/sounds/...` URLs.
+absolute `/tymer/sounds/...` URLs. It takes optional file/directory arguments inside
+`src/assets/sounds/` and converts the whole bank when given none; `sounds.py promote` passes it just
+the clips it copied, since re-encoding 230-odd files for a handful of new takes is minutes of ffmpeg.
 
 **Events, takes, and the manifest.** A sound event is a directory of interchangeable takes, and one
 is chosen at random per play. A browser cannot list a directory, so `build-tools/generate-sound-manifest.js`
@@ -186,8 +188,27 @@ The overtime ladder ends at 48 — the old 60-minute buzz was retired.
 **Spoken text is generated, not recorded.** The words live in `sound-prompts/*.txt`, one file per
 set (one voice, one character, one block per event), rendered by the vendored Gemini TTS tool in
 `build-tools/tts/`. See `sound-prompts/README.md` for the set format and `build-tools/tts/README.md`
-for the generate → promote workflow. Promoting a second set merges it in as extra takes rather than
-overwriting.
+for the workflow.
+
+`build-tools/tts/sounds.py` is a subcommand CLI (`pnpm run sounds <subcommand>`, plus
+`sounds:generate` / `sounds:promote` shortcuts). Clips stage under `.staging/<set>/` and reach the
+app only via `promote`:
+
+- **`generate`** fills in clips with no file yet — the resumable everyday run, since free-tier quota
+  makes a 33-clip set a multi-day job. **`regenerate`** redoes every clip over the set's take `-1`;
+  **`regenerate --fresh`** deletes the staged set first, so takes from an earlier, longer batch do
+  not survive. `--fresh` confirms before deleting and only ever clears a directory under `.staging/`.
+- **`audition`** (and `--audition each|end` during a run) plays clips through mpv. Listening time is
+  subtracted from the inter-request spacing, so it costs no extra wall clock.
+- **`promote`** merges the staged set in as extra takes by default — a second set, or a second batch
+  of the same one, lands beside what is there rather than overwriting. **`promote --replace`**
+  deletes every promoted take of that set first, so the staged batch becomes the whole of it; it
+  therefore requires a complete staging and asks before deleting. Both then convert only the copied
+  clips, refresh the manifest, and clear staging (`--skip-normalize` / `--keep-staging` opt out).
+
+**A deleted take must lose its `.webm` too.** `--replace` removes the counterpart under
+`public/sounds/` for every source it deletes, because `generate-sound-manifest.js` scans that
+directory: an orphan there is not stale, it stays in `SOUND_VARIANTS` and keeps playing.
 
 Not speech: `notifications/*.ogg` (63 chimes, played before period announcements), `button.webm`,
 `timer-end.webm`.

@@ -1,17 +1,21 @@
-# Generates Tymer's spoken sounds from the prompt sets in sound-prompts/.
+# Tymer's spoken sounds: generate them from the prompt sets in sound-prompts/,
+# audition them, then promote them into the app.
 #
-#   uv run generate_audio.py tymer-gacrux-brisk --dry-run        # preview, no API calls
-#   uv run generate_audio.py tymer-gacrux-brisk --overwrite      # generate the whole set
-#   uv run generate_audio.py tymer-gacrux --only overtime/       # one branch
+#   uv run sounds.py generate   tymer-gacrux-brisk --dry-run   # preview, no API calls
+#   uv run sounds.py generate   tymer-gacrux-brisk             # fill in what is missing
+#   uv run sounds.py regenerate tymer-gacrux-brisk --fresh     # discard and start over
+#   uv run sounds.py audition   tymer-gacrux-brisk             # listen to the staged set
+#   uv run sounds.py promote    tymer-gacrux-brisk             # into src/assets/sounds/
 #
 # Or from the repo root, no cd needed — every path below resolves against this
 # file rather than the working directory:
 #
 #   pnpm run sounds:generate tymer-gacrux-brisk --dry-run
+#   pnpm run sounds regenerate tymer-gacrux-brisk --fresh
 #
-# A set name resolves against sound-prompts/ and output defaults to
-# src/assets/sounds/, so neither has to be spelled out. Run normalize_audio.sh
-# afterwards to convert to .webm and regenerate the sound manifest.
+# A set name resolves against sound-prompts/, generation stages under
+# .staging/<set>/ and promote lands in src/assets/sounds/, so no path has to be
+# spelled out. Promote also converts what it copied and refreshes the manifest.
 #
 # Needs a Gemini API key in build-tools/tts/.env (see .env.example).
 # Format spec: sound-prompts/README.md
@@ -24,6 +28,7 @@ import os
 import re
 import shutil
 import struct
+import subprocess
 import sys
 import time
 from datetime import datetime, timedelta, timezone
@@ -38,6 +43,17 @@ TOOL_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(os.path.dirname(TOOL_DIR))
 PROMPTS_DIR = os.path.join(REPO_ROOT, 'sound-prompts')
 DEFAULT_OUTPUT_DIR = os.path.join(REPO_ROOT, 'src', 'assets', 'sounds')
+
+# Where normalize_audio.sh writes the .webm copies the app actually loads. A
+# take deleted from the source tree has to be deleted here too: the manifest
+# generator scans THIS directory, so an orphan left behind keeps playing.
+NORMALIZED_DIR = os.path.join(REPO_ROOT, 'public', 'sounds')
+NORMALIZE_SCRIPT = os.path.join(REPO_ROOT, 'normalize_audio.sh')
+MANIFEST_SCRIPT = os.path.join(REPO_ROOT, 'build-tools', 'generate-sound-manifest.js')
+
+# Subcommands that have a package.json script of their own; the rest are reached
+# through the bare `pnpm run sounds <subcommand>` passthrough.
+PNPM_SUBCOMMANDS = ('generate', 'promote')
 
 # One request per minute. The free tier allows three, but a 429 retry spends
 # from the same budget — at 21s spacing a single retry storm starved the next
@@ -96,20 +112,25 @@ def shell_cwd(env):
     return os.path.realpath(env.get('INIT_CWD') or os.getcwd())
 
 
-def invocation_hint(env):
-    """How to re-invoke this script from where the user actually is.
+def command_hint(env, subcommand):
+    """How to re-invoke this tool for `subcommand` from where the user actually is.
 
     Nothing here depends on the working directory — every path resolves against
     the script — so the tool runs the same from the repo root as from its own
     directory. The follow-up hints are meant to be pasted straight back into the
-    shell, though, so they have to name the form that works from there.
+    shell, though, so they have to name the form that works from there. Launched
+    through pnpm, that means another pnpm script: `sounds:generate` and
+    `sounds:promote` exist by name, anything else goes through `sounds`.
     """
     package_script = env.get('npm_lifecycle_event')
     if package_script:
-        return f'pnpm run {package_script}'
+        namespace = package_script.split(':')[0]
+        if subcommand in PNPM_SUBCOMMANDS:
+            return f'pnpm run {namespace}:{subcommand}'
+        return f'pnpm run {namespace} {subcommand}'
     if shell_cwd(env) == os.path.realpath(TOOL_DIR):
-        return 'uv run generate_audio.py'
-    return f'uv run --directory {TOOL_DIR} generate_audio.py'
+        return f'uv run sounds.py {subcommand}'
+    return f'uv run --directory {TOOL_DIR} sounds.py {subcommand}'
 
 
 def normalize_hint(env):
@@ -129,7 +150,7 @@ def staging_dir_for(set_path):
     A set takes several days to generate on free-tier quota. Writing straight
     into src/assets/sounds/ would leave the app playing a half-updated bank —
     some events in the new direction, some in the old. Staging keeps a partial
-    set out of the way until every clip exists, then --promote moves it across
+    set out of the way until every clip exists, then `promote` moves it across
     in one step.
     """
     name = os.path.basename(set_path)
@@ -226,6 +247,123 @@ def promote_staging(staging, destination):
             shutil.copy2(source, target)
             copied.append(os.path.relpath(target, destination))
     return copied, skipped
+
+
+def wav_files(root):
+    """Every .wav under `root`, in a stable order."""
+    found = []
+    for folder, _, names in os.walk(root):
+        found.extend(os.path.join(folder, name) for name in names if name.endswith('.wav'))
+    return sorted(found)
+
+
+def discard_staged_set(staging):
+    """Delete a staged set so the next run builds it from scratch. Returns the
+    number of clips thrown away.
+
+    Guarded to the tool's own .staging/ tree. This is the only destructive thing
+    generation can do, and an explicit output directory is just as likely to be
+    src/assets/sounds/ — a whole promoted bank — as a scratch folder.
+    """
+    staging_root = os.path.realpath(os.path.join(TOOL_DIR, '.staging'))
+    target = os.path.realpath(staging)
+    inside = target != staging_root and os.path.commonpath([target, staging_root]) == staging_root
+    if not inside:
+        raise ValueError(f'refusing to delete {staging} — --fresh only ever clears a set under {staging_root}')
+    discarded = len(wav_files(staging))
+    shutil.rmtree(staging, ignore_errors=True)
+    return discarded
+
+
+def normalized_counterpart(source_path, destination=None):
+    """The .webm that normalize_audio.sh produces for a promoted .wav.
+
+    None for anything outside the source tree — there is no counterpart to
+    reason about, and guessing one would put a delete somewhere unrelated.
+    """
+    destination = destination or DEFAULT_OUTPUT_DIR
+    relative = os.path.relpath(source_path, destination)
+    if relative.startswith(os.pardir):
+        return None
+    return os.path.join(NORMALIZED_DIR, f'{os.path.splitext(relative)[0]}.webm')
+
+
+def promoted_takes(blocks, destination):
+    """Every already-promoted take belonging to this set, in block order."""
+    return [take for block in blocks for take in existing_takes(expected_file(block, destination))]
+
+
+def clear_promoted_set(blocks, destination):
+    """Remove every promoted take of this set, from both trees.
+
+    Replacing a set means the incoming batch IS the set: an earlier, longer batch
+    must not survive alongside it as extra takes. Only stems belonging to this
+    set match (`existing_takes`), so other voices sharing an event directory are
+    left alone.
+
+    The .webm goes with the .wav. generate-sound-manifest.js scans public/sounds/,
+    so a normalized orphan is not merely stale — it stays in SOUND_VARIANTS and
+    the app keeps playing a take whose source no longer exists.
+
+    Returns (sources, normalized) as lists of removed absolute paths.
+    """
+    sources, normalized = [], []
+    for take in promoted_takes(blocks, destination):
+        os.remove(take)
+        sources.append(take)
+        counterpart = normalized_counterpart(take, destination)
+        if counterpart and os.path.exists(counterpart):
+            os.remove(counterpart)
+            normalized.append(counterpart)
+    return sources, normalized
+
+
+def normalize(paths):
+    """Convert promoted clips to .webm and refresh the manifest. True on success.
+
+    normalize_audio.sh with no arguments walks the entire bank, so an empty
+    selection must never reach it. There can still be a manifest to rebuild in
+    that case — a replacing promote may have only deleted — so that half runs on
+    its own.
+    """
+    command = ['node', MANIFEST_SCRIPT] if not paths else ['bash', NORMALIZE_SCRIPT, *paths]
+    return subprocess.call(command, cwd=REPO_ROOT) == 0
+
+
+def audition(paths):
+    """Play clips through mpv, handing it the terminal so the usual keys work.
+
+    Several files become one playlist — `>` / `<` step through it, `q` quits.
+    A missing mpv is a note rather than a failure: audio that cost quota-days to
+    generate is not going to be discarded over an absent player.
+    """
+    if not paths:
+        print('Nothing to play.')
+        return False
+    player = shutil.which('mpv')
+    if player is None:
+        print('mpv is not on PATH — skipping playback.')
+        return False
+    print(f'\nPlaying {len(paths)} clip(s) in mpv — q quits, > / < step through them.')
+    subprocess.call([player, '--no-video', *paths])
+    return True
+
+
+def confirm(question, assume_yes=False):
+    """Ask before something irreversible.
+
+    An unattended run does not get to have consent assumed for it — it has to
+    have said --yes up front.
+    """
+    if assume_yes:
+        return True
+    if not sys.stdin.isatty():
+        print('Nobody to ask — re-run with --yes if that is what you want.')
+        return False
+    try:
+        return input(f'{question} [y/N] ').strip().lower().startswith('y')
+    except EOFError:
+        return False
 
 
 class RateLimited(Exception):
@@ -698,15 +836,18 @@ def default_name_from_text(text):
     return cut or slug[:MAX_AUTO_NAME_LENGTH]
 
 
-def generate_audio(client, block, base_output_dir='sounds', retry_count=0, overwrite=False):
+def generate_clip(client, block, base_output_dir='sounds', overwrite=False):
     """Generate audio for a resolved block and save it under the block's path.
+
+    Returns the file written, so the caller can play it back or count it — None
+    when the model returned no audio at all.
 
     Args:
         client: Gemini API client
         block: A resolved block dict from parse_set_file (must have 'path',
             'voice', 'name' and the fields compose_prompt needs)
         base_output_dir: Base directory for output (default: 'sounds')
-        retry_count: Number of retries attempted
+        overwrite: Write over this set's take -1 rather than adding -2, -3, ...
     """
     model = 'gemini-3.1-flash-tts-preview'
     folder = block['path']
@@ -780,7 +921,7 @@ def generate_audio(client, block, base_output_dir='sounds', retry_count=0, overw
 
         if not audio_chunks:
             print('  WARNING: no audio returned for this prompt')
-            return
+            return None
 
         data_buffer = b''.join(audio_chunks)
         file_extension = mimetypes.guess_extension(audio_mime_type)
@@ -790,6 +931,7 @@ def generate_audio(client, block, base_output_dir='sounds', retry_count=0, overw
 
         file_name = resolve_output_filename(base_filename, file_extension, full_folder, overwrite)
         save_binary_file(file_name, data_buffer)
+        return file_name
     except httpx.TimeoutException as e:
         raise Transient(f'no data for {CHUNK_TIMEOUT_SECONDS}s ({type(e).__name__})') from e
     except httpx.TransportError as e:
@@ -925,58 +1067,113 @@ def parse_audio_mime_type(mime_type: str) -> dict[str, int | None]:
     return {'bits_per_sample': bits_per_sample, 'rate': rate}
 
 
+SET_HELP = 'Set name (resolved in sound-prompts/) or a path to a set-file'
+
+
 def build_arg_parser():
     parser = argparse.ArgumentParser(
-        description='Generate TTS audio clips from a structured set-file.',
+        prog='sounds.py',
+        description="Generate, audition and promote Tymer's spoken sounds.",
     )
-    parser.add_argument('set_file', help='Set name (resolved in sound-prompts/) or a path to a set-file')
-    parser.add_argument(
+    commands = parser.add_subparsers(dest='command', required=True, metavar='<command>')
+
+    # generate and regenerate differ only in what they consider already done, so
+    # everything else about them is one shared surface.
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument('set_file', help=SET_HELP)
+    common.add_argument(
         'output_dir', nargs='?', default=None,
-        help='Where to write (default: the set\'s staging dir under build-tools/tts/.staging/)',
+        help="Where to write (default: the set's staging dir under build-tools/tts/.staging/)",
     )
-    parser.add_argument(
-        '--promote', action='store_true',
-        help='Copy the completed staged set into src/assets/sounds/ and exit (no API calls)',
-    )
-    parser.add_argument(
-        '--regenerate', action='store_true',
-        help='Also re-generate blocks that already have a file (default: only missing ones)',
-    )
-    parser.add_argument('--limit', type=int, default=None, help='Only process the first N selected blocks')
-    parser.add_argument('--only', default=None, help='Only process blocks whose path starts with this prefix')
-    parser.add_argument(
+    common.add_argument('--only', default=None, help='Only process blocks whose path starts with this prefix')
+    common.add_argument('--limit', type=int, default=None, help='Only process the first N selected blocks')
+    common.add_argument(
         '--delay', type=float, default=DEFAULT_DELAY_SECONDS,
         help=f'Seconds to sleep between API requests (default: {DEFAULT_DELAY_SECONDS})',
     )
-    parser.add_argument('--dry-run', action='store_true', help='Print what would be generated; make no API calls')
-    parser.add_argument(
-        '--overwrite',
-        action='store_true',
-        help="Replace this set's own previous takes instead of adding -2, -3, ... alongside them",
+    common.add_argument('--dry-run', action='store_true', help='Print what would be generated; make no API calls')
+    common.add_argument(
+        '--audition', choices=('off', 'each', 'end'), default='off',
+        help='Play clips in mpv as they arrive (each) or all together once the run ends (end)',
     )
+
+    commands.add_parser(
+        'generate', parents=[common],
+        help='Generate the clips that are still missing — the resumable everyday run',
+    )
+
+    regenerate = commands.add_parser(
+        'regenerate', parents=[common],
+        help="Generate every clip again, writing over this set's take -1",
+    )
+    regenerate.add_argument(
+        '--fresh', action='store_true',
+        help='Delete the staged set first, so nothing of the previous batch survives',
+    )
+    regenerate.add_argument('-y', '--yes', action='store_true', help='Skip the confirmation --fresh asks for')
+
+    listen = commands.add_parser('audition', help='Play the staged set through mpv')
+    listen.add_argument('set_file', help=SET_HELP)
+    listen.add_argument('--only', default=None, help='Only play blocks whose path starts with this prefix')
+
+    promote = commands.add_parser(
+        'promote',
+        help='Copy the staged set into src/assets/sounds/, convert it, and clear staging',
+    )
+    promote.add_argument('set_file', help=SET_HELP)
+    promote.add_argument(
+        '--replace', action='store_true',
+        help="Replace this set's promoted takes entirely instead of landing beside them as alternatives",
+    )
+    promote.add_argument(
+        '--skip-normalize', action='store_true',
+        help='Do not convert to .webm or refresh the manifest',
+    )
+    promote.add_argument('--keep-staging', action='store_true', help='Leave the staged clips in place afterwards')
+    promote.add_argument('-y', '--yes', action='store_true', help='Skip the confirmation --replace asks for')
     return parser
 
 
-def main(args):
-    try:
-        set_path = resolve_set_file(args.set_file)
-        defaults, blocks = parse_set_file(set_path)
-    except ValueError as e:
-        print(f'Error: {e}')
-        sys.exit(1)
+def run_audition(args, blocks, staging):
+    """Listen to what is staged — the manual verification step before promoting."""
+    selected = select_blocks(blocks, only=args.only)
+    takes = [take for block in selected for take in existing_takes(expected_file(block, staging))]
+    if not takes:
+        print(f'\nNothing staged under {staging}.')
+        print(f'Generate a batch first:  {command_hint(os.environ, "generate")} {args.set_file}')
+        sys.exit(0)
+    audition(takes)
 
-    staging = staging_dir_for(set_path)
-    base_output_dir = os.path.expanduser(args.output_dir) if args.output_dir else staging
 
-    print(f'Set: {set_path} ({len(blocks)} blocks, voice: {defaults.get("voice")})')
-    print(f'Output directory: {base_output_dir}')
+def run_promote(args, blocks, staging):
+    """Move a staged set into the app, convert it, and clear the staging dir."""
+    outstanding = missing_blocks(blocks, staging)
+    if len(outstanding) == len(blocks):
+        print('\nNothing staged — there is nothing to promote.')
+        print(f'Generate a batch first:  {command_hint(os.environ, "generate")} {args.set_file}')
+        sys.exit(0)
 
-    if args.promote:
-        outstanding = missing_blocks(blocks, staging)
-        if len(outstanding) == len(blocks):
-            print('\nNothing staged — there is nothing to promote.')
-            print(f'Generate a batch first:  {invocation_hint(os.environ)} {args.set_file}')
-            sys.exit(0)
+    if args.replace:
+        # Replacing deletes before it copies, block by block over the whole set,
+        # so a partial batch would leave the events it has nothing for silent.
+        if outstanding:
+            print(f'\nRefusing to replace: {len(outstanding)} of {len(blocks)} clip(s) still missing.')
+            print('Replacing removes the promoted takes first — a partial batch would leave events with none.')
+            for block in outstanding[:10]:
+                print(f'  missing: {block["path"]}')
+            if len(outstanding) > 10:
+                print(f'  ... and {len(outstanding) - 10} more')
+            print(f'\nAdd them beside what is there instead:  {command_hint(os.environ, "promote")} {args.set_file}')
+            sys.exit(1)
+
+        doomed = promoted_takes(blocks, DEFAULT_OUTPUT_DIR)
+        question = f'\nDelete {len(doomed)} promoted take(s) of this set and replace them with the staged batch?'
+        if doomed and not confirm(question, args.yes):
+            print('Left as it is.')
+            sys.exit(1)
+        sources, normalized = clear_promoted_set(blocks, DEFAULT_OUTPUT_DIR)
+        print(f'\nRemoved {len(sources)} promoted take(s) and {len(normalized)} normalized copy(ies).')
+    else:
         if outstanding and not set_fully_promoted(blocks, DEFAULT_OUTPUT_DIR):
             print(f'\nRefusing to promote: {len(outstanding)} of {len(blocks)} clip(s) still missing.')
             print('Generate the rest first — promoting now would leave the bank half-updated.')
@@ -988,24 +1185,69 @@ def main(args):
         if outstanding:
             print(f'\nPartial batch — {len(blocks) - len(outstanding)} of {len(blocks)} staged.')
             print('Every event already has a take of this set, so promoting these as extras.')
-        copied, skipped = promote_staging(staging, DEFAULT_OUTPUT_DIR)
-        print(f'\nPromoted {len(copied)} clip(s) into {DEFAULT_OUTPUT_DIR}')
-        if skipped:
-            print(f'{len(skipped)} already present and identical — skipped')
-        renamed = [c for c in copied if not c.endswith('-1.wav')]
-        if renamed:
-            print(f'{len(renamed)} landed beside an existing take as an alternative:')
-            for name in renamed[:5]:
-                print(f'  {name}')
-            if len(renamed) > 5:
-                print(f'  ... and {len(renamed) - 5} more')
-        print(f'Run {normalize_hint(os.environ)} to convert them and refresh the manifest.')
-        sys.exit(0)
+
+    copied, skipped = promote_staging(staging, DEFAULT_OUTPUT_DIR)
+    print(f'\nPromoted {len(copied)} clip(s) into {DEFAULT_OUTPUT_DIR}')
+    if skipped:
+        print(f'{len(skipped)} already present and identical — skipped')
+    renamed = [name for name in copied if not name.endswith('-1.wav')]
+    if renamed:
+        print(f'{len(renamed)} landed beside an existing take as an alternative:')
+        for name in renamed[:5]:
+            print(f'  {name}')
+        if len(renamed) > 5:
+            print(f'  ... and {len(renamed) - 5} more')
+
+    if args.skip_normalize:
+        print(f'\nNot converted. Run {normalize_hint(os.environ)} to convert them and refresh the manifest.')
+        if args.replace:
+            print('Until then the manifest still lists the takes just deleted, and the app will 404 on them.')
+    else:
+        print()
+        if not normalize([os.path.join(DEFAULT_OUTPUT_DIR, name) for name in copied]):
+            print('\nNormalization failed — leaving staging in place so nothing is lost.')
+            sys.exit(1)
+
+    if args.keep_staging:
+        print(f'\nStaging kept at {staging}')
+    else:
+        shutil.rmtree(staging, ignore_errors=True)
+        print(f'\nCleared staging: {staging}')
+
+
+def run_generation(args, blocks, staging):
+    """generate: fill in what is missing. regenerate: do the lot again, over take -1.
+
+    `--fresh` turns the second into a true restart by throwing the staged batch
+    away first — the difference being whether takes from a previous, longer batch
+    (-2, -3, ...) survive.
+    """
+    overwrite = args.command == 'regenerate'
+    base_output_dir = os.path.expanduser(args.output_dir) if args.output_dir else staging
+
+    if getattr(args, 'fresh', False):
+        if args.output_dir:
+            print('\nError: --fresh clears the staged set; it will not delete an output directory you named yourself.')
+            sys.exit(1)
+        staged = len(wav_files(staging))
+        if not staged:
+            print('\nNothing staged yet — generating the set from scratch.')
+        else:
+            if not confirm(f'\nDelete {staged} staged clip(s) in {staging} and start over?', args.yes):
+                print('Left as it is.')
+                sys.exit(1)
+            try:
+                print(f'Discarded {discard_staged_set(staging)} staged clip(s).')
+            except ValueError as e:
+                print(f'Error: {e}')
+                sys.exit(1)
+
+    print(f'Output directory: {base_output_dir}')
 
     selected = select_blocks(blocks, only=args.only, limit=args.limit)
 
     already = len(blocks) - len(missing_blocks(blocks, base_output_dir))
-    if not args.regenerate:
+    if not overwrite:
         selected = missing_blocks(selected, base_output_dir)
 
     print(f'Already generated: {already}/{len(blocks)}')
@@ -1014,9 +1256,11 @@ def main(args):
     if not selected:
         if already == len(blocks):
             print('This set is complete — nothing to generate.')
-            print(f'Promote it with:  {invocation_hint(os.environ)} {args.set_file} --promote')
+            print(f'Listen to it:  {command_hint(os.environ, "audition")} {args.set_file}')
+            print(f'Promote it:    {command_hint(os.environ, "promote")} {args.set_file}')
         else:
-            print('Nothing to do for this selection (use --regenerate to redo existing clips).')
+            print('Nothing to do for this selection.')
+            print(f'Redo clips that already exist:  {command_hint(os.environ, "regenerate")} {args.set_file}')
         sys.exit(0)
 
     # Display selected blocks in a table
@@ -1075,6 +1319,7 @@ def main(args):
 
     done = 0
     skipped_blocks = []
+    produced = []
     # Blocks still to generate. Running out of quota does not end the run any
     # more — it parks whatever is left here and offers to wait for the reset.
     pending = list(selected)
@@ -1089,6 +1334,7 @@ def main(args):
 
                 # Try the block on each live key in turn before giving up on it.
                 failures = 0
+                request_finished = None
                 while True:
                     key = pool.next_key()
                     if key is None:
@@ -1107,8 +1353,13 @@ def main(args):
                         )
 
                     try:
-                        generate_audio(clients[key], block, base_output_dir, overwrite=args.overwrite)
+                        written = generate_clip(clients[key], block, base_output_dir, overwrite=overwrite)
+                        request_finished = time.monotonic()
                         done += 1
+                        if written:
+                            produced.append(written)
+                            if args.audition == 'each':
+                                audition([written])
                         break
                     except Transient as transient:
                         failures += 1
@@ -1152,9 +1403,14 @@ def main(args):
                 # the number of live keys — three keys means a third of the spacing.
                 if i < len(queue):
                     spacing = args.delay / max(1, len(pool.active()))
-                    print(f'  Waiting {spacing:.0f}s ({len(pool.active())} key(s) live)...')
-                    time.sleep(spacing)
-                    print()
+                    # Whatever happened since the request came back — auditioning,
+                    # most of all — was spent on the same clock the spacing meters.
+                    if request_finished is not None:
+                        spacing = max(0, spacing - (time.monotonic() - request_finished))
+                    if spacing:
+                        print(f'  Waiting {spacing:.0f}s ({len(pool.active())} key(s) live)...')
+                        time.sleep(spacing)
+                        print()
 
             if not exhausted:
                 break
@@ -1169,10 +1425,35 @@ def main(args):
 
         print('\nAll done!')
         report(done)
+        if args.audition == 'end':
+            audition(produced)
+        if not missing_blocks(blocks, base_output_dir):
+            print(f'\nThis set is complete.')
+            print(f'Listen to it:  {command_hint(os.environ, "audition")} {args.set_file}')
+            print(f'Promote it:    {command_hint(os.environ, "promote")} {args.set_file}')
     except KeyboardInterrupt:
         print('\n\nInterrupted by user.')
         report(done)
         sys.exit(0)
+
+
+def main(args):
+    try:
+        set_path = resolve_set_file(args.set_file)
+        defaults, blocks = parse_set_file(set_path)
+    except ValueError as e:
+        print(f'Error: {e}')
+        sys.exit(1)
+
+    staging = staging_dir_for(set_path)
+    print(f'Set: {set_path} ({len(blocks)} blocks, voice: {defaults.get("voice")})')
+
+    if args.command == 'promote':
+        run_promote(args, blocks, staging)
+    elif args.command == 'audition':
+        run_audition(args, blocks, staging)
+    else:
+        run_generation(args, blocks, staging)
 
 
 if __name__ == '__main__':

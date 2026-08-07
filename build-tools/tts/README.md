@@ -20,22 +20,27 @@ Get a key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
 
 A set is 33 clips and free-tier quota is ~15/day, so generating one is a
 multi-day job. The tool is built around that: clips accumulate in a **staging
-directory** per set, each run generates only what is **still missing**, and
-nothing reaches the app until the set is complete and you promote it.
+directory** per set, a run generates only what is **still missing**, and nothing
+reaches the app until you have listened to it and promoted it.
 
 ```bash
 cd build-tools/tts
 
 # 1. preview — no API calls, no key needed
-uv run generate_audio.py tymer-gacrux-brisk --dry-run
+uv run sounds.py generate tymer-gacrux-brisk --dry-run
 
 # 2. generate. Re-run daily; it picks up where it left off.
-uv run generate_audio.py tymer-gacrux-brisk
+uv run sounds.py generate tymer-gacrux-brisk
 
-# 3. once complete, move it into the app
-uv run generate_audio.py tymer-gacrux-brisk --promote
-cd ../.. && ./normalize_audio.sh
+# 3. listen to what came back
+uv run sounds.py audition tymer-gacrux-brisk
+
+# 4. move it into the app — converts and refreshes the manifest, then clears staging
+uv run sounds.py promote tymer-gacrux-brisk
 ```
+
+Step 2 reports `Already generated: 12/33` and stops early with *"This set is
+complete — nothing to generate"* rather than spending quota re-doing work.
 
 ### From the repo root, without the `cd`
 
@@ -44,56 +49,102 @@ tree — resolves against the script rather than the working directory, so it ru
 the same from anywhere. Only `uv` needs telling where the project is:
 
 ```bash
-pnpm run sounds:generate tymer-gacrux-brisk --dry-run    # flags pass through, no `--` needed
-uv run --directory build-tools/tts generate_audio.py tymer-gacrux-brisk
+pnpm run sounds:generate tymer-gacrux-brisk --dry-run   # flags pass through, no `--` needed
+pnpm run sounds:promote  tymer-gacrux-brisk
+pnpm run sounds regenerate tymer-gacrux-brisk --fresh   # subcommands without their own script
+uv run --directory build-tools/tts sounds.py generate tymer-gacrux-brisk
 ```
 
-The hints the tool prints back (`Promote it with: …`, `Run … to convert them`)
-adapt to how it was launched, so they stay copy-pasteable. Both launchers `cd`
-into `build-tools/tts` before running, so `os.getcwd()` is no help — the shell's
-real directory comes from `INIT_CWD`, which pnpm exports and `uv` does not. A
-bare `uv run --directory` from the root is therefore indistinguishable from a
-real `cd` and gets the `cd`-relative hint.
+The hints the tool prints back (`Promote it: …`, `Listen to it: …`) adapt to how
+it was launched, so they stay copy-pasteable. Both launchers `cd` into
+`build-tools/tts` before running, so `os.getcwd()` is no help — the shell's real
+directory comes from `INIT_CWD`, which pnpm exports and `uv` does not. A bare
+`uv run --directory` from the root is therefore indistinguishable from a real
+`cd` and gets the `cd`-relative hint.
 
-Step 2 reports `Already generated: 12/33` and stops early with *"This set is
-complete — nothing to generate"* rather than spending quota re-doing work.
-Step 3 refuses to run while anything is missing, so the app never plays a
-half-updated bank — unless every event already has a promoted take of this
-set, in which case a partial staging is purely additive (some events gain an
-extra take early) and promotes without waiting for the rest.
+## The three ways to generate
 
-`normalize_audio.sh` produces the `.webm` files the app loads and regenerates
-`src/lib/sound-manifest.js`.
+They differ only in what they consider already done.
 
-### Several sets become random alternatives
+| Command | What it does | Use it when |
+| --- | --- | --- |
+| `generate <set>` | Generates the clips with no file yet; leaves the rest alone | Every day, until the set is complete |
+| `regenerate <set>` | Generates every clip again, over this set's take `-1` | The prompts changed and you want new readings |
+| `regenerate <set> --fresh` | Deletes the staged set, then generates all of it | A previous batch left takes you want gone |
 
-Promote a second set into the same tree and its clips land **beside** the first
-as extra takes — `brisk-1.wav`, `brisk-2.wav` — which is exactly what the app
-picks between at random. Nothing is overwritten. Re-promoting an unchanged set
-is a no-op (a clip identical to *any* existing take of the set is skipped, even
-if an earlier promote renamed it), so it is safe to repeat.
+The difference between the last two is what survives: `regenerate` overwrites
+take `-1` and leaves a `brisk-2.wav` from an earlier, longer batch in place;
+`--fresh` starts from an empty directory, so nothing does. `--fresh` asks before
+deleting (`--yes` skips the question), refuses to run unattended without it, and
+only ever clears a set under `.staging/` — never an output directory you named
+yourself, which could just as easily be the whole promoted bank.
+
+### Hearing them
+
+`--audition each` plays every clip in mpv as it arrives; `--audition end` plays
+the whole run as one mpv playlist when it finishes. Time spent listening counts
+toward the inter-request spacing, so auditioning a run costs no extra wall clock.
 
 ```bash
-uv run generate_audio.py tymer-gacrux --promote     # merges with what's there
+uv run sounds.py generate tymer-gacrux-brisk --audition each
+uv run sounds.py audition tymer-gacrux-brisk --only overtime/
 ```
 
-The same applies to a second batch of the **same** set: clear the set's
-`.staging/` directory, regenerate, and promote — each clip lands beside the
-first batch as `-2`. Because the whole set is already in the app, the promote
-gate relaxes: you can promote after every quota day instead of waiting for all
-clips, and keep resuming the batch until it is done.
+`audition` on its own replays whatever is staged, which is the manual check
+before promoting. A missing mpv is a note, never a failure.
+
+## The two ways to promote
+
+```bash
+uv run sounds.py promote tymer-gacrux-brisk            # add as alternatives
+uv run sounds.py promote tymer-gacrux-brisk --replace  # this batch IS the set
+```
+
+**Default — add.** Clips land **beside** what is already there as extra takes —
+`brisk-1.wav`, `brisk-2.wav` — which is exactly what the app picks between at
+random. Nothing is overwritten. Re-promoting an unchanged set is a no-op (a clip
+identical to *any* existing take of the set is skipped, even if an earlier
+promote renamed it), so it is safe to repeat. It refuses while anything is
+missing, so the app never plays a half-updated bank — unless every event already
+has a promoted take of this set, in which case a partial staging is purely
+additive and promotes without waiting for the rest.
+
+**`--replace`.** Every promoted take of this set is deleted first, so the staged
+batch is the whole of it — the way to drop takes rather than accumulate them. It
+asks first (`--yes` skips), and requires a complete staging with no relaxed
+partial case: it deletes before it copies, so a partial batch would leave events
+with nothing. Other voices sharing an event directory are matched by stem and
+never touched.
+
+Deleting a take also deletes its `.webm` under `public/sounds/`.
+`generate-sound-manifest.js` scans that directory, so an orphan left there is not
+merely stale — it stays in `SOUND_VARIANTS` and the app keeps playing a take
+whose source no longer exists.
+
+**Either way**, promote then converts **only the clips it copied** to `.webm`,
+regenerates `src/lib/sound-manifest.js`, and deletes the staging directory. A
+failed conversion leaves staging in place so nothing is lost.
+
+| Flag | Effect |
+| --- | --- |
+| `--skip-normalize` | Do not convert or refresh the manifest — do it later with `./normalize_audio.sh` |
+| `--keep-staging` | Leave the staged clips where they are |
+
+## Flags shared by generate and regenerate
 
 | Flag | Effect |
 | --- | --- |
 | `--dry-run` | Print target paths and composed prompts; no API calls, no key needed |
-| `--promote` | Copy the completed staged set into `src/assets/sounds/`, renaming around existing takes |
-| `--regenerate` | Also redo clips that already exist (default: only missing ones) |
-| `--overwrite` | Replace this set's own previous takes rather than adding `-2`, `-3` |
+| `--audition {off,each,end}` | Play clips in mpv per clip, or all at the end |
 | `--only PREFIX` | Restrict to blocks whose path starts with PREFIX |
 | `--limit N` | Stop after N blocks |
 | `--delay SECONDS` | Spacing between requests (default 60) |
 
 Pass an explicit output directory to bypass staging entirely.
+
+`normalize_audio.sh` takes the same paths promote hands it — files or
+directories inside `src/assets/sounds/` — and converts the whole bank when given
+none. It regenerates the manifest either way.
 
 ## Quota
 

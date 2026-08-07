@@ -75,23 +75,32 @@ later without any code change.
 ## Regenerating
 
 The generator lives in [`build-tools/tts/`](../build-tools/tts/) — see its README
-for setup and quota details. A bare set name resolves against this directory and
-output defaults to `src/assets/sounds/`.
+for setup, the three generation modes, and quota details. A bare set name
+resolves against this directory; clips stage under `.staging/<set>/` until you
+promote them.
 
 ```bash
 cd build-tools/tts
 
 # preview every composed prompt — no API calls, no key needed
-uv run generate_audio.py tymer-gacrux --dry-run
+uv run sounds.py generate tymer-gacrux --dry-run
 
-# generate the whole set
-uv run generate_audio.py tymer-gacrux --overwrite
+# fill in whatever is still missing; re-run daily until the set is complete
+uv run sounds.py generate tymer-gacrux
 
-# regenerate just one branch
-uv run generate_audio.py tymer-gacrux --overwrite --only overtime/
+# redo one branch after editing its prompts
+uv run sounds.py regenerate tymer-gacrux --only overtime/
 ```
 
-Then normalize and convert to the `.webm` files the app actually loads:
+Then listen to it, and promote — which converts what it copied to the `.webm`
+files the app actually loads and refreshes the manifest:
+
+```bash
+uv run sounds.py audition tymer-gacrux
+uv run sounds.py promote tymer-gacrux
+```
+
+To convert the whole bank by hand instead:
 
 ```bash
 cd ../.. && ./normalize_audio.sh

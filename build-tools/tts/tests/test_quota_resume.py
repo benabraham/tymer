@@ -3,8 +3,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-import generate_audio as mod
-from generate_audio import (
+import sounds as mod
+from sounds import (
     KeyPool,
     RateLimited,
     build_arg_parser,
@@ -102,10 +102,10 @@ def run_set(tmp_path, monkeypatch):
             offers.append(True)
             return waits_granted.pop(0) if waits_granted else False
 
-        monkeypatch.setattr(mod, 'generate_audio', fake_generate)
+        monkeypatch.setattr(mod, 'generate_clip', fake_generate)
         monkeypatch.setattr(mod, 'wait_for_quota_reset', fake_wait)
 
-        args = build_arg_parser().parse_args([str(set_file), str(output_dir), '--delay', '0'])
+        args = build_arg_parser().parse_args(['generate', str(set_file), str(output_dir), '--delay', '0'])
         status = None
         try:
             mod.main(args)
