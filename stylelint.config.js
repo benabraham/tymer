@@ -15,29 +15,39 @@
  */
 
 export default {
-  extends: ['stylelint-config-standard-scss'],
-  plugins: ['stylelint-plugin-use-baseline'],
-  rules: {
-    // `user-select` and `resize` both fail this gate — not because they're new,
-    // but because they've never reached Baseline (blocked by iOS Safari support
-    // gaps since ~2020, per web-features data). Both are already used
-    // deliberately (drag-to-select prevention on buttons/labels, a resizable
-    // textarea) and this app's own browserslist targets iOS >= 12, so there is
-    // no CSS change that fixes this — it's a real, permanent gap to accept
-    // knowingly rather than silence. Kept as `warning` (not disabled) so new
-    // genuinely-too-new features still surface as errors; see the report for
-    // the individual findings.
-    'plugin/use-baseline': [true, { available: 2024, severity: 'warning' }],
-    // src/app/_themes.scss groups custom properties into blank-line-separated
-    // blocks (background colors, then button group colors, then text colors, ...).
-    // The standard config would flatten those groupings away.
-    'custom-property-empty-line-before': null,
-    // Most classes here are BEM (`.timeline__period--active`), which the default
-    // kebab-case pattern already accepts, but a few (`.tempPeriod`, `.tempPeriod__data`
-    // in src/app/_debug.scss) are camelCase and shared with matching className
-    // strings in .tsx debug components. Renaming would mean editing component
-    // source outside this task's scope, so this stays off rather than mass-editing
-    // stylesheets and components together.
-    'selector-class-pattern': null,
-  },
+    extends: ['stylelint-config-standard-scss'],
+    plugins: ['stylelint-plugin-use-baseline'],
+    rules: {
+        // `user-select` and `resize` both fail this gate — not because they're new,
+        // but because they've never reached Baseline (blocked by iOS Safari support
+        // gaps since ~2020, per web-features data). Both are already used
+        // deliberately (drag-to-select prevention on buttons/labels, a resizable
+        // textarea) and this app's own browserslist targets iOS >= 12, so there is
+        // no CSS change that fixes this — it's a real, permanent gap to accept
+        // knowingly rather than silence. Kept as `warning` (not disabled) so new
+        // genuinely-too-new features still surface as errors; see the report for
+        // the individual findings.
+        'plugin/use-baseline': [true, { available: 2024, severity: 'warning' }],
+        // src/app/_themes.scss groups custom properties into blank-line-separated
+        // blocks (background colors, then button group colors, then text colors, ...).
+        // The standard config would flatten those groupings away.
+        'custom-property-empty-line-before': null,
+        // Most classes here are BEM (`.timeline__period--active`), which the default
+        // kebab-case pattern already accepts, but a few (`.tempPeriod`, `.tempPeriod__data`
+        // in src/app/_debug.scss) are camelCase and shared with matching className
+        // strings in .tsx debug components. Renaming would mean editing component
+        // source outside this task's scope, so this stays off rather than mass-editing
+        // stylesheets and components together.
+        'selector-class-pattern': null,
+        // The one place stylelint still fights Prettier. stylelint 15 dropped
+        // its own stylistic rules — which is why job 1 above can claim nothing
+        // here contests whitespace — but stylelint-scss kept a few, and this one
+        // cannot tell the `/` in `grid-column: <start> / <end>` from SCSS
+        // division. When the two calc() halves do not fit in printWidth,
+        // Prettier wraps at that slash (src/app/_stats.scss), and the rule
+        // errors on output Prettier is entitled to produce and will reproduce
+        // on every run. Prettier owns line breaks in every other language in
+        // this repo; it owns them here too.
+        'scss/operator-no-newline-after': null,
+    },
 }

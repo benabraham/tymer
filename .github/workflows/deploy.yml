@@ -23,9 +23,25 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
 
+      # The Python side of the repo (build-tools/tts). uv reads the interpreter
+      # version from build-tools/tts/.python-version and provisions it itself,
+      # so there is no setup-python step and no second place to bump it.
+      # shellcheck needs nothing: it is preinstalled on the ubuntu runners.
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v9
+        with:
+          enable-cache: true
+
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install Python Dependencies
+        run: uv sync --directory build-tools/tts --frozen
+
+      # Every gate below is the SAME script the pre-commit hook runs through
+      # lint-staged, just over the whole tree instead of the staged files. The
+      # hook is the fast feedback loop; this is the one that actually decides.
+      # Deliberately ordered cheapest-first so an obvious failure reports early.
       - name: Format check
         run: pnpm run format:check
 
@@ -35,11 +51,23 @@ jobs:
       - name: Lint CSS
         run: pnpm run lint:css
 
+      - name: Lint shell
+        run: pnpm run lint:sh
+
+      - name: Lint Python
+        run: pnpm run lint:py
+
+      - name: Format check Python
+        run: pnpm run format:py:check
+
       - name: Typecheck
         run: pnpm run typecheck
 
       - name: Tests
         run: pnpm run test
+
+      - name: Python tests
+        run: uv run --directory build-tools/tts pytest -q
 
       - name: Build
         run: pnpm run build

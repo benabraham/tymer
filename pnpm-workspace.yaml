@@ -3,3 +3,8 @@ packages:
   - '.'
 allowBuilds:
   '@parcel/watcher': false
+  # Its postinstall would write .git/hooks on its own. Denied on purpose: the
+  # `prepare` script in package.json does that instead, so hook installation is
+  # something this repo asks for explicitly rather than something a transitive
+  # dependency does behind pnpm's back. Same outcome, visible in one place.
+  simple-git-hooks: false

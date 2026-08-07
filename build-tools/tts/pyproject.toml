@@ -2,7 +2,14 @@
 name = "tymer-tts"
 version = "0.1.0"
 description = "Generates Tymer's spoken sounds from the prompt sets in sound-prompts/"
-requires-python = ">=3.9"
+# The real floor, not an aspiration: sounds.py annotates `dict[str, int | None]`
+# without `from __future__ import annotations`, and a PEP 604 union is evaluated
+# at def time — so the module raises TypeError on import under 3.9, which this
+# said until it was measured. ruff derives its target-version from this line, so
+# it is now the thing that keeps newer syntax from creeping in unnoticed.
+# The version development and CI actually run is pinned separately, in
+# .python-version, which is what uv reads when it builds the venv.
+requires-python = ">=3.10"
 dependencies = [
     "google-genai",
     # Transitively a google-genai dependency, but imported directly to catch the
@@ -15,6 +22,11 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest",
+    # Pinned exactly, like every npm devDependency (.pnpmrc sets save-exact).
+    # Ruff's DEFAULT rule set moves between releases — 0.16 starts reporting
+    # I001 where 0.15 does not — so a floating version would quietly change what
+    # CI rejects. The explicit `select` below exists for the same reason.
+    "ruff==0.15.22",
 ]
 
 [tool.pytest.ini_options]
@@ -22,3 +34,26 @@ dev = [
 # the path so tests/ can import it.
 pythonpath = ["."]
 testpaths = ["tests"]
+
+[tool.ruff]
+# Prettier's printWidth for the rest of the repo. The same number here so that
+# "too long" means the same thing in every language.
+line-length = 100
+
+[tool.ruff.format]
+# The tool is written in single quotes throughout, as is every .ts file
+# (biome.json sets quoteStyle: single). Ruff's default would rewrite all four
+# files to double quotes for no reason beyond the default being what it is.
+quote-style = 'single'
+
+[tool.ruff.lint]
+# Spelled out rather than inherited. Ruff's implicit default is E4/E7/E9 + F and
+# it moves between releases, so listing it means a ruff bump lands as a visible
+# diff here instead of as a surprise CI failure.
+#   E4/E7/E9  pycodestyle imports, statements, syntax. E1/E2/E3 are deliberately
+#             absent: they are whitespace, which the formatter owns.
+#   F         pyflakes — the undefined-name / unused-import class of real bugs.
+#             This is what caught three NameErrors in the pre-subcommand CLI.
+#   I         import sorting, the counterpart of biome.json's organizeImports.
+#   UP        pyupgrade, held to the requires-python floor declared above.
+select = ['E4', 'E7', 'E9', 'F', 'I', 'UP']
