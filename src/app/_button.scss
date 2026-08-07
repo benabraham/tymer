@@ -6,7 +6,11 @@ button {
     font-size: 1rem;
     font-weight: 600;
     font-family: inherit;
-    transition: background-color 0.15s, color 0.15s, opacity 0.2s, filter 0.2s;
+    transition:
+        background-color 0.15s,
+        color 0.15s,
+        opacity 0.2s,
+        filter 0.2s;
     padding: 0.5rem 1rem;
     min-width: 9ch;
     user-select: none;
@@ -57,9 +61,7 @@ button.highlighted {
     display: flex;
     justify-content: center;
 
-
-
-    &>button {
+    & > button {
         min-width: auto;
         flex-basis: max-content;
         padding-inline: 1.5ch;
@@ -77,7 +79,6 @@ button.highlighted {
         &.button--sm {
             color: var(--color-text-button-sm);
             font-weight: normal;
-
         }
 
         &.button--xs {
@@ -87,7 +88,7 @@ button.highlighted {
     }
 
     &--connected {
-        border-radius: .5rem;
+        border-radius: 0.5rem;
         overflow: hidden;
 
         > button {
@@ -108,7 +109,7 @@ button.highlighted {
     }
 
     &--tight {
-        &>button {
+        & > button {
             padding-inline: 1ch;
         }
     }

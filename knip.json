@@ -1,11 +1,7 @@
 {
-  "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": [
-    "index.html",
-    "src/lib/timer-worker.ts",
-    "build-tools/sound-preloader.js"
-  ],
-  "project": ["src/**/*.{ts,tsx}", "build-tools/**/*.js"],
-  "ignoreBinaries": ["uv"],
-  "ignoreDependencies": []
+    "$schema": "https://unpkg.com/knip@6/schema.json",
+    "entry": ["index.html", "src/lib/timer-worker.ts", "build-tools/sound-preloader.js"],
+    "project": ["src/**/*.{ts,tsx}", "build-tools/**/*.js"],
+    "ignoreBinaries": ["uv"],
+    "ignoreDependencies": []
 }

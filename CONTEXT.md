@@ -90,7 +90,7 @@ A periodic update driven by a Web Worker. Recomputes the Current Period's elapse
 > **Dev:** "If the user edits a Past Period's duration in the timeline form, what should happen to the elapsed time?"
 > **Owner:** "It overwrites elapsed. Editing a Past Period means amending the recorded duration — they're saying 'actually I worked 30 minutes there, not 24.' That's different from editing a Future Period, which just sets the planned duration."
 >
-> **Dev:** "And going *back* to a Past Period via the previous-period button?"
+> **Dev:** "And going _back_ to a Past Period via the previous-period button?"
 > **Owner:** "That's not editing — that's resuming. The Period becomes Current again, elapsed keeps growing from where it was. We pre-extend its planned duration by a few minutes so they have breathing room before auto-extension kicks in."
 
 ## Flagged ambiguities

@@ -3,7 +3,15 @@ import re
 
 import pytest
 
-from sounds import PROMPTS_DIR, load_api_keys, resolve_set_file, default_name_from_text, compose_prompt, parse_set_file, select_blocks
+from sounds import (
+    PROMPTS_DIR,
+    compose_prompt,
+    default_name_from_text,
+    load_api_keys,
+    parse_set_file,
+    resolve_set_file,
+    select_blocks,
+)
 
 
 def set_path(name):
@@ -17,13 +25,16 @@ def write_set(tmp_path, content, name='set.txt'):
 
 
 def test_parses_file_level_header_and_one_block(tmp_path):
-    path = write_set(tmp_path, '''
+    path = write_set(
+        tmp_path,
+        """
 @voice Gacrux
 @profile Tymer
 
 [elapsed/006]
 @text Six minutes have passed.
-''')
+""",
+    )
     defaults, blocks = parse_set_file(path)
 
     assert defaults['voice'] == 'Gacrux'
@@ -37,14 +48,17 @@ def test_parses_file_level_header_and_one_block(tmp_path):
 
 
 def test_block_level_directives_override_file_level(tmp_path):
-    path = write_set(tmp_path, '''
+    path = write_set(
+        tmp_path,
+        """
 @voice Gacrux
 @style Warm
 
 [overtime/024]
 @style Clipped, impatient
 @text You are 24 minutes over.
-''')
+""",
+    )
     _, blocks = parse_set_file(path)
     block = blocks[0]
     assert block['style'] == 'Clipped, impatient'
@@ -52,7 +66,9 @@ def test_block_level_directives_override_file_level(tmp_path):
 
 
 def test_multiline_directives_stop_at_next_at_or_bracket(tmp_path):
-    path = write_set(tmp_path, '''
+    path = write_set(
+        tmp_path,
+        """
 @voice Gacrux
 @scene
 A quiet home office, late afternoon.
@@ -64,7 +80,8 @@ The timekeeper announces progress.
 @text
 Six minutes have (calm)
 already passed.
-''')
+""",
+    )
     defaults, blocks = parse_set_file(path)
     assert defaults['scene'] == 'A quiet home office, late afternoon.\nMore description here.'
     assert defaults['context'] == 'The timekeeper announces progress.'
@@ -72,20 +89,25 @@ already passed.
 
 
 def test_same_line_directive_value(tmp_path):
-    path = write_set(tmp_path, '''
+    path = write_set(
+        tmp_path,
+        """
 @voice Gacrux
 @scene A quiet room.
 
 [a/b]
 @text Hello there.
-''')
+""",
+    )
     defaults, blocks = parse_set_file(path)
     assert defaults['scene'] == 'A quiet room.'
     assert blocks[0]['text'] == 'Hello there.'
 
 
 def test_comments_and_blank_lines_ignored(tmp_path):
-    path = write_set(tmp_path, '''
+    path = write_set(
+        tmp_path,
+        """
 # a top comment
 @voice Gacrux
 
@@ -94,60 +116,75 @@ def test_comments_and_blank_lines_ignored(tmp_path):
 [a/b]
 # comment inside block area
 @text Hello.
-''')
+""",
+    )
     defaults, blocks = parse_set_file(path)
     assert defaults['voice'] == 'Gacrux'
     assert blocks[0]['text'] == 'Hello.'
 
 
 def test_missing_file_level_voice_is_error(tmp_path):
-    path = write_set(tmp_path, '''
+    path = write_set(
+        tmp_path,
+        """
 [a/b]
 @text Hello.
-''')
+""",
+    )
     with pytest.raises(ValueError):
         parse_set_file(path)
 
 
 def test_block_without_text_is_error_naming_line(tmp_path):
-    path = write_set(tmp_path, '''
+    path = write_set(
+        tmp_path,
+        """
 @voice Gacrux
 
 [a/b]
 @style Warm
-''')
+""",
+    )
     with pytest.raises(ValueError) as excinfo:
         parse_set_file(path)
     assert '4' in str(excinfo.value)
 
 
 def test_unknown_directive_is_error_naming_line(tmp_path):
-    path = write_set(tmp_path, '''
+    path = write_set(
+        tmp_path,
+        """
 @voice Gacrux
 @bogus something
 
 [a/b]
 @text Hello.
-''')
+""",
+    )
     with pytest.raises(ValueError) as excinfo:
         parse_set_file(path)
     assert '3' in str(excinfo.value)
 
 
 def test_malformed_block_header_is_error_naming_line(tmp_path):
-    path = write_set(tmp_path, '''
+    path = write_set(
+        tmp_path,
+        """
 @voice Gacrux
 
 [a/b
 @text Hello.
-''')
+""",
+    )
     with pytest.raises(ValueError) as excinfo:
         parse_set_file(path)
     assert '4' in str(excinfo.value)
 
 
 def test_repeated_block_paths_both_survive(tmp_path):
-    path = write_set(tmp_path, '''
+    path = write_set(
+        tmp_path,
+        """
 @voice Gacrux
 
 [elapsed/006]
@@ -155,7 +192,8 @@ def test_repeated_block_paths_both_survive(tmp_path):
 
 [elapsed/006]
 @text Second take.
-''')
+""",
+    )
     _, blocks = parse_set_file(path)
     assert len(blocks) == 2
     assert blocks[0]['path'] == 'elapsed/006'
@@ -252,7 +290,9 @@ def test_tymer_sets_round_trip():
         assert block['text'].strip() != ''
 
     # Same words in both sets — only the delivery differs.
-    strip_cues = lambda t: re.sub(r'\[[^\]]*\]', '', t).split()
+    def strip_cues(t):
+        return re.sub(r'\[[^\]]*\]', '', t).split()
+
     for a, b in zip(measured, brisk):
         assert strip_cues(a['text']) == strip_cues(b['text'])
 
@@ -295,13 +335,17 @@ def test_comment_banner_terminates_multiline_value(tmp_path):
     assert blocks[0]['text'] == '[calm] Six minutes have already passed.'
     assert blocks[1]['text'] == '[gently] Bring your task to a close.'
     assert blocks[0]['name'] == 'six-minutes-have-already-passed'
-    assert compose_prompt(blocks[0]).endswith('#### TRANSCRIPT\n[calm] Six minutes have already passed.')
+    assert compose_prompt(blocks[0]).endswith(
+        '#### TRANSCRIPT\n[calm] Six minutes have already passed.'
+    )
 
 
 def test_default_name_drops_cues_and_truncates():
     """Bracket cues are delivery directions, not speech — keep them out of filenames."""
-    assert default_name_from_text('[calm] Six minutes have already passed.') == \
-        'six-minutes-have-already-passed'
+    assert (
+        default_name_from_text('[calm] Six minutes have already passed.')
+        == 'six-minutes-have-already-passed'
+    )
 
     long_name = default_name_from_text(
         '[coldly] The scheduled time concluded forty-eight minutes ago. '
@@ -559,8 +603,11 @@ def test_command_hint_prefers_the_launcher_that_announced_itself():
     says so in the environment, and hints must name it over anything inferred."""
     from sounds import REPO_ROOT, command_hint
 
-    env = {'INIT_CWD': REPO_ROOT, 'npm_lifecycle_event': 'sounds:generate',
-           'TYMER_SOUNDS_LAUNCHER': 'sounds'}
+    env = {
+        'INIT_CWD': REPO_ROOT,
+        'npm_lifecycle_event': 'sounds:generate',
+        'TYMER_SOUNDS_LAUNCHER': 'sounds',
+    }
     assert command_hint(env, 'promote') == 'sounds promote'
 
 
@@ -599,7 +646,9 @@ def test_normalize_hint_is_relative_inside_the_repo_absolute_outside():
 
     assert normalize_hint({'INIT_CWD': REPO_ROOT}) == './normalize_audio.sh'
     assert normalize_hint({'INIT_CWD': TOOL_DIR}) == '../../normalize_audio.sh'
-    assert normalize_hint({'INIT_CWD': '/somewhere/unrelated'}) == os.path.join(REPO_ROOT, 'normalize_audio.sh')
+    assert normalize_hint({'INIT_CWD': '/somewhere/unrelated'}) == os.path.join(
+        REPO_ROOT, 'normalize_audio.sh'
+    )
 
 
 def test_shell_cwd_prefers_init_cwd_because_the_launchers_chdir(tmp_path, monkeypatch):
@@ -624,7 +673,9 @@ RECOGNIZED_BLOCK_PATHS = re.compile(
 )
 
 
-@pytest.mark.parametrize('set_name', ['tymer-gacrux.txt', 'tymer-gacrux-brisk.txt', 'tymer-kore-strict.txt'])
+@pytest.mark.parametrize(
+    'set_name', ['tymer-gacrux.txt', 'tymer-gacrux-brisk.txt', 'tymer-kore-strict.txt']
+)
 def test_every_block_path_reaches_the_app(set_name):
     """No set may contain a block the manifest generator would ignore.
 

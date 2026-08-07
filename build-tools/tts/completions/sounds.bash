@@ -72,7 +72,7 @@ _tymer_sounds() {
             return
             ;;
         --limit | --delay)
-            return  # a number; nothing to offer
+            return # a number; nothing to offer
             ;;
     esac
 
@@ -111,7 +111,7 @@ _tymer_sounds() {
     if ((positionals == 1)); then
         mapfile -t COMPREPLY < <(compgen -W "$(_tymer_sounds_sets)" -- "$cur")
     elif [[ $command == generate || $command == regenerate ]]; then
-        compopt -o dirnames 2>/dev/null  # the optional output directory
+        compopt -o dirnames 2>/dev/null # the optional output directory
     fi
 }
 

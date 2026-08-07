@@ -7,16 +7,16 @@ character, and one block per sound event. Regenerating a set reproduces the
 whole sound bank; adding a second set (different voice, different language)
 means adding another file, not editing this one.
 
-| File | Voice | Covers |
-| --- | --- | --- |
-| `tymer-gacrux.txt` | Gacrux (mature, middle pitch) | all 33 speech events |
-| `tymer-gacrux-brisk.txt` | Gacrux | same 33, same words, delivered fast |
-| `tymer-kore-strict.txt` | Kore | same 33, reworded, harsher overtime ladder |
-| `tymer-leda-whisper.txt` | Leda | same 33, whispered, broad Southern, edge of parody |
-| `tymer-leda-hush.txt` | Leda | same words as the whisper set, voiced murmur instead of a whisper |
-| `tymer-laomedeia-diva.txt` | Laomedeia | same 33, telenovela diva — Spanish-seasoned English, volcanic top of the ladder |
-| `tymer-despina-tube.txt` | Despina | same 33, London Underground announcer — RP, tannoy PA style, escalating attention-openers |
-| `tymer-despina-tube-alt.txt` | Despina | alternative takes for the SAME `tube` set — reworded, breath-length pauses, longer deadpan boundary calls |
+| File                         | Voice                         | Covers                                                                                                    |
+| ---------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `tymer-gacrux.txt`           | Gacrux (mature, middle pitch) | all 33 speech events                                                                                      |
+| `tymer-gacrux-brisk.txt`     | Gacrux                        | same 33, same words, delivered fast                                                                       |
+| `tymer-kore-strict.txt`      | Kore                          | same 33, reworded, harsher overtime ladder                                                                |
+| `tymer-leda-whisper.txt`     | Leda                          | same 33, whispered, broad Southern, edge of parody                                                        |
+| `tymer-leda-hush.txt`        | Leda                          | same words as the whisper set, voiced murmur instead of a whisper                                         |
+| `tymer-laomedeia-diva.txt`   | Laomedeia                     | same 33, telenovela diva — Spanish-seasoned English, volcanic top of the ladder                           |
+| `tymer-despina-tube.txt`     | Despina                       | same 33, London Underground announcer — RP, tannoy PA style, escalating attention-openers                 |
+| `tymer-despina-tube-alt.txt` | Despina                       | alternative takes for the SAME `tube` set — reworded, breath-length pauses, longer deadpan boundary calls |
 
 All sets land in the same event directories, so they merge as interchangeable
 takes. Each carries a distinct `@name` (`brisk`, `strict`, `whisper`, `hush`, `diva`, `tube`) so
@@ -123,16 +123,16 @@ switches keys automatically when one runs dry.
 `overtime/` and `overtime/break/` are deliberately staged — the same event at a
 later minute is the same information delivered with less patience:
 
-| Minutes over | Style | Pace |
-| --- | --- | --- |
-| 6 | warm, offering | unhurried |
-| 12 | matter-of-fact | steady |
-| 18 | firmer, polite | slightly clipped |
-| 24 | insistent | brisk |
-| 30 | stern, disappointed | deliberate |
-| 36 | urgent, commanding | fast, forceful |
-| 42 | sharp, absolute | clipped, staccato |
-| 48 | maximum urgency, pressing hard | driving, never releases |
+| Minutes over | Style                          | Pace                    |
+| ------------ | ------------------------------ | ----------------------- |
+| 6            | warm, offering                 | unhurried               |
+| 12           | matter-of-fact                 | steady                  |
+| 18           | firmer, polite                 | slightly clipped        |
+| 24           | insistent                      | brisk                   |
+| 30           | stern, disappointed            | deliberate              |
+| 36           | urgent, commanding             | fast, forceful          |
+| 42           | sharp, absolute                | clipped, staccato       |
+| 48           | maximum urgency, pressing hard | driving, never releases |
 
 48 is the top of the ladder: insistent rather than cold. An earlier take played
 it quiet, flat and slowed-down — the intended menace read as merely slow, so it

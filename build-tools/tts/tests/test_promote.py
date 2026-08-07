@@ -10,8 +10,8 @@ from sounds import (
     set_fully_promoted,
 )
 
-
 # --- promote_staging ---------------------------------------------------------
+
 
 def write(path, content):
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -81,7 +81,7 @@ def test_existing_takes_matches_only_the_same_stem(tmp_path):
 
 # --- the promote gate --------------------------------------------------------
 
-SET_TEXT = '''
+SET_TEXT = """
 @voice Gacrux
 @name diva
 
@@ -93,7 +93,7 @@ SET_TEXT = '''
 
 [elapsed/018]
 @text Eighteen minutes have passed.
-'''
+"""
 
 
 EVENTS = ('elapsed/006', 'elapsed/012', 'elapsed/018')
@@ -124,7 +124,11 @@ def promote_set(tmp_path, monkeypatch):
         return None  # ran through without bailing out
 
     return SimpleNamespace(
-        run=run, staging=staging, assets=assets, normalized=normalized, converted=converted,
+        run=run,
+        staging=staging,
+        assets=assets,
+        normalized=normalized,
+        converted=converted,
     )
 
 
@@ -166,6 +170,7 @@ def test_partial_staging_promotes_once_every_event_has_a_take(promote_set):
 
 # --- what promote does around the copy ---------------------------------------
 
+
 def test_promote_converts_only_what_it_copied_then_clears_staging(promote_set):
     promote_full_set(promote_set.assets)
     write(promote_set.staging / 'elapsed/006/diva-1.wav', b'second-batch')
@@ -193,6 +198,7 @@ def test_a_failed_conversion_keeps_staging(promote_set, monkeypatch):
 
 
 # --- replacing a set ---------------------------------------------------------
+
 
 def test_replace_removes_the_sets_earlier_takes_and_their_webm(promote_set):
     promote_full_set(promote_set.assets, promote_set.normalized)
@@ -239,6 +245,7 @@ def test_replace_leaves_other_sets_alone(promote_set):
 
 # --- the normalized counterpart ----------------------------------------------
 
+
 def test_normalized_counterpart_mirrors_the_path_and_swaps_the_extension(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, 'NORMALIZED_DIR', str(tmp_path / 'public'))
     assets = str(tmp_path / 'assets')
@@ -256,6 +263,7 @@ def test_normalized_counterpart_is_none_outside_the_source_tree(tmp_path, monkey
 
 
 # --- discarding a staged set -------------------------------------------------
+
 
 def test_discard_clears_a_set_inside_staging(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, 'TOOL_DIR', str(tmp_path))
@@ -282,6 +290,7 @@ def test_discard_refuses_anything_that_is_not_a_staged_set(tmp_path, monkeypatch
 
 # --- the three generation modes ----------------------------------------------
 
+
 @pytest.fixture
 def generate_set(tmp_path, monkeypatch):
     """Drive the generating commands with no API and no real clips written."""
@@ -297,8 +306,11 @@ def generate_set(tmp_path, monkeypatch):
 
     calls = []
     monkeypatch.setattr(
-        mod, 'generate_clip',
-        lambda client, block, base_output_dir, overwrite=False: calls.append((block['path'], overwrite)),
+        mod,
+        'generate_clip',
+        lambda client, block, base_output_dir, overwrite=False: calls.append(
+            (block['path'], overwrite)
+        ),
     )
 
     def run(command, *flags):
@@ -350,6 +362,7 @@ def test_fresh_without_a_yes_keeps_the_staged_batch(generate_set):
 
 # --- the command surface -----------------------------------------------------
 
+
 def test_generate_and_regenerate_share_a_surface_but_only_one_can_start_over():
     parser = build_arg_parser()
 
@@ -369,7 +382,9 @@ def test_fresh_will_not_delete_an_output_directory_the_user_named(tmp_path, caps
     scratch = tmp_path / 'scratch'
     write(scratch / 'elapsed/006/diva-1.wav', b'a')
 
-    args = build_arg_parser().parse_args(['regenerate', str(set_file), str(scratch), '--fresh', '--yes'])
+    args = build_arg_parser().parse_args(
+        ['regenerate', str(set_file), str(scratch), '--fresh', '--yes']
+    )
     with pytest.raises(SystemExit) as exit:
         mod.main(args)
 

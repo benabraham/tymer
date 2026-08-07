@@ -47,8 +47,7 @@ const keyForRelativePath = relativePath => {
     if (timesupFlat) return { key: `timesup_${timesupFlat[1]}`, set: null }
 
     const timesupDir = relativePath.match(/^timesup\/([a-zA-Z-]+)\/.+\.webm$/)
-    if (timesupDir)
-        return { key: `timesup_${timesupDir[1]}`, set: setForTakePath(relativePath) }
+    if (timesupDir) return { key: `timesup_${timesupDir[1]}`, set: setForTakePath(relativePath) }
 
     const notification = relativePath.match(/^notifications\/(\d+)\.ogg$/)
     if (notification) return { key: `notification_${parseInt(notification[1], 10)}`, set: null }

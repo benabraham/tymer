@@ -21,7 +21,9 @@ vi.mock('./sounds', () => ({
 describe('formatDocumentTitle', () => {
     it('returns the bare base when no flag is active', () => {
         expect(formatDocumentTitle({ base: 'Tymer' })).toBe('Tymer')
-        expect(formatDocumentTitle({ base: 'Tymer', flags: [false, null, undefined] })).toBe('Tymer')
+        expect(formatDocumentTitle({ base: 'Tymer', flags: [false, null, undefined] })).toBe(
+            'Tymer',
+        )
     })
 
     it('appends one bracketed suffix per active flag, in order', () => {

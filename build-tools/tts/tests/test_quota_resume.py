@@ -14,8 +14,8 @@ from sounds import (
     quota_reset_notice,
 )
 
-
 # --- reset-time reporting ---------------------------------------------------
+
 
 def test_reset_lands_on_midnight_pacific():
     reset = pacific_reset_at()
@@ -48,6 +48,7 @@ def test_notice_gives_a_local_clock_time_and_a_countdown():
 
 # --- key pool ---------------------------------------------------------------
 
+
 def test_revive_clears_retirement_but_keeps_request_counts():
     pool = KeyPool(['k1', 'k2'])
     pool.next_key()
@@ -65,7 +66,7 @@ def test_revive_clears_retirement_but_keeps_request_counts():
 
 # --- the run loop -----------------------------------------------------------
 
-SET_TEXT = '''
+SET_TEXT = """
 @voice Gacrux
 
 [elapsed/006]
@@ -76,7 +77,7 @@ SET_TEXT = '''
 
 [elapsed/018]
 @text Eighteen minutes have passed.
-'''
+"""
 
 
 @pytest.fixture
@@ -105,7 +106,9 @@ def run_set(tmp_path, monkeypatch):
         monkeypatch.setattr(mod, 'generate_clip', fake_generate)
         monkeypatch.setattr(mod, 'wait_for_quota_reset', fake_wait)
 
-        args = build_arg_parser().parse_args(['generate', str(set_file), str(output_dir), '--delay', '0'])
+        args = build_arg_parser().parse_args(
+            ['generate', str(set_file), str(output_dir), '--delay', '0']
+        )
         status = None
         try:
             mod.main(args)

@@ -51,13 +51,15 @@
         display: contents;
 
         &--active {
-            code, span {
+            code,
+            span {
                 background-color: var(--color-debug-active-bg);
                 outline: 1px solid var(--color-debug-active-outline);
             }
         }
 
-        code, span {
+        code,
+        span {
             padding: 0.25rem;
             text-wrap: nowrap;
             border-bottom: 1px solid var(--color-border-lighter);
@@ -89,7 +91,8 @@
     .sound-playback-log__row {
         display: contents;
 
-        code, span {
+        code,
+        span {
             padding: 0.25rem;
             text-wrap: nowrap;
             border-bottom: 1px solid var(--color-border-lighter);

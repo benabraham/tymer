@@ -22,7 +22,6 @@
 
 import argparse
 import filecmp
-import httpx
 import mimetypes
 import os
 import re
@@ -32,6 +31,8 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timedelta, timezone
+
+import httpx
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
@@ -277,7 +278,9 @@ def discard_staged_set(staging):
     target = os.path.realpath(staging)
     inside = target != staging_root and os.path.commonpath([target, staging_root]) == staging_root
     if not inside:
-        raise ValueError(f'refusing to delete {staging} — --fresh only ever clears a set under {staging_root}')
+        raise ValueError(
+            f'refusing to delete {staging} — --fresh only ever clears a set under {staging_root}'
+        )
     discarded = len(wav_files(staging))
     shutil.rmtree(staging, ignore_errors=True)
     return discarded
@@ -442,8 +445,9 @@ def wait_for_quota_reset():
 
     resume = reset + timedelta(seconds=QUOTA_RESET_BUFFER_SECONDS)
     left = (resume - datetime.now(timezone.utc)).total_seconds()
-    prompt = (f'\nWait {format_duration(left)} and retry at {format_local(resume)} '
-              f'local time? [Y/n] ')
+    prompt = (
+        f'\nWait {format_duration(left)} and retry at {format_local(resume)} local time? [Y/n] '
+    )
     try:
         answer = input(prompt).strip().lower()
     except EOFError:
@@ -457,8 +461,12 @@ def wait_for_quota_reset():
             break
         # One line, rewritten in place — a three-hour wait would otherwise
         # bury the run's output under a couple of hundred countdown lines.
-        print(f'  Waiting for quota — {format_duration(left)} left '
-              f'(resuming at {format_local(resume)})...   ', end='\r', flush=True)
+        print(
+            f'  Waiting for quota — {format_duration(left)} left '
+            f'(resuming at {format_local(resume)})...   ',
+            end='\r',
+            flush=True,
+        )
         time.sleep(min(left, 30))
     print('\nQuota should be back — resuming.\n')
     return True
@@ -590,7 +598,9 @@ def resolve_set_file(name):
     available = []
     if os.path.isdir(PROMPTS_DIR):
         available = sorted(f[:-4] for f in os.listdir(PROMPTS_DIR) if f.endswith('.txt'))
-    raise ValueError(f'no set-file matching {name!r}; available sets: {", ".join(available) or "none"}')
+    raise ValueError(
+        f'no set-file matching {name!r}; available sets: {", ".join(available) or "none"}'
+    )
 
 
 # Directives that may only take a value on the same line as the key (no
@@ -629,7 +639,7 @@ def parse_set_file(path):
       - an unknown @key
       - a malformed [path line (no closing ']')
     """
-    with open(path, 'r') as f:
+    with open(path) as f:
         raw_lines = f.read().splitlines()
 
     defaults = {}
@@ -689,7 +699,9 @@ def parse_set_file(path):
 
         if stripped.startswith('['):
             if not stripped.endswith(']'):
-                raise ValueError(f'{path}: line {line_num}: malformed block header (missing "]"): {stripped}')
+                raise ValueError(
+                    f'{path}: line {line_num}: malformed block header (missing "]"): {stripped}'
+                )
             block_path = stripped[1:-1].strip()
             current = {'path': block_path, 'line': line_num, 'values': {}}
             raw_blocks.append(current)
@@ -707,23 +719,27 @@ def parse_set_file(path):
         merged = {**defaults, **raw_block['values']}
         text = merged.get('text', '').strip()
         if not text:
-            raise ValueError(f'{path}: line {raw_block["line"]}: block [{raw_block["path"]}] is missing required @text')
+            raise ValueError(
+                f'{path}: line {raw_block["line"]}: block [{raw_block["path"]}] is missing required @text'
+            )
 
         name = merged.get('name', '').strip() or default_name_from_text(merged.get('text', ''))
 
-        blocks.append({
-            'path': raw_block['path'],
-            'line': raw_block['line'],
-            'voice': merged.get('voice', ''),
-            'profile': merged.get('profile', ''),
-            'scene': merged.get('scene', ''),
-            'style': merged.get('style', ''),
-            'pace': merged.get('pace', ''),
-            'accent': merged.get('accent', ''),
-            'context': merged.get('context', ''),
-            'text': merged.get('text', ''),
-            'name': name,
-        })
+        blocks.append(
+            {
+                'path': raw_block['path'],
+                'line': raw_block['line'],
+                'voice': merged.get('voice', ''),
+                'profile': merged.get('profile', ''),
+                'scene': merged.get('scene', ''),
+                'style': merged.get('style', ''),
+                'pace': merged.get('pace', ''),
+                'accent': merged.get('accent', ''),
+                'context': merged.get('context', ''),
+                'text': merged.get('text', ''),
+                'name': name,
+            }
+        )
 
     return defaults, blocks
 
@@ -877,9 +893,7 @@ def generate_clip(client, block, base_output_dir='sounds', overwrite=False):
         ],
         speech_config=types.SpeechConfig(
             voice_config=types.VoiceConfig(
-                prebuilt_voice_config=types.PrebuiltVoiceConfig(
-                    voice_name=block['voice']
-                )
+                prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=block['voice'])
             )
         ),
     )
@@ -988,17 +1002,23 @@ def generate_clip(client, block, base_output_dir='sounds', overwrite=False):
         daily_violations = [v for v in violations if 'PerDay' in v.get('quotaId', '')]
         # Message fallback for a body with no structured violations
         if daily_violations or (not violations and 'PerDay' in message):
-            limits = ', '.join(
-                f"{v.get('quotaValue', '?')}/day for {v.get('quotaDimensions', {}).get('model', 'this model')}"
-                for v in daily_violations
-            ) or 'daily limit'
+            limits = (
+                ', '.join(
+                    f'{v.get("quotaValue", "?")}/day for {v.get("quotaDimensions", {}).get("model", "this model")}'
+                    for v in daily_violations
+                )
+                or 'daily limit'
+            )
             print(f'  Daily quota spent for this key ({limits}) — resets {quota_reset_notice()}')
             raise RateLimited(retry_seconds, daily=True)
 
         quota_names = ', '.join(sorted({v['quotaId'] for v in violations if v.get('quotaId')}))
-        print(f'  Rate limit hit ({quota_names or "no quotaId in the reply"}). Waiting {retry_seconds:.0f} seconds...')
+        print(
+            f'  Rate limit hit ({quota_names or "no quotaId in the reply"}). Waiting {retry_seconds:.0f} seconds...'
+        )
         time.sleep(retry_seconds)
         raise RateLimited(retry_seconds, daily=False)
+
 
 def convert_to_wav(audio_data: bytes, mime_type: str) -> bytes:
     """Generates a WAV file header for the given audio data and parameters.
@@ -1024,21 +1044,22 @@ def convert_to_wav(audio_data: bytes, mime_type: str) -> bytes:
 
     header = struct.pack(
         '<4sI4s4sIHHIIHH4sI',
-        b'RIFF',          # ChunkID
-        chunk_size,       # ChunkSize (total file size - 8 bytes)
-        b'WAVE',          # Format
-        b'fmt ',          # Subchunk1ID
-        16,               # Subchunk1Size (16 for PCM)
-        1,                # AudioFormat (1 for PCM)
-        num_channels,     # NumChannels
-        sample_rate,      # SampleRate
-        byte_rate,        # ByteRate
-        block_align,      # BlockAlign
+        b'RIFF',  # ChunkID
+        chunk_size,  # ChunkSize (total file size - 8 bytes)
+        b'WAVE',  # Format
+        b'fmt ',  # Subchunk1ID
+        16,  # Subchunk1Size (16 for PCM)
+        1,  # AudioFormat (1 for PCM)
+        num_channels,  # NumChannels
+        sample_rate,  # SampleRate
+        byte_rate,  # ByteRate
+        block_align,  # BlockAlign
         bits_per_sample,  # BitsPerSample
-        b'data',          # Subchunk2ID
-        data_size         # Subchunk2Size (size of audio data)
+        b'data',  # Subchunk2ID
+        data_size,  # Subchunk2Size (size of audio data)
     )
     return header + audio_data
+
 
 def parse_audio_mime_type(mime_type: str) -> dict[str, int | None]:
     """Parses bits per sample and rate from an audio MIME type string.
@@ -1057,7 +1078,7 @@ def parse_audio_mime_type(mime_type: str) -> dict[str, int | None]:
 
     # Extract rate from parameters
     parts = mime_type.split(';')
-    for param in parts: # Skip the main type part
+    for param in parts:  # Skip the main type part
         param = param.strip()
         if param.lower().startswith('rate='):
             try:
@@ -1065,12 +1086,12 @@ def parse_audio_mime_type(mime_type: str) -> dict[str, int | None]:
                 rate = int(rate_str)
             except (ValueError, IndexError):
                 # Handle cases like "rate=" with no value or non-integer value
-                pass # Keep rate as default
+                pass  # Keep rate as default
         elif param.startswith('audio/L'):
             try:
                 bits_per_sample = int(param.split('L', 1)[1])
             except (ValueError, IndexError):
-                pass # Keep bits_per_sample as default if conversion fails
+                pass  # Keep bits_per_sample as default if conversion fails
 
     return {'bits_per_sample': bits_per_sample, 'rate': rate}
 
@@ -1090,39 +1111,58 @@ def build_arg_parser():
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument('set_file', help=SET_HELP)
     common.add_argument(
-        'output_dir', nargs='?', default=None,
+        'output_dir',
+        nargs='?',
+        default=None,
         help="Where to write (default: the set's staging dir under build-tools/tts/.staging/)",
     )
-    common.add_argument('--only', default=None, help='Only process blocks whose path starts with this prefix')
-    common.add_argument('--limit', type=int, default=None, help='Only process the first N selected blocks')
     common.add_argument(
-        '--delay', type=float, default=DEFAULT_DELAY_SECONDS,
+        '--only', default=None, help='Only process blocks whose path starts with this prefix'
+    )
+    common.add_argument(
+        '--limit', type=int, default=None, help='Only process the first N selected blocks'
+    )
+    common.add_argument(
+        '--delay',
+        type=float,
+        default=DEFAULT_DELAY_SECONDS,
         help=f'Seconds to sleep between API requests (default: {DEFAULT_DELAY_SECONDS})',
     )
-    common.add_argument('--dry-run', action='store_true', help='Print what would be generated; make no API calls')
     common.add_argument(
-        '--audition', choices=('off', 'each', 'end'), default='off',
+        '--dry-run', action='store_true', help='Print what would be generated; make no API calls'
+    )
+    common.add_argument(
+        '--audition',
+        choices=('off', 'each', 'end'),
+        default='off',
         help='Play clips in mpv as they arrive (each) or all together once the run ends (end)',
     )
 
     commands.add_parser(
-        'generate', parents=[common],
+        'generate',
+        parents=[common],
         help='Generate the clips that are still missing — the resumable everyday run',
     )
 
     regenerate = commands.add_parser(
-        'regenerate', parents=[common],
+        'regenerate',
+        parents=[common],
         help="Generate every clip again, writing over this set's take -1",
     )
     regenerate.add_argument(
-        '--fresh', action='store_true',
+        '--fresh',
+        action='store_true',
         help='Delete the staged set first, so nothing of the previous batch survives',
     )
-    regenerate.add_argument('-y', '--yes', action='store_true', help='Skip the confirmation --fresh asks for')
+    regenerate.add_argument(
+        '-y', '--yes', action='store_true', help='Skip the confirmation --fresh asks for'
+    )
 
     listen = commands.add_parser('audition', help='Play the staged set through mpv')
     listen.add_argument('set_file', help=SET_HELP)
-    listen.add_argument('--only', default=None, help='Only play blocks whose path starts with this prefix')
+    listen.add_argument(
+        '--only', default=None, help='Only play blocks whose path starts with this prefix'
+    )
 
     promote = commands.add_parser(
         'promote',
@@ -1130,15 +1170,21 @@ def build_arg_parser():
     )
     promote.add_argument('set_file', help=SET_HELP)
     promote.add_argument(
-        '--replace', action='store_true',
+        '--replace',
+        action='store_true',
         help="Replace this set's promoted takes entirely instead of landing beside them as alternatives",
     )
     promote.add_argument(
-        '--skip-normalize', action='store_true',
+        '--skip-normalize',
+        action='store_true',
         help='Do not convert to .webm or refresh the manifest',
     )
-    promote.add_argument('--keep-staging', action='store_true', help='Leave the staged clips in place afterwards')
-    promote.add_argument('-y', '--yes', action='store_true', help='Skip the confirmation --replace asks for')
+    promote.add_argument(
+        '--keep-staging', action='store_true', help='Leave the staged clips in place afterwards'
+    )
+    promote.add_argument(
+        '-y', '--yes', action='store_true', help='Skip the confirmation --replace asks for'
+    )
     return parser
 
 
@@ -1165,13 +1211,19 @@ def run_promote(args, blocks, staging):
         # Replacing deletes before it copies, block by block over the whole set,
         # so a partial batch would leave the events it has nothing for silent.
         if outstanding:
-            print(f'\nRefusing to replace: {len(outstanding)} of {len(blocks)} clip(s) still missing.')
-            print('Replacing removes the promoted takes first — a partial batch would leave events with none.')
+            print(
+                f'\nRefusing to replace: {len(outstanding)} of {len(blocks)} clip(s) still missing.'
+            )
+            print(
+                'Replacing removes the promoted takes first — a partial batch would leave events with none.'
+            )
             for block in outstanding[:10]:
                 print(f'  missing: {block["path"]}')
             if len(outstanding) > 10:
                 print(f'  ... and {len(outstanding) - 10} more')
-            print(f'\nAdd them beside what is there instead:  {command_hint(os.environ, "promote")} {args.set_file}')
+            print(
+                f'\nAdd them beside what is there instead:  {command_hint(os.environ, "promote")} {args.set_file}'
+            )
             sys.exit(1)
 
         doomed = promoted_takes(blocks, DEFAULT_OUTPUT_DIR)
@@ -1180,10 +1232,14 @@ def run_promote(args, blocks, staging):
             print('Left as it is.')
             sys.exit(1)
         sources, normalized = clear_promoted_set(blocks, DEFAULT_OUTPUT_DIR)
-        print(f'\nRemoved {len(sources)} promoted take(s) and {len(normalized)} normalized copy(ies).')
+        print(
+            f'\nRemoved {len(sources)} promoted take(s) and {len(normalized)} normalized copy(ies).'
+        )
     else:
         if outstanding and not set_fully_promoted(blocks, DEFAULT_OUTPUT_DIR):
-            print(f'\nRefusing to promote: {len(outstanding)} of {len(blocks)} clip(s) still missing.')
+            print(
+                f'\nRefusing to promote: {len(outstanding)} of {len(blocks)} clip(s) still missing.'
+            )
             print('Generate the rest first — promoting now would leave the bank half-updated.')
             for block in outstanding[:10]:
                 print(f'  missing: {block["path"]}')
@@ -1207,9 +1263,13 @@ def run_promote(args, blocks, staging):
             print(f'  ... and {len(renamed) - 5} more')
 
     if args.skip_normalize:
-        print(f'\nNot converted. Run {normalize_hint(os.environ)} to convert them and refresh the manifest.')
+        print(
+            f'\nNot converted. Run {normalize_hint(os.environ)} to convert them and refresh the manifest.'
+        )
         if args.replace:
-            print('Until then the manifest still lists the takes just deleted, and the app will 404 on them.')
+            print(
+                'Until then the manifest still lists the takes just deleted, and the app will 404 on them.'
+            )
     else:
         print()
         if not normalize([os.path.join(DEFAULT_OUTPUT_DIR, name) for name in copied]):
@@ -1235,13 +1295,17 @@ def run_generation(args, blocks, staging):
 
     if getattr(args, 'fresh', False):
         if args.output_dir:
-            print('\nError: --fresh clears the staged set; it will not delete an output directory you named yourself.')
+            print(
+                '\nError: --fresh clears the staged set; it will not delete an output directory you named yourself.'
+            )
             sys.exit(1)
         staged = len(wav_files(staging))
         if not staged:
             print('\nNothing staged yet — generating the set from scratch.')
         else:
-            if not confirm(f'\nDelete {staged} staged clip(s) in {staging} and start over?', args.yes):
+            if not confirm(
+                f'\nDelete {staged} staged clip(s) in {staging} and start over?', args.yes
+            ):
                 print('Left as it is.')
                 sys.exit(1)
             try:
@@ -1268,15 +1332,17 @@ def run_generation(args, blocks, staging):
             print(f'Promote it:    {command_hint(os.environ, "promote")} {args.set_file}')
         else:
             print('Nothing to do for this selection.')
-            print(f'Redo clips that already exist:  {command_hint(os.environ, "regenerate")} {args.set_file}')
+            print(
+                f'Redo clips that already exist:  {command_hint(os.environ, "regenerate")} {args.set_file}'
+            )
         sys.exit(0)
 
     # Display selected blocks in a table
     console = Console()
-    table = Table(show_header=True, header_style="bold magenta")
-    table.add_column("#", style="dim", width=3)
-    table.add_column("Path", style="cyan")
-    table.add_column("Text", style="white")
+    table = Table(show_header=True, header_style='bold magenta')
+    table.add_column('#', style='dim', width=3)
+    table.add_column('Path', style='cyan')
+    table.add_column('Text', style='white')
 
     for i, block in enumerate(selected, 1):
         table.add_row(str(i), block['path'], block['text'])
@@ -1286,7 +1352,9 @@ def run_generation(args, blocks, staging):
 
     if args.dry_run:
         for i, block in enumerate(selected, 1):
-            full_folder = os.path.join(base_output_dir, block['path']) if block['path'] else base_output_dir
+            full_folder = (
+                os.path.join(base_output_dir, block['path']) if block['path'] else base_output_dir
+            )
             print(f'[{i}/{len(selected)}] {full_folder}')
             print(f'  Voice: {block["voice"]}')
             print(f'  Filename stem: {block["name"]}')
@@ -1361,7 +1429,9 @@ def run_generation(args, blocks, staging):
                         )
 
                     try:
-                        written = generate_clip(clients[key], block, base_output_dir, overwrite=overwrite)
+                        written = generate_clip(
+                            clients[key], block, base_output_dir, overwrite=overwrite
+                        )
                         request_finished = time.monotonic()
                         done += 1
                         if written:
@@ -1373,20 +1443,26 @@ def run_generation(args, blocks, staging):
                         failures += 1
                         print(f'  {pool.label(key)}: {transient}')
                         if failures >= MAX_TRANSIENT_ATTEMPTS:
-                            print(f'  Giving up on {block["path"]} after {failures} attempts — moving on.')
+                            print(
+                                f'  Giving up on {block["path"]} after {failures} attempts — moving on.'
+                            )
                             skipped_blocks.append(block['path'])
                             break
                         if transient.wait_seconds:
                             print(f'  Waiting {transient.wait_seconds}s for it to recover...')
                             time.sleep(transient.wait_seconds)
-                        print(f'  Retrying on the next key ({failures}/{MAX_TRANSIENT_ATTEMPTS})...')
+                        print(
+                            f'  Retrying on the next key ({failures}/{MAX_TRANSIENT_ATTEMPTS})...'
+                        )
                     except RateLimited as limited:
                         retired = pool.record_rate_limit(key, limited.daily)
                         if retired:
                             print(f'  {pool.label(key)} retired: {pool.retire_reason[key]}')
                         else:
-                            print(f'  {pool.label(key)} rate limited '
-                                  f'({pool.strikes[key]}/{pool.max_strikes} strikes)')
+                            print(
+                                f'  {pool.label(key)} rate limited '
+                                f'({pool.strikes[key]}/{pool.max_strikes} strikes)'
+                            )
 
                         if pool.all_exhausted():
                             exhausted = True
@@ -1398,12 +1474,12 @@ def run_generation(args, blocks, staging):
                             print(f'  Waiting {limited.retry_seconds:.0f}s before retrying...')
                             time.sleep(limited.retry_seconds)
                         else:
-                            print(f'  Handing this block to another key...')
+                            print('  Handing this block to another key...')
 
                 # This block never got generated, so it goes back at the head of
                 # the queue along with everything after it.
                 if exhausted:
-                    pending = queue[i - 1:]
+                    pending = queue[i - 1 :]
                     break
                 print()
 
@@ -1436,7 +1512,7 @@ def run_generation(args, blocks, staging):
         if args.audition == 'end':
             audition(produced)
         if not missing_blocks(blocks, base_output_dir):
-            print(f'\nThis set is complete.')
+            print('\nThis set is complete.')
             print(f'Listen to it:  {command_hint(os.environ, "audition")} {args.set_file}')
             print(f'Promote it:    {command_hint(os.environ, "promote")} {args.set_file}')
     except KeyboardInterrupt:

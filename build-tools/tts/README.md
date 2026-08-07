@@ -11,7 +11,7 @@ words and the tool that speaks them stay together.
 ```bash
 cd build-tools/tts
 uv sync
-cp .env.example .env      # then add your key(s)
+cp .env.example .env # then add your key(s)
 ```
 
 Get a key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
@@ -39,8 +39,8 @@ uv run sounds.py audition tymer-gacrux-brisk
 uv run sounds.py promote tymer-gacrux-brisk
 ```
 
-Step 2 reports `Already generated: 12/33` and stops early with *"This set is
-complete — nothing to generate"* rather than spending quota re-doing work.
+Step 2 reports `Already generated: 12/33` and stops early with _"This set is
+complete — nothing to generate"_ rather than spending quota re-doing work.
 
 ### From the repo root, without the `cd`
 
@@ -49,9 +49,9 @@ tree — resolves against the script rather than the working directory, so it ru
 the same from anywhere. Only `uv` needs telling where the project is:
 
 ```bash
-pnpm run sounds:generate tymer-gacrux-brisk --dry-run   # flags pass through, no `--` needed
-pnpm run sounds:promote  tymer-gacrux-brisk
-pnpm run sounds regenerate tymer-gacrux-brisk --fresh   # subcommands without their own script
+pnpm run sounds:generate tymer-gacrux-brisk --dry-run # flags pass through, no `--` needed
+pnpm run sounds:promote tymer-gacrux-brisk
+pnpm run sounds regenerate tymer-gacrux-brisk --fresh # subcommands without their own script
 uv run --directory build-tools/tts sounds.py generate tymer-gacrux-brisk
 ```
 
@@ -92,11 +92,11 @@ would need `bashcompinit`.
 
 They differ only in what they consider already done.
 
-| Command | What it does | Use it when |
-| --- | --- | --- |
-| `generate <set>` | Generates the clips with no file yet; leaves the rest alone | Every day, until the set is complete |
-| `regenerate <set>` | Generates every clip again, over this set's take `-1` | The prompts changed and you want new readings |
-| `regenerate <set> --fresh` | Deletes the staged set, then generates all of it | A previous batch left takes you want gone |
+| Command                    | What it does                                                | Use it when                                   |
+| -------------------------- | ----------------------------------------------------------- | --------------------------------------------- |
+| `generate <set>`           | Generates the clips with no file yet; leaves the rest alone | Every day, until the set is complete          |
+| `regenerate <set>`         | Generates every clip again, over this set's take `-1`       | The prompts changed and you want new readings |
+| `regenerate <set> --fresh` | Deletes the staged set, then generates all of it            | A previous batch left takes you want gone     |
 
 The difference between the last two is what survives: `regenerate` overwrites
 take `-1` and leaves a `brisk-2.wav` from an earlier, longer batch in place;
@@ -122,14 +122,14 @@ before promoting. A missing mpv is a note, never a failure.
 ## The two ways to promote
 
 ```bash
-uv run sounds.py promote tymer-gacrux-brisk            # add as alternatives
-uv run sounds.py promote tymer-gacrux-brisk --replace  # this batch IS the set
+uv run sounds.py promote tymer-gacrux-brisk           # add as alternatives
+uv run sounds.py promote tymer-gacrux-brisk --replace # this batch IS the set
 ```
 
 **Default — add.** Clips land **beside** what is already there as extra takes —
 `brisk-1.wav`, `brisk-2.wav` — which is exactly what the app picks between at
 random. Nothing is overwritten. Re-promoting an unchanged set is a no-op (a clip
-identical to *any* existing take of the set is skipped, even if an earlier
+identical to _any_ existing take of the set is skipped, even if an earlier
 promote renamed it), so it is safe to repeat. It refuses while anything is
 missing, so the app never plays a half-updated bank — unless every event already
 has a promoted take of this set, in which case a partial staging is purely
@@ -151,20 +151,20 @@ whose source no longer exists.
 regenerates `src/lib/sound-manifest.js`, and deletes the staging directory. A
 failed conversion leaves staging in place so nothing is lost.
 
-| Flag | Effect |
-| --- | --- |
+| Flag               | Effect                                                                           |
+| ------------------ | -------------------------------------------------------------------------------- |
 | `--skip-normalize` | Do not convert or refresh the manifest — do it later with `./normalize_audio.sh` |
-| `--keep-staging` | Leave the staged clips where they are |
+| `--keep-staging`   | Leave the staged clips where they are                                            |
 
 ## Flags shared by generate and regenerate
 
-| Flag | Effect |
-| --- | --- |
-| `--dry-run` | Print target paths and composed prompts; no API calls, no key needed |
-| `--audition {off,each,end}` | Play clips in mpv per clip, or all at the end |
-| `--only PREFIX` | Restrict to blocks whose path starts with PREFIX |
-| `--limit N` | Stop after N blocks |
-| `--delay SECONDS` | Spacing between requests (default 60) |
+| Flag                        | Effect                                                               |
+| --------------------------- | -------------------------------------------------------------------- |
+| `--dry-run`                 | Print target paths and composed prompts; no API calls, no key needed |
+| `--audition {off,each,end}` | Play clips in mpv per clip, or all at the end                        |
+| `--only PREFIX`             | Restrict to blocks whose path starts with PREFIX                     |
+| `--limit N`                 | Stop after N blocks                                                  |
+| `--delay SECONDS`           | Spacing between requests (default 60)                                |
 
 Pass an explicit output directory to bypass staging entirely.
 
@@ -182,7 +182,7 @@ set in one day.
 Two things soften that:
 
 - **Several keys.** `GEMINI_API_KEYS` takes a list of any length. Quota is per
-  Cloud project, so keys from *different Google accounts* have separate daily
+  Cloud project, so keys from _different Google accounts_ have separate daily
   **and** per-minute budgets — two keys in one project share a budget and buy
   nothing.
 - **`--delay 60` by default, divided by the number of live keys.** A 429 spends
@@ -214,10 +214,10 @@ command later generates whatever is still missing. The offer is skipped when
 stdin is not a terminal, so unattended runs still fail fast.
 
 | Keys | Clips/day | 33-clip set |
-| --- | --- | --- |
-| 1 | 10 | 4 days |
-| 3 | 30 | 2 days |
-| 4 | 40 | one run |
+| ---- | --------- | ----------- |
+| 1    | 10        | 4 days      |
+| 3    | 30        | 2 days      |
+| 4    | 40        | one run     |
 
 ## When it isn't the quota
 

@@ -75,11 +75,13 @@
     grid-column: var(--middle-line-left) / var(--middle-line-right);
 
     &.stats-bar--original {
-        grid-column: calc(var(--middle-line-left) + var(--fun-max) - var(--fun-original)) / calc(var(--middle-line-right) - var(--fun-max) + var(--fun-original));
+        grid-column: calc(var(--middle-line-left) + var(--fun-max) - var(--fun-original)) /
+            calc(var(--middle-line-right) - var(--fun-max) + var(--fun-original));
     }
 
     &.stats-bar--current {
-        grid-column: calc(var(--middle-line-left) + var(--fun-max) - var(--fun-planned)) / calc(var(--middle-line-right) - var(--fun-max) + var(--fun-planned));
+        grid-column: calc(var(--middle-line-left) + var(--fun-max) - var(--fun-planned)) /
+            calc(var(--middle-line-right) - var(--fun-max) + var(--fun-planned));
     }
 }
 

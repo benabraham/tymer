@@ -8,7 +8,9 @@ pnpm run dev
 ```
 
 ## What it does
+
 It's a countdown timer that can
+
 - be started
 - be paused (after it has started)
 - be resumed (after it has been paused)
@@ -29,6 +31,7 @@ Builds the app for production to the `dist` folder.
 ```bash
 pnpm run build
 ```
+
 ## Deployment
 
 The app is deployed to GitHub Pages.
@@ -54,13 +57,13 @@ generated rather than recorded, from prompt sets kept in the repo.
 ## Tests
 
 ```bash
-pnpm test               # Run tests with Vitest
-pnpm run test:coverage  # Run tests with coverage report
+pnpm test              # Run tests with Vitest
+pnpm run test:coverage # Run tests with coverage report
 ```
 
 ## Formatting
 
 ```bash
-pnpm run format         # Write
-pnpm run format:check   # Check only
+pnpm run format       # Write
+pnpm run format:check # Check only
 ```
