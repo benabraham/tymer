@@ -121,7 +121,15 @@ def command_hint(env, subcommand):
     shell, though, so they have to name the form that works from there. Launched
     through pnpm, that means another pnpm script: `sounds:generate` and
     `sounds:promote` exist by name, anything else goes through `sounds`.
+
+    A shell function is invisible from inside the process it launched — and it
+    chdirs, so it looks exactly like a real `cd` — which is why the one in
+    completions/sounds.bash announces itself in the environment instead.
     """
+    launcher = env.get('TYMER_SOUNDS_LAUNCHER')
+    if launcher:
+        return f'{launcher} {subcommand}'
+
     package_script = env.get('npm_lifecycle_event')
     if package_script:
         namespace = package_script.split(':')[0]

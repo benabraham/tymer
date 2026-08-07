@@ -554,6 +554,16 @@ def test_key_pool_summary_marks_survivors():
     assert 'still available' in summary[1]
 
 
+def test_command_hint_prefers_the_launcher_that_announced_itself():
+    """The `sounds` shell function chdirs, so it is invisible from in here — it
+    says so in the environment, and hints must name it over anything inferred."""
+    from sounds import REPO_ROOT, command_hint
+
+    env = {'INIT_CWD': REPO_ROOT, 'npm_lifecycle_event': 'sounds:generate',
+           'TYMER_SOUNDS_LAUNCHER': 'sounds'}
+    assert command_hint(env, 'promote') == 'sounds promote'
+
+
 def test_command_hint_names_the_package_script_when_run_through_pnpm():
     from sounds import REPO_ROOT, command_hint
 

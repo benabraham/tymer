@@ -62,6 +62,32 @@ directory comes from `INIT_CWD`, which pnpm exports and `uv` does not. A bare
 `uv run --directory` from the root is therefore indistinguishable from a real
 `cd` and gets the `cd`-relative hint.
 
+### Tab completion
+
+```bash
+echo 'source ~/code/tymer/build-tools/tts/completions/sounds.bash' >> ~/.bashrc
+```
+
+That defines a `sounds` command and completes it: subcommands, then the set
+names actually in `sound-prompts/`, then the flags belonging to that particular
+subcommand (`--fresh` only after `regenerate`, `--replace` only after
+`promote`), plus values for `--audition` and `--only`.
+
+```bash
+sounds gen<TAB> tymer-<TAB> --<TAB>
+```
+
+Completion attaches to a command word, and every documented way to run this tool
+puts someone else's there — `uv`, `pnpm`. Hijacking their completion would break
+everything else those commands do, so the file ships a `sounds` shell function
+and completes that instead. It finds the repo from its own location, so a clone
+anywhere works unedited, and it exports `TYMER_SOUNDS_LAUNCHER` so the printed
+hints say `sounds promote …` rather than naming a command you never typed.
+
+Set names come from globbing `sound-prompts/`, not from asking the tool — a
+Python start-up per keypress is not what `<TAB>` should cost. Bash only; zsh
+would need `bashcompinit`.
+
 ## The three ways to generate
 
 They differ only in what they consider already done.
