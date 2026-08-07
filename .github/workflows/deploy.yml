@@ -57,8 +57,17 @@ jobs:
       # It requires pnpm >= 11; this repo is on 11.18.0. No `runtime` input
       # either — that would make package.json a second source of the Node
       # version, and `.nvmrc` above is meant to be the only one.
+      #
+      # `install: false` is NOT redundant with the explicit install step below,
+      # it is what makes that step mean anything. This input defaults to true,
+      # and the install it runs has no `--frozen-lockfile`: handed a package.json
+      # that disagrees with pnpm-lock.yaml it reconciles the lockfile on disk and
+      # carries on, after which `--frozen-lockfile` compares against the repaired
+      # file and passes. The gate would still be there, just unable to fail.
       - name: Setup pnpm
         uses: pnpm/setup@v2.0.0
+        with:
+          install: false
 
       # The Python side of the repo (build-tools/tts). uv reads the interpreter
       # version from build-tools/tts/.python-version and provisions it itself,
