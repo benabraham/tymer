@@ -209,7 +209,10 @@ failed play waits before retrying, so muted/locked audio doesn't busy-spin.
 - **Ownership differs by editor** (same contract shape as the anchor): the live editor owns the
   list — valid lines set exactly those, no `+` line at all clears, `+` lines present but none
   valid keeps (`hasDeadlineLine`). A config apply only SETS when `+` lines are present; absence
-  leaves the list alone, so a daily deadline survives config switches.
+  leaves the list alone, so a daily deadline survives config switches. **Reset is the exception**
+  — `resetTimer` passes `clearDeadlines: true` down to `setPeriodsFromConfig`, which forwards it
+  as `clearOnAbsence`, so after a Reset the list is exactly the active config's `+` lines and
+  empty when it has none. Deadlines do not survive a Reset.
 - **Only one alarm at a time — the latest expired owns it** (`deadlineAlarmTimestamp` = max overdue
   occurrence). When a newer deadline expires while an older one still rings, a supersede effect
   silences the older one FOR GOOD (it must not resume even if the newer one is later deleted).

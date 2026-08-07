@@ -504,7 +504,7 @@ export const reconcileToAnchor = (): void => {
 // the active config's text has an `@h:mm` header, re-arm the anchor for the
 // fresh timeline (a future anchor arms auto-start, a past one just sits until
 // Start is pressed). Never runs at boot — only from explicit apply/reset calls.
-const setPeriodsFromConfig = (periods: PeriodData[]): void => {
+const setPeriodsFromConfig = (periods: PeriodData[], { clearDeadlines = false } = {}): void => {
     stopTick()
     batch(() => {
         Schedule.reset()
@@ -513,10 +513,13 @@ const setPeriodsFromConfig = (periods: PeriodData[]): void => {
         const anchorMinutes = parseConfigAnchor(activeConfig.value.text)
         if (anchorMinutes != null) Schedule.pin(todayAtMinutes(anchorMinutes))
 
-        // '+' lines in the config set the deadlines on apply; absence leaves
-        // them alone (clearOnAbsence defaults false) — a config that says
-        // nothing about deadlines must not wipe a daily one set elsewhere.
-        applyDeadlinesFromText(activeConfig.value.text)
+        // '+' lines in the config set the deadlines on apply. Absence is what
+        // differs: a plain apply leaves them alone (clearOnAbsence false), so
+        // switching configs never wipes a daily deadline set in the live
+        // editor — but Reset owns the list like the live editor does, so
+        // nothing survives it: afterwards the deadlines are exactly what the
+        // active config declares, and none if it declares none.
+        applyDeadlinesFromText(activeConfig.value.text, { clearOnAbsence: clearDeadlines })
     })
 }
 
@@ -532,9 +535,10 @@ export const selectAndApplyConfig = (id: string): void => {
     applyActiveConfig()
 }
 
-// resets timer to the active config
+// resets timer to the active config — deadlines included: they do not survive
+// a reset, only the active config's own '+' lines come back.
 export const resetTimer = (): void => {
-    setPeriodsFromConfig(activeConfigPeriods.value)
+    setPeriodsFromConfig(activeConfigPeriods.value, { clearDeadlines: true })
 
     console.clear()
     log('timer reset', logSnapshot(), 7)

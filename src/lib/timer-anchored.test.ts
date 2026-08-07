@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MIN_PERIOD_MS, PERIOD_CONFIG } from './config'
+import { deadlines, setDeadlines } from './deadline'
 import type { PeriodData } from './period.js'
 import {
     addConfig,
@@ -30,6 +31,7 @@ import {
     pauseTimer,
     pinTimer,
     reconcileToAnchor,
+    resetTimer,
     resumeAfterEditing,
     resumeTimer,
     startTimer,
@@ -64,6 +66,10 @@ vi.mock('./sounds', () => ({
     playTimerFinishedSound: vi.fn(),
     playPeriodSound: vi.fn(),
     getSoundKeyFromPath: vi.fn(() => 'key'),
+    // Reached through timer.ts → deadline.ts: an overdue deadline starts the
+    // alarm loop, which must not touch Howler in jsdom.
+    pickRandomNotificationKey: vi.fn(() => 'notification_1'),
+    playNotification: vi.fn(() => Promise.resolve(false)),
 }))
 
 // Stub Worker — jsdom has no Worker implementation, and startTick()/initWorker()
@@ -1528,6 +1534,42 @@ describe('Timer anchor lifecycle', () => {
             applyActiveConfig()
 
             expect(Schedule.isAnchored.value).toBe(false)
+
+            deleteConfig(config.id)
+        })
+    })
+
+    describe('deadlines do not survive a reset', () => {
+        afterEach(() => {
+            selectConfig(BUILTIN_CONFIG.id)
+            deadlines.value = []
+        })
+
+        it('resetTimer clears deadlines the active config does not declare', () => {
+            const config = addConfig()
+            updateConfigText(config.id, 'W 24\nB 6')
+            selectConfig(config.id)
+            setDeadlines([{ kind: 'daily', minutes: 990, label: 'gym' }])
+
+            // A plain apply keeps them — only Reset owns the list.
+            applyActiveConfig()
+            expect(deadlines.value).toHaveLength(1)
+
+            resetTimer()
+            expect(deadlines.value).toEqual([])
+
+            deleteConfig(config.id)
+        })
+
+        it('resetTimer restores exactly the + lines of the active config', () => {
+            const config = addConfig()
+            updateConfigText(config.id, 'W 24\nB 6\n+16:30 gym')
+            selectConfig(config.id)
+            setDeadlines([{ kind: 'daily', minutes: 600, label: 'standup' }])
+
+            resetTimer()
+
+            expect(deadlines.value).toEqual([{ kind: 'daily', minutes: 990, label: 'gym' }])
 
             deleteConfig(config.id)
         })

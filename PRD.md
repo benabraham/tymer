@@ -114,6 +114,8 @@ The built-in, read-only "Default" config: 18 work periods of 24 min alternating 
 - Rebuilds the timeline from the **active config** (§6) and clears the schedule,
   including any anchor. If the active config carries an `@h:mm` header the anchor is
   immediately re-armed for the fresh timeline (§8.2).
+- Also rebuilds the **deadlines** from that config's `+` lines, clearing them when it
+  has none — deadlines do not survive a Reset (§15.1).
 - Enabled only once something diverges from the pristine state: periods modified from
   the active config, a session started, or a session finished. (A freshly loaded,
   untouched timeline has nothing to reset.)
@@ -638,10 +640,11 @@ Everything survives restart; there is no server and no account.
   wall clock did the counting (§3.5).
 - A missing or structurally invalid saved session falls back to the default timeline
   — deliberately no migrations: a stale shape means a clean reset.
-- Deadlines persist **outside** the session blob — Reset, config switches, and
-  Finish leave them untouched. Reopening the app with an unsilenced overdue
-  deadline resumes its alarm; each deadline's chime, however, is per browser
-  session and re-picked after a reload (§15.4).
+- Deadlines persist **outside** the session blob — config switches and Finish
+  leave them untouched; **Reset does not** — it rebuilds the deadline list from
+  the active config, so nothing set elsewhere survives it (§15.1). Reopening the
+  app with an unsilenced overdue deadline resumes its alarm; each deadline's
+  chime, however, is per browser session and re-picked after a reload (§15.4).
 
 ---
 
@@ -760,8 +763,8 @@ Scenarios a port must reproduce exactly:
 
 Wall-clock targets, independent of the period list — the session's periods say how
 long things take, deadlines say when something must be done. Several may exist at
-once. They persist separately from the session and survive resets, config switches,
-and reloads.
+once. They persist separately from the session and survive config switches and
+reloads — but not a Reset, which rebuilds them from the active config.
 
 ### 15.1 Defining
 
@@ -784,7 +787,14 @@ would re-parse as daily, silently changing kind.
 Ownership mirrors the anchor contract: the **live editor owns the list** — its
 valid `+` lines replace it, no `+` line at all clears it, and `+` lines present
 but none valid (a half-edited sole line) leave it untouched. A **config apply only
-sets** — a config without `+` lines never wipes deadlines set elsewhere.
+sets** — a config without `+` lines never wipes deadlines set elsewhere, so a
+daily deadline survives switching configs.
+
+**Reset is the exception, and owns the list like the live editor does**: after a
+Reset the deadlines are exactly what the active config's `+` lines declare, and
+none at all if it declares none. Reset means "back to what this config says" for
+the timeline, the anchor, and the deadlines alike — nothing set elsewhere
+survives it.
 
 ### 15.2 Occurrences
 
