@@ -1,10 +1,10 @@
+import { useSignalEffect } from '@preact/signals'
 import { useEffect } from 'preact/hooks'
 import { compactMode } from '../../lib/compact'
 import { debugVisible } from '../../lib/debug'
-import { formatTime } from '../../lib/format'
-import { Schedule } from '../../lib/schedule'
+import { documentTitle } from '../../lib/document-title'
 import { unlockAudio } from '../../lib/sounds'
-import { currentPeriod, initializeTimer } from '../../lib/timer'
+import { initializeTimer } from '../../lib/timer'
 import { BuildInfo } from '../build-info/build-info'
 import { PeriodControls } from './controls/period-controls'
 import { TimerControls } from './controls/timer-controls'
@@ -38,47 +38,11 @@ export function Timer() {
         }
     }, [])
 
-    // Update document title based on timer state
-    useEffect(() => {
-        const isRunning = Schedule.isRunning.value
-        const period = currentPeriod.value
-
-        if (isRunning && period) {
-            // Check if both times are under 60 minutes to determine format
-            const bothUnderOneHour =
-                period.state.remaining < 60 * 60 * 1000 && period.state.duration < 60 * 60 * 1000
-
-            let formattedPeriodDurationElapsed: string
-            let periodUserIntendedDuration: string
-
-            if (bothUnderOneHour) {
-                // Show only minutes when both are under 60 minutes
-                formattedPeriodDurationElapsed = Math.ceil(
-                    period.state.elapsed / (60 * 1000),
-                ).toString()
-                periodUserIntendedDuration = Math.ceil(
-                    period.config.userIntendedDuration / (60 * 1000),
-                ).toString()
-            } else {
-                // Use full hours:minutes format
-                formattedPeriodDurationElapsed = formatTime(period.state.elapsed)
-                periodUserIntendedDuration = formatTime(period.config.userIntendedDuration)
-            }
-
-            const periodTypeInitial = period.config.type.charAt(0).toUpperCase()
-            const isOvertime = period.state.elapsed > period.config.userIntendedDuration
-            const overtimeIndicator = isOvertime ? '🛑 ' : ''
-            document.title = `${periodTypeInitial} ${overtimeIndicator}${formattedPeriodDurationElapsed}/${periodUserIntendedDuration}`
-        } else {
-            document.title = 'Tymer'
-        }
-    }, [
-        Schedule.isRunning.value,
-        currentPeriod.value?.state.remaining,
-        currentPeriod.value?.state.elapsed,
-        currentPeriod.value?.config.userIntendedDuration,
-        currentPeriod.value?.config.type,
-    ])
+    // Keep the browser tab title in sync — the string itself is derived in
+    // `src/lib/document-title.ts`.
+    useSignalEffect(() => {
+        document.title = documentTitle.value
+    })
 
     return (
         <>
