@@ -1,0 +1,233 @@
+# Tymer voice set — Despina, London Underground announcer (alternative takes)
+#
+# A companion to tymer-despina-tube.txt: the SAME set, not a new one. It keeps
+# @name tube on purpose, so its clips promote as extra interchangeable takes
+# (tube-2.wav, ...) beside the originals and the app mixes them at random.
+#
+# What differs from the original file:
+#   - Pauses are demoted from a hanging silence to a breath — [short pause]
+#     only, and the pace directives say so.
+#   - Every line is reworded, so alternating takes never repeat verbatim.
+#   - The boundary calls (timesup/*), the first overtime rungs and the last
+#     two remaining notices run longer and drier — the first overtime line
+#     covers the case where the boundary announcement went unheard.
+#
+# Same character rules as the original: Underground tannoy STYLE, not
+# vocabulary. Iconic announcement phrases welcome ("mind the gap", "all
+# change, please", "end of the line"); literal transport nouns (station,
+# train, platform, passengers) are not. Content is only ever time, work
+# and breaks.
+#
+# CAUTION: because both files share the tube stem, `promote --replace` of
+# EITHER file wipes the promoted takes of BOTH — promote this file normally
+# (additively), and avoid --replace unless you mean to rebuild tube entirely.
+#
+# Regenerate: see sound-prompts/README.md
+
+@voice Despina
+@name tube
+@profile Tymer — the station announcer
+@scene
+A London Underground platform. The announcer is unseen, speaking through the
+station tannoy from a control room — the voice is projected to carry across a
+long, tiled, slightly reverberant space, addressing everyone on the platform
+rather than any one person. Trains pass; the announcements are the only human
+voice in the room.
+@style
+Professional public-address delivery. Polished, impersonal courtesy — perfect
+diction, even projection, every word articulated for a noisy platform. Formal
+but never robotic, and with a very dry, deadpan wit: any humour is delivered
+absolutely straight, as if it were timetable information. No endearments, no
+small talk.
+@pace
+Fluent PA cadence. A [short pause] is a single breath, never a hanging
+silence — the opening phrase flows almost directly into the information.
+Keep the announcement moving; the reverb supplies the grandeur, the voice
+does not need to wait for it.
+@accent
+Received Pronunciation — crisp, polished London English, the classic Underground
+announcement voice.
+@context
+The announcer marks the passage of a work or break period in the manner of a
+station announcement: a brief attention-catching phrase, one breath, then what
+is happening or what the listener must do. The delivery is pure Underground
+tannoy; the words themselves are only ever about time, work and breaks. Dry
+humour is read exactly like schedule information.
+
+
+# ---------------------------------------------------------------------------
+# elapsed — routine time checks; same information as the original takes,
+# different wording so alternation never sounds like a loop
+# ---------------------------------------------------------------------------
+
+[elapsed/006]
+@text [clear] Time check. [short pause] [measured] Six minutes on the clock.
+
+[elapsed/012]
+@text [clear] Your attention, please. [short pause] [measured] Twelve minutes are now behind you.
+
+[elapsed/024]
+@text [clear] Progress report. [short pause] [measured] Twenty-four minutes completed.
+
+[elapsed/036]
+@text [clear] Time check. [short pause] [measured] Thirty-six minutes on the clock.
+
+[elapsed/048]
+@text [clear] Your attention, please. [short pause] [measured] Forty-eight minutes completed, and counting.
+
+[elapsed/060]
+@style A touch warmer than the routine checks — quiet pride in a smooth run.
+@text [clear] Time check. [short pause] [pleased] One hour, precisely. A commendably smooth run so far.
+
+[elapsed/072]
+@text [clear] Progress report. [short pause] [measured] One hour and twelve minutes completed.
+
+[elapsed/084]
+@text [clear] Time check. [short pause] [measured] One hour and twenty-four minutes on the clock.
+
+[elapsed/096]
+@text [clear] Your attention, please. [short pause] [measured] One hour and thirty-six minutes are now behind you.
+
+[elapsed/108]
+@text [clear] Time check. [short pause] [measured] One hour and forty-eight minutes — approaching the two-hour mark.
+
+
+# ---------------------------------------------------------------------------
+# remaining — approach to the terminus. The last two notices are longer and
+# drier: practical advice delivered like timetable information.
+# ---------------------------------------------------------------------------
+
+[remaining/024]
+@style Courteous advance notice — informative, no pressure yet.
+@text [clear] Advance notice. [short pause] [measured] Twenty-four minutes remain in this period. No action is required — please carry on.
+
+[remaining/012]
+@style Courteous, drily helpful — practical advice read as schedule information.
+@text [clear] Advance notice. [short pause] [measured] Twelve minutes remain. [dry] That is ample time to finish what you are doing, and no time at all to begin anything new. Please plan accordingly.
+
+[remaining/006]
+@style Final-approach notice — courteous, precise, a hint of ceremony.
+@text [clear] Final approach. [short pause] [measured] Six minutes remain in this period. [courteous] Kindly begin gathering your thoughts, and remember to take your conclusions with you when you finish.
+
+
+# ---------------------------------------------------------------------------
+# overtime (work) — the escalation ladder. Openers still climb: attention
+# please → service announcement → important → urgent → final call → emergency.
+# The first rungs are longer and deadpan; the top stays hard and fast.
+# ---------------------------------------------------------------------------
+
+[overtime/006]
+@style Courteous, deadpan — patiently repeating itself for anyone who missed the boundary call.
+@pace Unhurried but flowing — no theatrical gaps.
+@text [courteous] Your attention, please. [short pause] [gently] This period ended six minutes ago. [dry] In the unlikely event that you did not hear that announcement: your time is up. It is now, in fact, slightly more up. Please begin bringing things to a close.
+
+[overtime/012]
+@style Matter-of-fact, dry — the courtesy is procedural, the apology is not.
+@pace Steady, businesslike.
+@text [clear] Your attention, please. [short pause] [matter-of-fact] Twelve minutes past the end of this period. [dry] We apologise for the delay to your day. The delay, on this occasion, is you. Please find a stopping point.
+
+[overtime/018]
+@style Firm. Politeness maintained, patience visibly thinning.
+@pace Slightly clipped.
+@text [firmly] This is a service announcement. [short pause] [firm] Eighteen minutes over. The schedule is being held open for you — it would rather not be. Bring this to a close.
+
+[overtime/024]
+@style Insistent. An instruction, and the listener should hear that.
+@pace Brisk, pressing.
+@text [insistent] This is an important announcement. [short pause] [pointed] Twenty-four minutes over schedule. This is no longer a delay; it is becoming a habit. Close it down now.
+
+[overtime/030]
+@style Stern. The measured authority of a delayed service losing patience.
+@pace Deliberate, weighted, each word landing.
+@text [sternly] This is an important announcement. [short pause] [flat] Thirty minutes over schedule. Half an hour, borrowed from the rest of your day, with interest. Stop work now.
+
+[overtime/036]
+@style Urgent and commanding. Nothing courteous remains.
+@pace Fast, forceful, driving.
+@text [urgently] This is an urgent announcement. [short pause] [commanding] Thirty-six minutes over schedule. Stop. Not shortly — now.
+
+[overtime/042]
+@style Sharp, absolute — the last time this will be said.
+@pace Clipped, staccato, each phrase a strike.
+@text [sharply] Final call. This is the final call. [short pause] [commanding] Forty-two minutes past time. Put it down. Step away. Now.
+
+[overtime/048]
+@style
+Maximum urgency — the top of the ladder. Full emergency-broadcast pressure:
+loud, driving, relentless, the intensity keeps climbing and never releases.
+Not cold — pressing.
+@pace Driving and emphatic. Weight on every word, pushing forward, never dragging.
+@text [urgently] This is an emergency announcement. [short pause] [insistent] Forty-eight minutes past time. Whatever this is, it is finished. Stop immediately — and immediately means now.
+
+
+# ---------------------------------------------------------------------------
+# overtime/break — same ladder, break-flavoured; early rungs deadpan
+# ---------------------------------------------------------------------------
+
+[overtime/break/006]
+@style Courteous, deadpan — genuinely no pressure yet.
+@pace Unhurried but flowing.
+@text [courteous] Your attention, please. [short pause] [gently] Your break ended six minutes ago. [dry] If you did not hear that announcement, do not worry — the work heard it, and it is waiting. Please make your way back.
+
+[overtime/break/012]
+@style Matter-of-fact, dry. Procedural courtesy, no warmth.
+@pace Steady, businesslike.
+@text [clear] Your attention, please. [short pause] [matter-of-fact] Twelve minutes past the end of your break. [dry] A rest of this thoroughness is technically an absence. Please return to work.
+
+[overtime/break/018]
+@style Firm. Politeness maintained, patience thinning.
+@pace Slightly clipped.
+@text [firmly] This is a service announcement. [short pause] [firm] This break has overrun by eighteen minutes. Please return to work — it remembers you fondly.
+
+[overtime/break/024]
+@style Insistent. No longer a request.
+@pace Brisk, pressing.
+@text [insistent] This is an important announcement. [short pause] [pointed] Twenty-four minutes past the end of your break. Return to work without further delay.
+
+[overtime/break/030]
+@style Stern. Delayed-service authority, patience nearly spent.
+@pace Deliberate, weighted.
+@text [sternly] This is an important announcement. [short pause] [flat] Thirty minutes past your break. This is no longer a break; it is an escape. Return to work immediately.
+
+[overtime/break/036]
+@style Urgent and commanding. Nothing courteous remains.
+@pace Fast, forceful, driving.
+@text [urgently] This is an urgent announcement. [short pause] [commanding] Your break ended thirty-six minutes ago. Return to work at once.
+
+[overtime/break/042]
+@style Sharp, absolute — final-warning authority.
+@pace Clipped, staccato.
+@text [sharply] Final call. This is the final call. [short pause] [commanding] Forty-two minutes past your break. Back to work. This instant.
+
+[overtime/break/048]
+@style
+Maximum urgency — the top of the ladder. Full emergency-broadcast pressure:
+loud, driving, relentless, never releasing. Pressing, not cold.
+@pace Driving and emphatic. Weight on every word, pushing forward, never dragging.
+@text [urgently] This is an emergency announcement. [short pause] [insistent] Your break ended forty-eight minutes ago. It is over. It has been over for quite some time. Return to work now.
+
+
+# ---------------------------------------------------------------------------
+# timesup — period boundaries. Longer, more ceremonial than the originals;
+# the dry wit rides on classic announcement phrasing.
+# ---------------------------------------------------------------------------
+
+[timesup/work]
+@style Bright boundary announcement — crisp, rousing, drily encouraging.
+@pace Crisp, flowing.
+@text [announcing] Mind the gap. [short pause] [clear] Mind the gap between resting and working — a work period is now departing. [brightly] Please make a start, and do take your focus with you.
+
+[timesup/break]
+@style Warm boundary announcement — permission to rest, professionally given, with a dry flourish.
+@pace Relaxed, easy.
+@text [announcing] Mind the gap. [short pause] [warmly] The work period has ended. Please step away from your work and enjoy a well-earned break. [dry] Refreshments are available wherever you keep them.
+
+[timesup/fun]
+@style Bright, genuinely pleased — the pleasant part of the timetable, announced as official business.
+@pace Light, a touch quicker.
+@text [announcing] Mind the gap. [short pause] [brightly] This period has ended, and something considerably more enjoyable is waiting. [dry] Off you go — that is an official instruction.
+
+[timesup/finish]
+@style Settled and final — the end-of-the-line call, closing the day with quiet ceremony and thanks.
+@pace Unwinding, warm, ceremonial but never dragging.
+@text [announcing] End of the line. [short pause] [clear] All change, please — all change. [warmly] The session is complete, and there is nothing further today. Thank you for keeping good time. We look forward to seeing you again.

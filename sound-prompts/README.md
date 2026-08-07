@@ -16,10 +16,15 @@ means adding another file, not editing this one.
 | `tymer-leda-hush.txt` | Leda | same words as the whisper set, voiced murmur instead of a whisper |
 | `tymer-laomedeia-diva.txt` | Laomedeia | same 33, telenovela diva — Spanish-seasoned English, volcanic top of the ladder |
 | `tymer-despina-tube.txt` | Despina | same 33, London Underground announcer — RP, tannoy PA style, escalating attention-openers |
+| `tymer-despina-tube-alt.txt` | Despina | alternative takes for the SAME `tube` set — reworded, breath-length pauses, longer deadpan boundary calls |
 
 All sets land in the same event directories, so they merge as interchangeable
 takes. Each carries a distinct `@name` (`brisk`, `strict`, `whisper`, `hush`, `diva`, `tube`) so
-filenames never collide.
+filenames never collide. The one deliberate exception: `tymer-despina-tube-alt.txt`
+shares `@name tube`, so its clips promote as extra takes of the existing tube set
+(`tube-2.wav`, …) instead of forming a new voice. Because both files share the
+stem, `promote --replace` of either one clears the promoted takes of both —
+promote the alt file additively.
 
 **`@name` is required.** It is not just collision avoidance — the app derives the
 voice set from the filename stem (minus the trailing `-N` take suffix), so
