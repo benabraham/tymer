@@ -1,33 +1,45 @@
-# Tab completion for Tymer's TTS tool, plus the `sounds` command it completes.
+# Tab completion for Tymer's TTS tool.
 #
-#   source /path/to/tymer/build-tools/tts/completions/sounds.bash
+# Reached two ways, and it has to work the same in both:
 #
-# Then `sounds <TAB>` offers the subcommands, `sounds generate <TAB>` offers the
-# set names actually present in sound-prompts/, and each subcommand offers only
-# its own flags.
+#   1. The dev shell. flake.nix puts a `sounds` command on PATH along with a
+#      stub at share/bash-completion/completions/sounds, which bash-completion's
+#      dynamic loader finds and which sources this file. Nothing to set up —
+#      cd into the repo and press <TAB>.
+#   2. Sourced by hand from a shell rc, for a shell with no direnv.
 #
-# Completion is registered per command word, and the documented ways to run this
-# tool put someone else's name there — `uv run ...`, `pnpm run ...`. Overriding
+# Completion registers per command word, and every other way to run this tool
+# puts someone else's name there — `uv run ...`, `pnpm run ...`. Overriding
 # their completion to reach ours would break everything else those commands do,
-# so this defines a `sounds` function instead and completes that. It resolves the
-# tool directory from this file, so a clone anywhere works with no editing.
+# which is why a `sounds` command exists at all.
 
-_TYMER_TTS_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-_TYMER_TTS_ROOT=$(cd -- "$_TYMER_TTS_DIR/../.." && pwd)
+# Where the checkout is. TYMER_ROOT comes from the dev shell; without it this
+# file was sourced from a checkout and can locate itself.
+_TYMER_SOUNDS_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)
 
+_tymer_sounds_root() {
+    printf '%s\n' "${TYMER_ROOT:-$_TYMER_SOUNDS_ROOT}"
+}
+
+# Case 2 only. In the dev shell the real command is already on PATH, and a
+# function would shadow it — silently, and with the wrong tool directory.
+#
 # TYMER_SOUNDS_LAUNCHER is how the tool learns it was reached through here: a
 # shell function leaves no trace in the process it starts, and `uv --directory`
 # chdirs, so from inside it is indistinguishable from a plain `cd`. Without it
 # every "Promote it: ..." hint would name a command the user did not type.
-sounds() {
-    TYMER_SOUNDS_LAUNCHER=sounds uv run --directory "$_TYMER_TTS_DIR" sounds.py "$@"
-}
+if ! command -v sounds >/dev/null 2>&1; then
+    sounds() {
+        TYMER_SOUNDS_LAUNCHER=sounds \
+            uv run --directory "$(_tymer_sounds_root)/build-tools/tts" sounds.py "$@"
+    }
+fi
 
 # Sets are files on disk; globbing them keeps <TAB> instant. Asking the tool
 # would mean a Python start-up and a dotenv read on every keypress.
 _tymer_sounds_sets() {
     local file
-    for file in "$_TYMER_TTS_ROOT"/sound-prompts/*.txt; do
+    for file in "$(_tymer_sounds_root)"/sound-prompts/*.txt; do
         [ -e "$file" ] || continue
         file=${file##*/}
         printf '%s\n' "${file%.txt}"

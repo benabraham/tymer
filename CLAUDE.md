@@ -258,11 +258,17 @@ set (one voice, one character, one block per event), rendered by the vendored Ge
 for the workflow.
 
 `build-tools/tts/sounds.py` is a subcommand CLI (`pnpm run sounds <subcommand>`, plus
-`sounds:generate` / `sounds:promote` shortcuts). `build-tools/tts/completions/sounds.bash` is
-sourced from the user's shell: it defines a `sounds` function — completion attaches to a command
-word, and `uv`/`pnpm` own theirs — and tab-completes subcommands, the set names found in
-`sound-prompts/`, and per-subcommand flags. Clips stage under `.staging/<set>/` and reach the app
-only via `promote`:
+`sounds:generate` / `sounds:promote` shortcuts). Inside the repo it is just `sounds <subcommand>`:
+`flake.nix` builds a `tymer-sounds` derivation that direnv puts on PATH, carrying `bin/sounds` and
+`share/bash-completion/completions/sounds`. **That second path is load-bearing** — direnv replays
+environment variables only and cannot export a shell function or a `complete` registration, but
+bash-completion's `complete -D` loader derives `<prefix>/share/bash-completion/completions/<cmd>`
+from every PATH entry ending in `/bin`, so shipping both halves gets tab completion with no shell
+config. Both halves are stubs resolving through `TYMER_ROOT` (exported by the shell hook) into
+`build-tools/tts/completions/sounds.bash`, so edits need no rebuild. That file also defines a
+`sounds` function for shells with no direnv — guarded by `command -v sounds`, since a function
+would otherwise shadow the dev shell's command with the wrong tool directory. Clips stage under
+`.staging/<set>/` and reach the app only via `promote`:
 
 - **`generate`** fills in clips with no file yet — the resumable everyday run, since free-tier quota
   makes a 33-clip set a multi-day job. **`regenerate`** redoes every clip over the set's take `-1`;

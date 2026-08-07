@@ -62,31 +62,51 @@ directory comes from `INIT_CWD`, which pnpm exports and `uv` does not. A bare
 `uv run --directory` from the root is therefore indistinguishable from a real
 `cd` and gets the `cd`-relative hint.
 
-### Tab completion
+### `sounds`, with tab completion
+
+The dev shell puts a `sounds` command on PATH, so inside the repo there is no
+`uv run` or `pnpm run` to type — and `<TAB>` completes subcommands, the set names
+actually in `sound-prompts/`, and the flags belonging to that particular
+subcommand (`--fresh` only after `regenerate`, `--replace` only after `promote`),
+plus values for `--audition` and `--only`.
 
 ```bash
-echo 'source ~/code/tymer/build-tools/tts/completions/sounds.bash' >> ~/.bashrc
-```
-
-That defines a `sounds` command and completes it: subcommands, then the set
-names actually in `sound-prompts/`, then the flags belonging to that particular
-subcommand (`--fresh` only after `regenerate`, `--replace` only after
-`promote`), plus values for `--audition` and `--only`.
-
-```bash
+cd tymer                # direnv loads the shell
 sounds gen<TAB> tymer-<TAB> --<TAB>
 ```
 
-Completion attaches to a command word, and every documented way to run this tool
-puts someone else's there — `uv`, `pnpm`. Hijacking their completion would break
-everything else those commands do, so the file ships a `sounds` shell function
-and completes that instead. It finds the repo from its own location, so a clone
-anywhere works unedited, and it exports `TYMER_SOUNDS_LAUNCHER` so the printed
-hints say `sounds promote …` rather than naming a command you never typed.
+Nothing to install: `.envrc` is `use flake`, and `flake.nix` builds a small
+derivation carrying both halves.
 
-Set names come from globbing `sound-prompts/`, not from asking the tool — a
-Python start-up per keypress is not what `<TAB>` should cost. Bash only; zsh
-would need `bashcompinit`.
+**Why the packaging shape matters.** direnv replays environment *variables*; it
+cannot export a shell function or a `complete` registration, so sourcing this
+file from `.envrc` would define everything in a subshell and lose it. What
+direnv can do is put a directory on PATH — and bash-completion's dynamic loader
+(`complete -D`) resolves an unknown command by deriving
+`<prefix>/share/bash-completion/completions/<cmd>` from each PATH entry ending in
+`/bin`. So a derivation with `bin/sounds` *and*
+`share/bash-completion/completions/sounds` gets its completion sourced into the
+interactive shell on the first `<TAB>`, with no shell config anywhere.
+
+Both installed halves are stubs pointing back at the checkout through
+`TYMER_ROOT` (exported by the shell hook), so editing `sounds.py` or this
+completion takes effect immediately — no flake rebuild, no direnv reload.
+
+**Without direnv**, source it from a shell rc instead:
+
+```bash
+source ~/code/tymer/build-tools/tts/completions/sounds.bash
+```
+
+That defines `sounds` as a shell function, resolving the repo from the file's own
+location. It is skipped when a real `sounds` is already on PATH — a function
+would shadow the dev shell's command silently, and with the wrong tool directory.
+
+Either way the launcher exports `TYMER_SOUNDS_LAUNCHER`, so the printed hints say
+`sounds promote …` rather than naming a command you never typed. Set names come
+from globbing `sound-prompts/`, not from asking the tool — a Python start-up per
+keypress is not what `<TAB>` should cost. Bash only; zsh would need
+`bashcompinit`.
 
 ## The three ways to generate
 
