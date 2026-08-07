@@ -9,7 +9,7 @@ target_lufs=-18
 target_tp=-2
 target_lra=7
 bitrate=128k
-silence_duration=0.5  # 500ms silence between sounds
+silence_duration=0.5 # 500ms silence between sounds
 
 echo "Normalizing WAV files and combining with ${silence_duration}s pauses..."
 
@@ -65,19 +65,19 @@ categorize_files() {
 
     # Sort each category only if non-empty
     if [ ${#general_files[@]} -gt 0 ]; then
-        IFS=$'\n' general_files=($(printf '%s\n' "${general_files[@]}" | sort))
+        mapfile -t general_files < <(printf '%s\n' "${general_files[@]}" | sort)
     fi
     if [ ${#elapsed_files[@]} -gt 0 ]; then
-        IFS=$'\n' elapsed_files=($(printf '%s\n' "${elapsed_files[@]}" | sort))
+        mapfile -t elapsed_files < <(printf '%s\n' "${elapsed_files[@]}" | sort)
     fi
     if [ ${#remaining_files[@]} -gt 0 ]; then
-        IFS=$'\n' remaining_files=($(printf '%s\n' "${remaining_files[@]}" | sort))
+        mapfile -t remaining_files < <(printf '%s\n' "${remaining_files[@]}" | sort)
     fi
     if [ ${#timesup_files[@]} -gt 0 ]; then
-        IFS=$'\n' timesup_files=($(printf '%s\n' "${timesup_files[@]}" | sort))
+        mapfile -t timesup_files < <(printf '%s\n' "${timesup_files[@]}" | sort)
     fi
     if [ ${#overtime_files[@]} -gt 0 ]; then
-        IFS=$'\n' overtime_files=($(printf '%s\n' "${overtime_files[@]}" | sort))
+        mapfile -t overtime_files < <(printf '%s\n' "${overtime_files[@]}" | sort)
     fi
 
     # Debug: show what's in each category
@@ -202,14 +202,12 @@ for i in $(seq 1 $((${#processed_files[@]} - 1))); do
     prev_combined="$temp_combined"
     temp_combined="$temp_dir/combined_$i.wav"
 
-    echo "Adding sound $(($i + 1))/${#processed_files[@]}: $(basename "$next_file")"
+    echo "Adding sound $((i + 1))/${#processed_files[@]}: $(basename "$next_file")"
 
     # Concatenate: previous_combined + silence + next_file
-    ffmpeg -i "$prev_combined" -i "$silence_file" -i "$next_file" \
-           -filter_complex "[0:a][1:a][2:a]concat=n=3:v=0:a=1[out]" \
-           -map "[out]" "$temp_combined" -y -loglevel warning 2>/dev/null
-
-    if [ $? -ne 0 ]; then
+    if ! ffmpeg -i "$prev_combined" -i "$silence_file" -i "$next_file" \
+        -filter_complex "[0:a][1:a][2:a]concat=n=3:v=0:a=1[out]" \
+        -map "[out]" "$temp_combined" -y -loglevel warning 2>/dev/null; then
         echo "✗ Failed to add $(basename "$next_file")"
         break
     fi

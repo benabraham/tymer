@@ -56,7 +56,7 @@ for file in "${files[@]}"; do
     # Position within the source tree — the same path is used under public/.
     # Absolute paths are handled by matching on the tree root rather than a prefix.
     case "$file" in
-        *"$source_root"/*) rel_path="${file#*$source_root/}" ;;
+        *"$source_root"/*) rel_path="${file#*"$source_root"/}" ;;
         *)
             echo "Skipping (outside $source_root): $file"
             continue
