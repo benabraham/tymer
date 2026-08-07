@@ -19,8 +19,75 @@ This is a countdown timer web application built with Preact and Vite called "Tym
 - `pnpm run preview` - Preview production build
 - `pnpm test` - Run tests with Vitest
 - `pnpm run test:coverage` - Run tests with coverage report
-- `pnpm run format` - Format code with Prettier
-- `pnpm run format:check` - Check code formatting
+- `pnpm run format` / `format:check` - Prettier over the whole repo
+- `pnpm run lint` / `lint:fix` - Biome (JS/TS/JSON)
+- `pnpm run lint:css` / `lint:css:fix` - Stylelint (SCSS)
+- `pnpm run lint:sh` - shellcheck
+- `pnpm run lint:py` / `format:py` / `format:py:check` - ruff
+- `pnpm run typecheck` - `tsc --noEmit`
+- `pnpm run knip` - orphan discovery
+
+## Toolchain
+
+### What installs what
+
+The split is the whole design, and it is what `flake.nix` is careful not to blur:
+
+- **The project installs libraries and pins them.** Biome, Prettier
+  (+ `prettier-plugin-sh`), Stylelint, TypeScript, lint-staged and
+  simple-git-hooks come from `package.json`; ruff from
+  `build-tools/tts/pyproject.toml`, pinned exactly because ruff's DEFAULT rule
+  set moves between releases (0.16 reports `I001` where 0.15 does not — hence
+  the explicit `select` there too).
+- **The environment supplies runtimes and standalone binaries**: `node`, `pnpm`,
+  `uv`, `shellcheck`. The project does not install these and must not try — no
+  postinstall binary downloaders. `nix develop` is _one_ way to get them;
+  nvm/corepack, apt and brew are equally fine, and CI uses none of them.
+  Versions live in neutral files both the flake and CI read: `.nvmrc` for node,
+  `build-tools/tts/.python-version` for the interpreter uv provisions.
+
+`shfmt` is deliberately absent: `prettier-plugin-sh` wraps mvdan/sh as WASM, so
+shell formatting needs no binary and rides the Prettier config already there.
+
+### Who owns whitespace
+
+**Prettier, in every language it can parse — including shell.** `biome.json` sets
+`formatter.enabled: false` for exactly this reason, so Biome contributes lint
+fixes and import sorting only. Stylelint 17 ships no stylistic rules, with one
+exception that had to be switched off: `scss/operator-no-newline-after` cannot
+tell the `/` in `grid-column: <start> / <end>` from SCSS division, and errors
+when Prettier wraps such a declaration at the slash (`src/app/_stats.scss`).
+
+Scope is `.prettierignore`, not a glob. A glob in `package.json` was the previous
+design and it silently left **every** `.scss` file unformatted for as long as the
+stylesheets existed, because `css` in a brace list does not match `scss`. An
+ignore file fails the other way: a new file type is formatted until someone
+decides otherwise. Note `.prettierrc` sets `tabWidth: 4` explicitly, which
+**overrides** `.editorconfig` — hence the `*.yml`/`*.yaml` override restoring 2,
+and the `*.sh` one turning off `spaceRedirects` (on by default, it would rewrite
+every `2>/dev/null` in the audio scripts).
+
+### Pre-commit
+
+`.simple-git-hooks.js` installs a one-line `pre-commit` that runs
+`pnpm exec lint-staged`; `lint-staged.config.js` holds the actual chains. The
+hook is installed by the `prepare` script, so `pnpm install` is the only
+bootstrap. simple-git-hooks' own postinstall is denied in `pnpm-workspace.yaml`
+so hook installation stays something this repo asks for explicitly.
+
+Two rules govern `lint-staged.config.js`:
+
+1. Within a chain, Biome runs **first** and Prettier **last** (see above).
+2. **No two write-capable globs may match the same file.** lint-staged runs
+   different globs' chains concurrently, so an overlap means two processes
+   rewriting one file at once. This is why `.scss` and `.sh` are single stacked
+   entries, and why `tsc` sits at the end of the JS/TS chain rather than in a
+   glob of its own — as a function task, so no file list is appended to it.
+
+Escape hatches: `git commit --no-verify`, or `SKIP_SIMPLE_GIT_HOOKS=1`.
+
+Every gate is CI-enforced in `.github/workflows/deploy.yml`, running the same
+`package.json` scripts over the whole tree. The hook is the fast loop; CI decides.
 
 ## Architecture
 
@@ -144,7 +211,7 @@ picks via `pickVariant` (`src/lib/pick-variant.js`), which never returns the pre
 key — so a repeated event does not replay the same take twice in a row. Last-index bookkeeping is a
 module-level `Map`, deliberately not a signal (it is never rendered).
 
-**Voice sets.** Each speech take's filename stem *is* its set — `elapsed/006/brisk-1.webm` belongs to
+**Voice sets.** Each speech take's filename stem _is_ its set — `elapsed/006/brisk-1.webm` belongs to
 `brisk`, `brisk-2.webm` to the same set (a trailing `-<N>` take suffix is stripped). So the sets a
 prompt file promotes are already distinguishable on disk and nothing has to move; the generator just
 records the set alongside the path. **This makes `@name` in a prompt set load-bearing** — a set
@@ -163,7 +230,7 @@ button is permanently as wide as the longest name and does not jump as the set c
 instant and reloads nothing). **An empty filter falls back to the full pool** rather than returning
 nothing: set-less keys match no set and must keep playing under every selection, and a
 half-promoted set degrades to the other voices instead of going silent — silence is exactly the
-failure mode described below. Because the index now points into a *filtered* list, `lastVariantIndex`
+failure mode described below. Because the index now points into a _filtered_ list, `lastVariantIndex`
 is keyed `` `${soundKey}|${set}` ``; a stale index from another set would be meaningless.
 
 **The manifest is the only source of sound paths.** `getVariants(key)` returns
@@ -175,7 +242,7 @@ trap rather than a safety net: the flat paths it fell back to (`elapsed/006.webm
 restructured into take directories, so a missing key produced a `Howl` on a 404 that sat in
 `state === 'loading'` forever, in silence. An empty list instead reaches `playByKey`'s existing
 not-found branch, which logs and records a failed `soundPlaybackLog` entry. `REQUIRED_SOUND_KEYS`
-(derived from `AVAILABLE_SOUNDS` + the 63 notifications + `button`/`timerFinished`/`timesup_*`) is
+(derived from `AVAILABLE_SOUNDS` + the 78 notifications + `button`/`timerFinished`/`timesup_*`) is
 what `buildSoundConfig` iterates, and `src/lib/sounds.test.js` guards it three ways: every required
 key has a manifest entry, every manifest path exists on disk, and every set in `SOUND_SETS` covers
 every speech key. The second assertion is the one that catches a bank restructure; the third catches
@@ -213,8 +280,19 @@ only via `promote`:
 `public/sounds/` for every source it deletes, because `generate-sound-manifest.js` scans that
 directory: an orphan there is not stale, it stays in `SOUND_VARIANTS` and keeps playing.
 
-Not speech: `notifications/*.ogg` (63 chimes, played before period announcements), `button.webm`,
+Not speech: `notifications/*.ogg` (78 chimes, played before period announcements), `button.webm`,
 `timer-end.webm`.
+
+**The notification chimes bypass `normalize_audio.sh` entirely.** That script only walks
+`src/assets/sounds/**/*.wav`, so the oggs are copied to `public/sounds/notifications/` by hand —
+adding one means writing it to BOTH trees, then `pnpm run sounds:manifest`. They are stock Android
+ringtones (`64`–`78` came from a per-vendor ringtone bank), which pad a short chime out to 1.5–3 s
+of silence. Trim that silence with a **stream copy**, never a re-encode:
+`ffmpeg -ss <start> -i in.ogg -t <len> -c copy out.ogg` cuts at Vorbis packet boundaries and the
+decoded PCM stays bit-identical, so the clip survives with no generation loss; it just lands within
+~10 ms of the requested point. Re-encoding a lossy source to trim leading silence is the tempting
+wrong move. Bump the `78` in `REQUIRED_SOUND_KEYS` and `playRandomNotification` (`src/lib/sounds.ts`)
+in lockstep — the count is not derived from the manifest, and the sounds test fails if it drifts.
 
 PWA precaching uses recursive globs (`sounds/**/*.webm`, `sounds/**/*.ogg`) in `vite.config.js` —
 single-`*` globs silently missed `overtime/break/` and every notification.

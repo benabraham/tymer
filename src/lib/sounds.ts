@@ -35,7 +35,7 @@ export const getVariantPaths = (key: string): string[] => getVariants(key).map(v
 // Narrows `variants` to the given set. `ALL_SETS` returns everything
 // unchanged — today's behavior. Otherwise, filters to just that set's takes,
 // BUT falls back to the full pool when the filter matches nothing: set-less
-// keys (button, the 63 notifications, timerFinished) carry no set at all and
+// keys (button, the 78 notifications, timerFinished) carry no set at all and
 // must keep playing under every selection, and a half-generated set degrades
 // to the full pool instead of going silent — the exact silent-404-Howl trap
 // CLAUDE.md documents from the old hardcoded-fallback bug.
@@ -59,7 +59,7 @@ export const REQUIRED_SOUND_KEYS: string[] = [
     ...AVAILABLE_SOUNDS.remaining.map(min => `remaining_${min}`),
     ...AVAILABLE_SOUNDS.overtime.map(min => `overtime_${min}`),
     ...AVAILABLE_SOUNDS.overtimeBreak.map(min => `overtime_break_${min}`),
-    ...Array.from({ length: 63 }, (_, i) => `notification_${i + 1}`),
+    ...Array.from({ length: 78 }, (_, i) => `notification_${i + 1}`),
     'button',
     'timerFinished',
     'timesup_work',
@@ -344,11 +344,11 @@ const playByKey = async (soundKey: string): Promise<boolean> => {
     }
 }
 
-// Play a random notification sound (1-63)
+// Play a random notification sound (1-78)
 const playRandomNotification = async (): Promise<boolean> => {
     if (!soundEnabled.value) return false
 
-    const randomNum = Math.floor(Math.random() * 63) + 1 // 1-63
+    const randomNum = Math.floor(Math.random() * 78) + 1 // 1-78
     const notificationKey = `notification_${randomNum}`
 
     log('🔊 Playing random notification', notificationKey, 10)

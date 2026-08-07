@@ -104,7 +104,7 @@ describe('pickCandidates', () => {
         ])
     })
 
-    // Load-bearing fallback: set-less keys (button, the 63 notifications,
+    // Load-bearing fallback: set-less keys (button, the 78 notifications,
     // timerFinished) have no variant matching any named set, so filtering
     // would empty the list and silence them entirely. A half-generated set
     // (missing a take for some key) would do the same for a speech key. In
