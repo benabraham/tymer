@@ -1,0 +1,84 @@
+name: Dependabot auto-merge
+
+# Merges a Dependabot pull request once — and only once — the full gate suite in
+# deploy.yml has passed on it. Merging to main then triggers deploy.yml again on
+# push, which is the run that actually publishes. So a green bump reaches the
+# live site with no human in the loop, and a red one simply sits as an open PR.
+#
+# Why `workflow_run` rather than the more obvious approaches:
+#
+#   - `gh pr merge --auto` is not available here. Auto-merge is off at the repo
+#     level (`allow_auto_merge: false`) and main has no branch protection, and
+#     GitHub requires both before it will queue a merge. This workflow needs no
+#     repository settings at all.
+#   - A `pull_request`-triggered workflow could not do the merge. GitHub hands
+#     Dependabot-authored PRs a READ-ONLY `GITHUB_TOKEN` no matter what the
+#     `permissions` block asks for. `workflow_run` runs in the base repository's
+#     context instead, where the token is writable. That is the whole reason
+#     this is a second workflow and not a job inside deploy.yml.
+#
+# The same property is why the guards below matter: this workflow is privileged,
+# so it must never check out or execute PR code. It only reads metadata and
+# merges — no `actions/checkout` step, deliberately.
+on:
+  workflow_run:
+    workflows: ['Deploy to GitHub Pages']
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge:
+    # Every clause is load-bearing:
+    #   conclusion       — a failed or cancelled gate run must not merge.
+    #   event            — only runs that came from a pull request.
+    #   head_repository  — same-repo branch, never a fork.
+    #   head_branch      — Dependabot's own branch namespace.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      startsWith(github.event.workflow_run.head_branch, 'dependabot/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge the pull request that run validated
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+
+          pr=$(gh pr list --repo "$REPO" --head "$BRANCH" --state open \
+              --json number --jq '.[0].number // empty')
+          if [ -z "$pr" ]; then
+              echo "No open PR for $BRANCH — nothing to merge."
+              exit 0
+          fi
+
+          meta=$(gh pr view "$pr" --repo "$REPO" --json author,headRefOid)
+          author=$(jq -r '.author.login' <<<"$meta")
+          sha=$(jq -r '.headRefOid' <<<"$meta")
+
+          # The branch prefix is only a naming convention; this is the actual
+          # authorship check. `gh` reports app authors with an `app/` prefix,
+          # so accept both spellings.
+          case "$author" in
+              'app/dependabot' | 'dependabot[bot]') ;;
+              *)
+                  echo "PR #$pr is authored by '$author', not Dependabot. Refusing."
+                  exit 1
+                  ;;
+          esac
+
+          # Guard against a push landing between the gate run and this job: the
+          # commit that passed must still be the commit being merged.
+          if [ "$sha" != "$HEAD_SHA" ]; then
+              echo "PR #$pr moved to $sha since $HEAD_SHA was tested. Leaving it open."
+              exit 0
+          fi
+
+          gh pr merge "$pr" --repo "$REPO" --squash --delete-branch

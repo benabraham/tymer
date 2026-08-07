@@ -1,0 +1,64 @@
+version: 2
+
+# Every ecosystem here is checked daily, and nothing is proposed until it has
+# been public for a week — `cooldown` is the server-side twin of the
+# `minimumReleaseAge` (10080 min) that pnpm already enforces at install time.
+# Without it a daily schedule would be a machine for adopting hours-old
+# releases, which is the failure mode both settings exist to prevent.
+#
+# Cooldown deliberately does NOT apply to Dependabot's security updates:
+# GitHub exempts them, so a CVE fix still arrives the day it ships.
+#
+# Each ecosystem is grouped into a single pull request. One PR per ecosystem
+# means one CI run and one merge commit per day instead of seven, and it fails
+# safe: if any member of the group breaks the build, the whole group stays
+# unmerged rather than landing piecemeal.
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: daily
+    cooldown:
+      default-days: 7
+    groups:
+      npm:
+        patterns:
+          - '*'
+    open-pull-requests-limit: 1
+    commit-message:
+      prefix: build(deps)
+
+  # uv reads build-tools/tts/pyproject.toml + uv.lock. Note that ruff is
+  # pinned exactly on purpose (its default rule set moves between releases) —
+  # Dependabot will still offer the bump, it just lands as a visible diff.
+  - package-ecosystem: uv
+    directory: /build-tools/tts
+    schedule:
+      interval: daily
+    cooldown:
+      default-days: 7
+    groups:
+      uv:
+        patterns:
+          - '*'
+    open-pull-requests-limit: 1
+    commit-message:
+      prefix: build(deps)
+
+  # `/` here means .github/workflows, not the repo root. This is the ecosystem
+  # that most needs the automation: the actions in deploy.yml are pinned to
+  # exact releases (see the comment there), so without Dependabot they are the
+  # one set of dependencies that never moves on its own.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: daily
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns:
+          - '*'
+    open-pull-requests-limit: 1
+    commit-message:
+      prefix: build(deps)

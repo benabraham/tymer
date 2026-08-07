@@ -3,7 +3,7 @@ import { Howl, Howler } from 'howler'
 import { log } from './log.js'
 import type { PeriodData, PeriodType } from './period.js'
 import { pickVariant } from './pick-variant.js'
-import { AVAILABLE_SOUNDS } from './sound-discovery'
+import { AVAILABLE_SOUNDS } from './sound-discovery.js'
 import { SOUND_VARIANTS, type SoundVariant } from './sound-manifest.js'
 import { ALL_SETS, activeSoundSet } from './sound-set.js'
 

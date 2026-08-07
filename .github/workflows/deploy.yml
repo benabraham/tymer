@@ -1,9 +1,14 @@
 name: Deploy to GitHub Pages
 
+# A pull request runs every gate below but stops short of publishing (see the
+# `if` on the Deploy step). This exists so Dependabot's daily PRs are actually
+# tested: auto-merge is only worth having if something ran the suite first, and
+# a push-only trigger would have merged unverified bumps straight to main.
 on:
   push:
     branches:
       - main
+  pull_request:
 
 permissions:
   contents: write
@@ -37,10 +42,23 @@ jobs:
         with:
           node-version-file: '.nvmrc'
 
+      # pnpm/setup, NOT the older pnpm/action-setup, whose README now points
+      # here. v2 downloads pnpm's self-contained release binary and checks it
+      # against GitHub's published SHA-256, instead of installing `@pnpm/exe`
+      # through npm — the path that shipped a placeholder binary for pnpm
+      # 11.13.0 and failed later with a bare `This: not found`.
+      #
+      # The one action here younger than the 7-day soak rule (released
+      # 2026-08-04). Taken deliberately: v1 is the npm-install architecture v2
+      # exists to replace, so waiting would have meant migrating twice.
+      #
       # No `version` input on purpose: the action reads `packageManager` from
       # package.json, which is the single place the pnpm version is declared.
+      # It requires pnpm >= 11; this repo is on 11.18.0. No `runtime` input
+      # either — that would make package.json a second source of the Node
+      # version, and `.nvmrc` above is meant to be the only one.
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6.0.9
+        uses: pnpm/setup@v2.0.0
 
       # The Python side of the repo (build-tools/tts). uv reads the interpreter
       # version from build-tools/tts/.python-version and provisions it itself,
@@ -91,7 +109,11 @@ jobs:
       - name: Build
         run: pnpm run build
 
+      # Push-to-main only. On a pull request every gate above still runs — that
+      # result is what dependabot-auto-merge.yml keys off — but nothing is
+      # published, so a PR can never overwrite the live site.
       - name: Deploy
+        if: github.event_name == 'push'
         uses: JamesIves/github-pages-deploy-action@v4.8.0
         with:
           folder: dist
