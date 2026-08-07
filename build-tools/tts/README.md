@@ -78,13 +78,13 @@ sounds gen<TAB> tymer-<TAB> --<TAB>
 Nothing to install: `.envrc` is `use flake`, and `flake.nix` builds a small
 derivation carrying both halves.
 
-**Why the packaging shape matters.** direnv replays environment *variables*; it
+**Why the packaging shape matters.** direnv replays environment _variables_; it
 cannot export a shell function or a `complete` registration, so sourcing this
 file from `.envrc` would define everything in a subshell and lose it. What
 direnv can do is put a directory on PATH — and bash-completion's dynamic loader
 (`complete -D`) resolves an unknown command by deriving
 `<prefix>/share/bash-completion/completions/<cmd>` from each PATH entry ending in
-`/bin`. So a derivation with `bin/sounds` *and*
+`/bin`. So a derivation with `bin/sounds` _and_
 `share/bash-completion/completions/sounds` gets its completion sourced into the
 interactive shell on the first `<TAB>`, with no shell config anywhere.
 

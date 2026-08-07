@@ -4,7 +4,9 @@ import {
     formatDurationToken,
     formatElapsedToken,
     hasAnchorLine,
+    hasDeadlineLine,
     parseCurrentDurationsText,
+    parseDeadlineLines,
     parseDurationsAnchor,
     serializeCurrentDurations,
 } from './durations-format'
@@ -141,6 +143,64 @@ describe('hasAnchorLine', () => {
     })
 })
 
+describe('parseDeadlineLines', () => {
+    it('parses a bare +h:mm as daily (day null), with optional label', () => {
+        expect(parseDeadlineLines('+16:30')).toEqual([{ minutes: 990, day: null, label: '' }])
+        expect(parseDeadlineLines('+ 6:05 Leave for gym')).toEqual([
+            { minutes: 365, day: null, label: 'Leave for gym' },
+        ])
+    })
+
+    it('parses named day qualifiers (case-insensitive)', () => {
+        expect(parseDeadlineLines('+today 17:00')).toEqual([
+            { minutes: 1020, day: 'today', label: '' },
+        ])
+        expect(parseDeadlineLines('+Tomorrow 9:00 standup')).toEqual([
+            { minutes: 540, day: 'tomorrow', label: 'standup' },
+        ])
+        expect(parseDeadlineLines('+yesterday 23:50')).toEqual([
+            { minutes: 1430, day: 'yesterday', label: '' },
+        ])
+    })
+
+    it('parses an explicit day+month qualifier', () => {
+        expect(parseDeadlineLines('+30 Dec 9:00 release')).toEqual([
+            { minutes: 540, day: { day: 30, monthIndex: 11 }, label: 'release' },
+        ])
+    })
+
+    it('skips invalid deadline forms and absent lines', () => {
+        expect(parseDeadlineLines('+')).toEqual([])
+        expect(parseDeadlineLines('+9')).toEqual([])
+        expect(parseDeadlineLines('+24:00')).toEqual([])
+        expect(parseDeadlineLines('+9:60')).toEqual([])
+        expect(parseDeadlineLines('+30 Foo 9:00')).toEqual([])
+        expect(parseDeadlineLines('+0 Dec 9:00')).toEqual([])
+        expect(parseDeadlineLines('W 20\nB 6')).toEqual([])
+    })
+
+    it('parses EVERY valid deadline line in order, mixed in among period lines', () => {
+        const text = ['W 20', '+17:00 wrap up', 'B 6', '+18:00', '+24:00 broken'].join('\n')
+        expect(parseDeadlineLines(text)).toEqual([
+            { minutes: 1020, day: null, label: 'wrap up' },
+            { minutes: 1080, day: null, label: '' },
+        ])
+        expect(parseCurrentDurationsText(text).map(p => p.type)).toEqual(['work', 'break'])
+    })
+})
+
+describe('hasDeadlineLine', () => {
+    it('detects deadline INTENT on half-edited, unparseable lines', () => {
+        expect(hasDeadlineLine('+\nW 20')).toBe(true)
+        expect(hasDeadlineLine('W 20\n +24:00')).toBe(true)
+    })
+
+    it('is false when no line starts with +', () => {
+        expect(hasDeadlineLine('W 20\nB 6')).toBe(false)
+        expect(hasDeadlineLine('W 20 note with +17:00 inside')).toBe(false)
+    })
+})
+
 describe('formatAnchorToken', () => {
     it('formats minutes-since-midnight as @h:mm', () => {
         expect(formatAnchorToken(540)).toBe('@9:00')
@@ -226,5 +286,22 @@ describe('serializeCurrentDurations', () => {
             minutes: 540,
             day: { day: 30, monthIndex: 11 },
         })
+    })
+
+    it('appends the deadline lines last, after periods (and anchor)', () => {
+        const periods = [period({ type: 'fun', duration: 5 * MIN, elapsed: 0 })]
+        expect(serializeCurrentDurations(periods, { deadlineLines: ['+17:00 wrap up'] })).toBe(
+            'F 5\n+17:00 wrap up',
+        )
+        const text = serializeCurrentDurations(periods, {
+            anchorMinutes: 540,
+            deadlineLines: ['+today 17:00', '+18:30 gym'],
+        })
+        expect(text).toBe('@9:00\nF 5\n+today 17:00\n+18:30 gym')
+        expect(parseDeadlineLines(text)).toEqual([
+            { minutes: 1020, day: 'today', label: '' },
+            { minutes: 1110, day: null, label: 'gym' },
+        ])
+        expect(parseCurrentDurationsText(text).map(p => p.type)).toEqual(['fun'])
     })
 })

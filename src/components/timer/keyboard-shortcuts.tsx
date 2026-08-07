@@ -1,4 +1,5 @@
 import { useEffect } from 'preact/hooks'
+import { deadlineAlarmActive, silenceDeadlineAlarm } from '../../lib/deadline'
 import { configPanelOpen } from '../../lib/period-configs'
 import { Schedule } from '../../lib/schedule'
 import { getNextMultipleOf3Delta } from '../../lib/snap'
@@ -367,6 +368,19 @@ export function KeyboardShortcuts() {
                 event.preventDefault()
                 if (canTogglePin.value) {
                     togglePinTimer()
+                }
+            }
+
+            // S - silence the deadline alarm
+            else if (
+                (event.key === 's' || event.key === 'S')
+                && !event.ctrlKey
+                && !event.altKey
+                && !event.shiftKey
+            ) {
+                event.preventDefault()
+                if (deadlineAlarmActive.value) {
+                    silenceDeadlineAlarm()
                 }
             }
 

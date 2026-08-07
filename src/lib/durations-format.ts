@@ -134,6 +134,68 @@ export const parseDurationsAnchor = (text: string): ParsedDurationsAnchor | null
 export const hasAnchorLine = (text: string): boolean =>
     text.split('\n').some(line => line.trim().startsWith('@'))
 
+// Deadline lines — wall-clock targets shown as markers over the timeline
+// (see src/lib/deadline.ts). EVERY valid deadline line counts — a text may
+// declare several deadlines. Forms (label optional, free text):
+//
+//   +h:mm Label            no date → recurs EVERY day at that time
+//   +today h:mm Label      absolute, today
+//   +tomorrow h:mm Label   absolute, tomorrow
+//   +yesterday h:mm Label  absolute, yesterday (already overdue)
+//   +30 Dec h:mm Label     absolute, that date in the current year
+//
+// An absolute deadline always serializes WITH its day qualifier (today
+// included) — a bare "+h:mm" re-parsing as daily would silently change kind.
+type DeadlineDay = 'today' | 'tomorrow' | 'yesterday' | { day: number; monthIndex: number } | null
+
+export type ParsedDeadline = {
+    minutes: number
+    day: DeadlineDay
+    label: string
+}
+
+const DEADLINE_RE =
+    /^\+\s*(?:(today|tomorrow|yesterday)\s+|(\d{1,2})\s+([a-z]{3})\s+)?(\d{1,2}):(\d{1,2})(?:\s+(.*))?$/i
+
+const parseDeadlineMatch = (match: RegExpMatchArray): ParsedDeadline | null => {
+    const hours = parseInt(match[4], 10)
+    const minutes = parseInt(match[5], 10)
+    if (hours > 23 || minutes > 59) return null
+
+    const label = (match[6] || '').trim()
+    if (match[1]) {
+        return {
+            minutes: hours * 60 + minutes,
+            day: match[1].toLowerCase() as DeadlineDay,
+            label,
+        }
+    }
+    if (match[2]) {
+        const day = parseInt(match[2], 10)
+        const monthIndex = MONTHS.indexOf(match[3].toLowerCase())
+        if (monthIndex === -1 || day < 1 || day > 31) return null
+        return { minutes: hours * 60 + minutes, day: { day, monthIndex }, label }
+    }
+    return { minutes: hours * 60 + minutes, day: null, label }
+}
+
+// → every valid deadline line, in text order (there may be several deadlines).
+// day is null (daily), a named day, or { day, monthIndex }. Resolving
+// day+minutes to a timestamp is the caller's job (it needs a reference "now").
+export const parseDeadlineLines = (text: string): ParsedDeadline[] =>
+    text
+        .split('\n')
+        .map(line => {
+            const match = line.trim().match(DEADLINE_RE)
+            return match ? parseDeadlineMatch(match) : null
+        })
+        .filter((line): line is ParsedDeadline => line !== null)
+
+// Same contract as hasAnchorLine: a half-edited '+' line means "leave the
+// deadline alone" — only a fully absent line means clear.
+export const hasDeadlineLine = (text: string): boolean =>
+    text.split('\n').some(line => line.trim().startsWith('+'))
+
 export const formatAnchorToken = (minutes: number, dayMarker = ''): string =>
     `@${dayMarker ? `${dayMarker} ` : ''}${Math.floor(minutes / 60)}:${pad(minutes % 60)}`
 
@@ -157,12 +219,19 @@ export const formatElapsedToken = (ms: number): string => {
 // anchorMinutes is given (not null), an "@h:mm" header line is prepended —
 // with the day qualifier (e.g. "yesterday", "30 Dec") when anchorDayMarker is
 // non-empty, so anchors from before today survive the round-trip exactly.
+// When deadlineLines is non-empty, they are appended as the last lines —
+// the caller formats them (see serializeDeadlineLines in deadline.ts).
 export const serializeCurrentDurations = (
     periods: PeriodData[],
     {
         anchorMinutes = null,
         anchorDayMarker = '',
-    }: { anchorMinutes?: number | null; anchorDayMarker?: string } = {},
+        deadlineLines = [],
+    }: {
+        anchorMinutes?: number | null
+        anchorDayMarker?: string
+        deadlineLines?: string[]
+    } = {},
 ): string => {
     const lines = periods
         .map(period => {
@@ -176,7 +245,9 @@ export const serializeCurrentDurations = (
             return `${char} ${field}${note}`
         })
         .join('\n')
-    return anchorMinutes != null
-        ? `${formatAnchorToken(anchorMinutes, anchorDayMarker)}\n${lines}`
-        : lines
+    const withAnchor =
+        anchorMinutes != null
+            ? `${formatAnchorToken(anchorMinutes, anchorDayMarker)}\n${lines}`
+            : lines
+    return deadlineLines.length ? [withAnchor, ...deadlineLines].join('\n') : withAnchor
 }

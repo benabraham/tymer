@@ -631,12 +631,17 @@ Everything survives restart; there is no server and no account.
 | ----------------------------------------------------------------- | --------------------- |
 | Full session (periods + schedule)                                 | on every state change |
 | Named configs and the active config id                            | on every change       |
+| Deadlines and their silenced occurrences (§15)                    | on every change       |
 | Preferences: mute, voice set, theme, clocks visible, compact mode | on toggle             |
 
 - Because elapsed is clock-derived, "restore" of a running session is trivial: the
   wall clock did the counting (§3.5).
 - A missing or structurally invalid saved session falls back to the default timeline
   — deliberately no migrations: a stale shape means a clean reset.
+- Deadlines persist **outside** the session blob — Reset, config switches, and
+  Finish leave them untouched. Reopening the app with an unsilenced overdue
+  deadline resumes its alarm; each deadline's chime, however, is per browser
+  session and re-picked after a reload (§15.4).
 
 ---
 
@@ -700,6 +705,7 @@ Shortcuts are inert while a text field is focused (Escape excepted).
 | E                 | open durations panel (config or live editor per §6.3)     |
 | Escape            | close durations panel / cancel period edit                |
 | P                 | pin / unpin start time                                    |
+| S                 | silence the ringing deadline alarm (§15)                  |
 | M                 | mute / unmute                                             |
 | V                 | cycle voice set                                           |
 
@@ -750,7 +756,78 @@ Scenarios a port must reproduce exactly:
 
 ---
 
-## 15. Out of scope for this document
+## 15. Deadlines
+
+Wall-clock targets, independent of the period list — the session's periods say how
+long things take, deadlines say when something must be done. Several may exist at
+once. They persist separately from the session and survive resets, config switches,
+and reloads.
+
+### 15.1 Defining
+
+Deadlines are created, edited, and removed **only as text**, via `+` lines accepted
+anywhere in either durations editor (named configs §6, live editor §7). Every valid
+`+` line counts, one deadline each:
+
+| Form                | Meaning                                   |
+| ------------------- | ----------------------------------------- |
+| `+h:mm Label`       | **daily** — recurs every day at that time |
+| `+today h:mm Label` | **absolute** — that moment today          |
+| `+tomorrow h:mm`    | absolute, tomorrow                        |
+| `+yesterday h:mm`   | absolute, yesterday (already overdue)     |
+| `+30 Dec h:mm`      | absolute, that date in the current year   |
+
+The label is optional free text. Round-tripping is exact: an absolute deadline
+always serializes **with** a day qualifier (`today` included) — a bare `+h:mm`
+would re-parse as daily, silently changing kind.
+
+Ownership mirrors the anchor contract: the **live editor owns the list** — its
+valid `+` lines replace it, no `+` line at all clears it, and `+` lines present
+but none valid (a half-edited sole line) leave it untouched. A **config apply only
+sets** — a config without `+` lines never wipes deadlines set elsewhere.
+
+### 15.2 Occurrences
+
+A daily deadline resolves to _the current day_ at its time; after midnight it
+rolls over and is pending again. An absolute deadline is its timestamp. All
+alarm/overdue logic operates on this resolved **occurrence timestamp**. Deadlines
+run on their own 1 Hz clock — they must fire while the timer is idle too.
+
+### 15.3 Display
+
+Each deadline is a **dashed vertical line** over the timeline at its clock
+position (same projection as §9.2's start), clamped to the band's edges so it
+stays visible even when it falls outside the session's span. It carries:
+
+- right of the line: the time, a day qualifier when not today, and the label;
+- left of the line, always visible: a **countdown** — `0:01` one minute before
+  the deadline, `-0:01` one minute past it (elapsed floored, remaining ceiled).
+
+Past its moment the marker switches to the danger color and pulses. This **red
+state is tied to being overdue, not to the alarm** — it keeps pulsing after the
+alarm is silenced, until the occurrence rolls over (daily) or the deadline is
+removed.
+
+### 15.4 Alarm
+
+Crossing a deadline starts an alarm: a notification chime replayed back-to-back
+with no gap. The chime is chosen at random **once per deadline** and kept for the
+rest of the browser session (in memory only), so a given deadline always sounds
+the same.
+
+At most **one** alarm rings at a time, owned by the **latest expired** occurrence:
+
+- When a newer deadline expires while an older one is still ringing, the older is
+  turned off **for good** — it must not resume even if the newer deadline is later
+  deleted.
+- Silencing (bell button on the ringing marker's label, or `S`) is recorded per
+  occurrence timestamp: an absolute deadline stays quiet forever; a daily one
+  alarms again at its next day's occurrence.
+- A deadline that is already overdue the moment it is typed starts silenced — the
+  alarm is for the live crossing (and for reopening the app while an unsilenced
+  overdue deadline exists), not for editor keystrokes.
+
+## 16. Out of scope for this document
 
 - Web/PWA delivery: service worker, caching, update/reload policy, build identity.
 - Debug surfaces (debug panel, playback log, verbose logging).

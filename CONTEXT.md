@@ -75,6 +75,21 @@ When moving to the next Period, the current Period's `elapsed` is snapped down t
 **Tick**:
 A periodic update driven by a Web Worker. Recomputes the Current Period's elapsed/remaining from `Date.now() - timestampStarted` and triggers period-based sounds.
 
+### Deadline
+
+**Deadline**:
+A wall-clock target independent of Periods — "when something must be done", not "how long it takes". Defined only as `+` lines in the durations editors; several may exist. Either **absolute** (one timestamp) or **daily** (a time of day, recurring).
+_Avoid_: alarm (that's the sound it triggers), timer
+
+**Occurrence**:
+The concrete timestamp a Deadline currently points at: the timestamp itself when absolute, the current day at its time when daily (rolls over at midnight). All overdue/alarm/silencing logic operates on occurrences.
+
+**Overdue**:
+The condition `now >= occurrence`. Drives the marker's danger color and pulse. Independent of the alarm — a silenced Deadline stays overdue-red.
+
+**Deadline alarm**:
+The looping chime owned by the **latest expired** occurrence only. Chosen once per Deadline (per browser session), replayed gaplessly. Silencing is per occurrence; a newer expiry silences an older ringing Deadline for good.
+
 ## Relationships
 
 - A **Timer** owns an ordered list of **Periods** plus a **Schedule**
@@ -84,6 +99,7 @@ A periodic update driven by a Web Worker. Recomputes the Current Period's elapse
 - **Planned duration** lives in `PeriodConfig`; **Recorded duration** lives in `PeriodState` (as `elapsed` once a Period becomes Past)
 - **Auto-extension** mutates `PeriodState.duration` only; **Overtime** is the condition that may trigger it
 - Mixed verbs that touch both Schedule and Periods (e.g. `moveToNextPeriod`) live in Timer and wrap their multi-signal writes in `batch()`
+- **Deadlines** live outside the Timer entirely (own module, own persistence, own 1 Hz clock) — the timeline only projects them onto the session's span for display
 
 ## Example dialogue
 

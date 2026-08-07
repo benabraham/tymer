@@ -11,6 +11,7 @@ import { compactMode } from '../../../lib/compact'
 import { msToMinutes } from '../../../lib/format'
 import { Schedule } from '../../../lib/schedule'
 import { autoEditIndex, timerDuration, timerState } from '../../../lib/timer'
+import { TimelineDeadline } from './timeline-deadline'
 import { getTimelineData } from './timeline-logic'
 import { TimelinePeriod } from './timeline-period'
 
@@ -63,6 +64,7 @@ export const Timeline = () => {
             {timelinePeriods.map(props => (
                 <TimelinePeriod {...props} />
             ))}
+            <TimelineDeadline />
         </div>
     )
 }

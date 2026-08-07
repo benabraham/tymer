@@ -188,6 +188,47 @@ A session can be pinned to a wall-clock time (`Schedule.pin`/`unpin`/`isAnchored
 - Any user-facing pause (`pauseTimer`) unpins; `pauseForEditing`/`resumeAfterEditing` (used by the live editor and the timeline period-edit form) do not.
 - While anchored, elapsed is clock-owned — the current period's elapsed is derived from the anchor (`reconcileToAnchor`) — so manual elapsed adjustment (`adjustElapsed`, `moveElapsedTimeToPreviousPeriod`) instead **transfers recorded time with the previous period** (`Period.amendRecordedDuration`), keeping the anchor and total elapsed fixed: forward shrinks the previous period's record and grows the current period's derived elapsed; backward does the reverse, floored at 0. The transfer slides the **boundary** between the two periods, not the current period's **end**: its duration follows its elapsed by the same amount (`Period.shiftDuration`, applied before the elapsed refresh so a forward transfer never reads as an overrun), so `state.remaining` — and every projected clock time from there to the end of the session — is unchanged. `shiftDuration` moves `state.duration` and `config.userIntendedDuration` by the same delta rather than collapsing them (unlike `extendDuration`), so an auto-extension gap survives and the move is exactly reversible; both floor at `MIN_PERIOD_MS`. **`moveElapsedTimeToPreviousPeriod` ("move time to previous" / `Backspace`) is the exception** — it passes `adjustElapsed(delta, { keepDuration: true })`, keeping the current period's LENGTH instead of its end, so it starts and therefore ends later, exactly as that button behaves unanchored. The previous period's record can't shrink below `MIN_PERIOD_MS` (`canAdjustElapsed*` guards this), and there's nothing to transfer with on the first period (`currentPeriodIndex === 0`), so adjustment is a no-op there. **Any caller computing an `adjustElapsed` delta must measure it against `adjustableElapsed`, never `timerDurationElapsed`** — while anchored the session total is nailed to the wall clock and cannot move, so a delta derived from it never converges (the reference is unaffected by the adjustment) and bleeds sub-minute time out of the previous period's record on every keypress. `adjustableElapsed` is the current period's elapsed while anchored, the session total otherwise — **floored to a whole minute in both modes**: a running reference never sits on a whole minute, and `getNextMultipleOf3Delta` snaps such a value to the boundary just below it, so without the floor the plain ←/→ keys only shave off seconds the next tick re-adds and the elapsed can never actually step (it also made anchored deltas fractional, corrupting the previous period's record). This is what the plain ←/→ snap-to-3 keys use; `End` uses the current period's elapsed directly. Period boundaries behave exactly like normal mode — an overrun period auto-extends and later periods just shift; the anchor only fixes the session start and the completed periods' record. Moving elapsed **backward while NOT anchored** hands the auto-extension back (`Period.relaxAutoExtension`, via `updateCurrentPeriod({ relax: true })`): `state.duration` returns to `config.userIntendedDuration`, floored at the remaining elapsed, so a forward/back round trip is lossless. Without it the extension outlived the elapsed that earned it and every projected clock time drifted later on each bounce. The anchored branch does not need it — it manages duration explicitly in both directions via `shiftDuration`. Any clock gap (late Start on a past anchor, device sleep/reload, time spent in the live editor) lands entirely on the current period, so an anchored session never self-finishes and no wall-clock time since the anchor is lost (the user ends it via Finish). Consequently, any past `@` time is valid in the live editor no matter how old, and `resumeTimer` reconciles when a paused session is anchored (reachable by typing `@h:mm` while paused).
 
+### Deadlines
+
+Wall-clock targets independent of the session's periods (`src/lib/deadline.ts`) — there can be
+several. Each is a 2px dashed white marker over the timeline (`timeline-deadline.tsx`) with a
+countdown left of the line, shown at all times: `0:01` one minute before, `-0:01` one minute past.
+Once the clock passes a deadline its marker turns `--color-error` and pulses — the red light is
+tied to being OVERDUE, not to the alarm, so it keeps pulsing after silencing — and a notification
+chime loops until silenced via the little bell-slash button on the alarming marker's label or the
+`S` key. The chime is randomly picked ONCE per deadline (keyed by kind/time/label in an in-memory
+map — deliberately not persisted, a reload re-picks) and replays back-to-back with no gap; only a
+failed play waits before retrying, so muted/locked audio doesn't busy-spin.
+
+- **Set/edited/cleared only through the durations textareas**, via `+` lines — every valid one
+  counts (`parseDeadlineLines` in `durations-format.ts`): `+h:mm Label` with NO date is a **daily**
+  deadline — it recurs every day at that time; `+today h:mm`, `+tomorrow h:mm`, `+yesterday h:mm`
+  and `+30 Dec h:mm` are **absolute**. The mirror serializes an absolute deadline WITH its day
+  qualifier even for today (`serializeDeadlineLines`) — a bare `+h:mm` would re-parse as daily,
+  silently changing kind. Markers show the time, the day when not today, and the optional label.
+- **Ownership differs by editor** (same contract shape as the anchor): the live editor owns the
+  list — valid lines set exactly those, no `+` line at all clears, `+` lines present but none
+  valid keeps (`hasDeadlineLine`). A config apply only SETS when `+` lines are present; absence
+  leaves the list alone, so a daily deadline survives config switches.
+- **Only one alarm at a time — the latest expired owns it** (`deadlineAlarmTimestamp` = max overdue
+  occurrence). When a newer deadline expires while an older one still rings, a supersede effect
+  silences the older one FOR GOOD (it must not resume even if the newer one is later deleted).
+  Silencing is per occurrence timestamp (`silencedDeadlines`, persisted, pruned against current
+  occurrences): an absolute deadline stays quiet forever, a daily one resolves to a new timestamp
+  after midnight and alarms again. A deadline already overdue when it first appears starts
+  silenced — typing `+yesterday 17:00` must not blast chimes per keystroke; the alarm is for the
+  live crossing (and for reopening the app while un-silenced-overdue). `setDeadlines` batches the
+  list write with that silencing so the alarm effect never sees the intermediate state. The loop
+  (`playNotification` of the owner's fixed chime) re-checks `deadlineAlarmActive` each round, so
+  silence/supersede/clear/mute stops it at the next clip boundary.
+- Deadline state persists under its own localStorage keys (`deadlines`, `deadlineSilenced`), NOT in
+  the `timerState` blob — it outlives sessions. The module runs its own 1 Hz clock (`deadlineNow`,
+  a plain `setInterval`): the timer's worker tick only runs during a session, and a deadline must
+  fire, and its daily resolution must roll over at midnight, while idle too.
+- Markers map each deadline's clock time into the session's start..end span (start =
+  `timestampAnchor ?? now − totalElapsed`) and clamp to the timeline's edges, so a set deadline is
+  always visible; unanchored, they slide as the derived start moves with "now".
+
 ### Sound System
 
 Sources are WAV files in `src/assets/sounds/`; `./normalize_audio.sh` converts them to
@@ -297,7 +338,7 @@ of silence. Trim that silence with a **stream copy**, never a re-encode:
 `ffmpeg -ss <start> -i in.ogg -t <len> -c copy out.ogg` cuts at Vorbis packet boundaries and the
 decoded PCM stays bit-identical, so the clip survives with no generation loss; it just lands within
 ~10 ms of the requested point. Re-encoding a lossy source to trim leading silence is the tempting
-wrong move. Bump the `78` in `REQUIRED_SOUND_KEYS` and `playRandomNotification` (`src/lib/sounds.ts`)
+wrong move. Bump the `78` in `REQUIRED_SOUND_KEYS` and `pickRandomNotificationKey` (`src/lib/sounds.ts`)
 in lockstep — the count is not derived from the manifest, and the sounds test fails if it drifts.
 
 PWA precaching uses recursive globs (`sounds/**/*.webm`, `sounds/**/*.ogg`) in `vite.config.js` —

@@ -12,6 +12,9 @@
     outline: none;
     opacity: 0.9;
 
+    // Positioning context for the deadline marker (absolute, left in %).
+    position: relative;
+
     &:focus-visible {
         opacity: 1;
     }
@@ -83,6 +86,89 @@
     padding-block: var(--line-overshoot);
     border-right: 2px solid var(--color-current-time);
     color: var(--color-current-time);
+}
+
+/* Deadline marker — a wall-clock line over the whole timeline (absolute wrt
+   .timeline, so grid flow is untouched). The line overshoots the top so its
+   label sits in the margin above the periods. */
+.timeline__deadline {
+    --deadline-overshoot: 3rem;
+
+    position: absolute;
+    top: calc(-1 * var(--deadline-overshoot));
+    bottom: 0;
+    left: calc(var(--deadline-minutes) / var(--total-minutes) * 100%);
+    border-left: 2px dashed var(--color-border-white);
+    z-index: 3;
+    pointer-events: none;
+}
+
+.timeline__deadline-label {
+    position: absolute;
+    top: 0;
+    left: 0.25rem;
+    font-size: 0.625rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    color: var(--color-border-white);
+    opacity: 0.9;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-variant-numeric: tabular-nums;
+}
+
+// Time to/past the deadline ("0:01" / "-0:01"), always visible just left of
+// the line, mirroring the label's styling on the other side.
+.timeline__deadline-countdown {
+    position: absolute;
+    top: 0;
+    right: calc(100% + 0.25rem);
+    font-size: 0.625rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    color: var(--color-border-white);
+    opacity: 0.9;
+    font-variant-numeric: tabular-nums;
+}
+
+.timeline__deadline-day {
+    font-weight: normal;
+}
+
+// Overdue: danger color + pulse — tied to being past the deadline, NOT to the
+// alarm, so a silenced deadline keeps its red light. The pulse animates the
+// line's border color (not the marker's opacity) so the labels and the
+// silence button stay steadily visible and clickable.
+.timeline__deadline--overdue {
+    border-left-color: var(--color-error);
+    animation: timeline-deadline-pulse 1.2s ease-in-out infinite;
+
+    .timeline__deadline-label,
+    .timeline__deadline-countdown {
+        color: var(--color-error);
+        opacity: 1;
+    }
+}
+
+@keyframes timeline-deadline-pulse {
+    50% {
+        border-left-color: transparent;
+    }
+}
+
+.timeline__deadline-silence {
+    pointer-events: auto;
+    width: 1.25rem;
+    height: 1.25rem;
+    padding: 0;
+    min-width: auto;
+    border-radius: 50%;
+    font-size: 0.625rem;
+    line-height: 1;
+    background-color: var(--color-error);
+    color: var(--color-text-button);
+    outline: 2px solid var(--color-bg-body);
 }
 
 .timeline__text {

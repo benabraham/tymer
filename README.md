@@ -21,8 +21,24 @@ It's a countdown timer that can
 - have current period elapsed time adjusted
 - move to the next or previous period
 - show the total time elapsed while it was running
+- carry deadlines — wall-clock targets drawn as dashed lines over the timeline
 
 It uses localStorage to “keep running” after closing the page and opening it again.
+
+## Deadlines
+
+Add `+` lines in the durations editor (`E`), one per deadline:
+
+```
++16:30 stretch        every day at 16:30
++today 17:00 leave    a concrete moment (today/tomorrow/yesterday/30 Dec)
+```
+
+Each deadline is a dashed line over the timeline with a countdown next to it (`0:05` — five
+minutes to go, `-0:05` — five minutes over). Past its moment it turns red and pulses, and a chime
+(picked once per deadline) repeats until silenced — with the bell button on its label or the `S`
+key. Only the most recently expired deadline rings; an older still-ringing one goes quiet for good
+when a newer one fires. Daily deadlines ring again the next day.
 
 ## Build
 

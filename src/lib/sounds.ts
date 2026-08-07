@@ -24,7 +24,7 @@ declare global {
 
 // Resolves the variants (objects) for a sound key from the generated manifest.
 // A key absent from the manifest resolves to no variants — callers (playByKey,
-// playRandomNotification) already treat an empty list as "sound not found".
+// playNotification) already treat an empty list as "sound not found".
 export const getVariants = (key: string): SoundVariant[] => SOUND_VARIANTS[key] ?? []
 
 // Resolves just the variant paths — consumed by soundConfig (build-time
@@ -344,14 +344,19 @@ const playByKey = async (soundKey: string): Promise<boolean> => {
     }
 }
 
-// Play a random notification sound (1-78)
-const playRandomNotification = async (): Promise<boolean> => {
+// Picks a random notification key ('notification_1'…'notification_78'). The
+// deadline alarm uses this to choose its chime ONCE per deadline and then
+// replays that same key, so picking and playing are separate.
+export const pickRandomNotificationKey = (): string =>
+    `notification_${Math.floor(Math.random() * 78) + 1}`
+
+// Play a specific notification chime by key. Resolves when the clip has
+// finished playing (or failed) — the deadline alarm loop relies on that to
+// chain repetitions gaplessly.
+export const playNotification = async (notificationKey: string): Promise<boolean> => {
     if (!soundEnabled.value) return false
 
-    const randomNum = Math.floor(Math.random() * 78) + 1 // 1-78
-    const notificationKey = `notification_${randomNum}`
-
-    log('🔊 Playing random notification', notificationKey, 10)
+    log('🔊 Playing notification', notificationKey, 10)
 
     const allVariants = sounds[notificationKey]
     if (!allVariants || allVariants.length === 0) {
@@ -395,6 +400,9 @@ const playRandomNotification = async (): Promise<boolean> => {
         return false
     }
 }
+
+// Play a random notification sound (1-78)
+const playRandomNotification = (): Promise<boolean> => playNotification(pickRandomNotificationKey())
 
 // Legacy function for backwards compatibility with general sounds
 export const playSound = (soundName: string): Promise<boolean> => playByKey(soundName)

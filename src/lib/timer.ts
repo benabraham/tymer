@@ -1,5 +1,6 @@
 import { batch, computed, effect, type ReadonlySignal, type Signal, signal } from '@preact/signals'
 import { DURATION_TO_ADD_AUTOMATICALLY, MIN_PERIOD_MS, PERIOD_CONFIG } from './config.js'
+import { applyDeadlinesFromText, serializeDeadlineLines } from './deadline'
 import {
     hasAnchorLine,
     parseCurrentDurationsText,
@@ -511,6 +512,11 @@ const setPeriodsFromConfig = (periods: PeriodData[]): void => {
 
         const anchorMinutes = parseConfigAnchor(activeConfig.value.text)
         if (anchorMinutes != null) Schedule.pin(todayAtMinutes(anchorMinutes))
+
+        // '+' lines in the config set the deadlines on apply; absence leaves
+        // them alone (clearOnAbsence defaults false) — a config that says
+        // nothing about deadlines must not wipe a daily one set elsewhere.
+        applyDeadlinesFromText(activeConfig.value.text)
     })
 }
 
@@ -569,10 +575,10 @@ const beginEditCurrentDurations = (): void => {
     }
     // Freeze the current period's elapsed into state so serialization is exact.
     updateCurrentPeriod()
-    currentDurationsText.value = serializeCurrentDurations(
-        timerState.value.periods,
-        anchorForSerialization(),
-    )
+    currentDurationsText.value = serializeCurrentDurations(timerState.value.periods, {
+        ...anchorForSerialization(),
+        deadlineLines: serializeDeadlineLines(),
+    })
     editingCurrentDurations.value = true
 }
 
@@ -638,6 +644,12 @@ export const applyCurrentDurations = (text: string): void => {
         timerState.value = { ...timerState.value, periods }
         Schedule.setIndex(clampedIndex)
 
+        // The live editor owns the deadlines: valid '+' lines set them, fully
+        // absent ones clear them, half-edited ones keep them. Day resolution
+        // uses the real clock, NOT `reference` — timestampPaused can be days
+        // old (paused overnight), and "+today" must mean today.
+        applyDeadlinesFromText(text, { clearOnAbsence: true })
+
         if (anchorIsValid && !keepExistingAnchor) {
             // anchorIsValid implies typedAnchorMs is non-null.
             Schedule.pin(typedAnchorMs as number)
@@ -667,8 +679,9 @@ export const applyCurrentDurations = (text: string): void => {
 effect(() => {
     const periods = timerState.value.periods
     const anchor = anchorForSerialization()
+    const deadlineLines = serializeDeadlineLines()
     if (!editingCurrentDurations.value || editorIsApplying) return
-    currentDurationsText.value = serializeCurrentDurations(periods, anchor)
+    currentDurationsText.value = serializeCurrentDurations(periods, { ...anchor, deadlineLines })
 })
 
 // ----------------------------------------------------------------------------
