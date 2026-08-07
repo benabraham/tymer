@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PeriodData } from '../../../lib/period.js'
-import { calculateEndTimes, calculateStartTime } from './timeline-logic.js'
+import {
+    calculateEndTimes,
+    calculateStartTime,
+    calculateTimelineMinutes,
+} from './timeline-logic.js'
 
 const MIN = 60 * 1000
 
@@ -97,5 +101,40 @@ describe('calculateStartTime', () => {
         const startTime = calculateStartTime({ periods: [period(90 * MIN, 60 * MIN)] })
 
         expect(startTime).toBe('yesterday<br>23<br>30')
+    })
+})
+
+describe('calculateTimelineMinutes', () => {
+    const START = new Date(2024, 0, 2, 12, 0, 0).getTime()
+
+    it('is the periods total when no deadlines are set', () => {
+        expect(calculateTimelineMinutes({ durationMs: 48 * MIN, sessionStart: START })).toBe(48)
+    })
+
+    it('ignores deadlines at or before the session end', () => {
+        const minutes = calculateTimelineMinutes({
+            durationMs: 48 * MIN,
+            sessionStart: START,
+            deadlineTimestamps: [START + 30 * MIN, START + 48 * MIN],
+        })
+        expect(minutes).toBe(48)
+    })
+
+    it('extends up to the latest deadline beyond the end', () => {
+        const minutes = calculateTimelineMinutes({
+            durationMs: 48 * MIN,
+            sessionStart: START,
+            deadlineTimestamps: [START + 60 * MIN, START + 90 * MIN],
+        })
+        expect(minutes).toBe(90)
+    })
+
+    it('rounds a fractional tail up so the marker stays inside the grid', () => {
+        const minutes = calculateTimelineMinutes({
+            durationMs: 48 * MIN,
+            sessionStart: START,
+            deadlineTimestamps: [START + 48 * MIN + 90 * 1000],
+        })
+        expect(minutes).toBe(50)
     })
 })

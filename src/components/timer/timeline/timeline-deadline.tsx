@@ -11,9 +11,9 @@ import {
     silenceDeadlineAlarm,
 } from '../../../lib/deadline'
 import { formatTime } from '../../../lib/format'
-import { Schedule } from '../../../lib/schedule'
 import { playSound } from '../../../lib/sounds'
-import { timerDuration, timerDurationElapsed } from '../../../lib/timer'
+import { sessionStartTimestamp, timerDuration } from '../../../lib/timer'
+import { calculateTimelineMinutes } from './timeline-logic'
 
 type MarkerProps = {
     occurrence: DeadlineOccurrence
@@ -72,18 +72,26 @@ const TimelineDeadlineMarker = ({ occurrence, offsetMinutes }: MarkerProps) => {
 }
 
 // Dashed wall-clock markers over the timeline, one per deadline. The timeline
-// maps the session's start..end to its width, so each marker sits at its
-// deadline's clock position and slides as the (unanchored) start re-derives
-// from "now" each second. A deadline outside the session's span clamps to the
-// nearest edge — a set deadline is always visible; the label carries the exact
-// time regardless.
+// maps the session's start..end to its width — extended past the end up to the
+// latest deadline (calculateTimelineMinutes, mirrored by the container's
+// --total-minutes) — so each marker sits at its deadline's clock position and
+// slides as the (unanchored) start re-derives from "now" each second. A
+// deadline before the session start still clamps to the left edge — a set
+// deadline is always visible; the label carries the exact time regardless.
 export const TimelineDeadline = () => {
     const occurrences = deadlineOccurrences.value
     if (!occurrences.length) return null
 
-    const now = deadlineNow.value
-    const sessionStart = Schedule.timestampAnchor.value ?? now - timerDurationElapsed.value
-    const totalMinutes = timerDuration.value / 60000
+    // sessionStartTimestamp is jitter-free (stable timestamps while running,
+    // minute-quantized clock otherwise), so marker positions hold still until
+    // a full minute actually passes. deadlineNow is only for the countdown
+    // and overdue texts, which do update per second.
+    const sessionStart = sessionStartTimestamp.value
+    const totalMinutes = calculateTimelineMinutes({
+        durationMs: timerDuration.value,
+        sessionStart,
+        deadlineTimestamps: occurrences.map(o => o.timestamp),
+    })
 
     return (
         <>

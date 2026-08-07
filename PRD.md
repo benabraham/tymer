@@ -233,8 +233,20 @@ Anchored mode changes all of the above — see §8.6.
 
 ### 5.3 Adding a period
 
-A new period defaults to **fun, 24 min, no note**. Where it lands depends on how far
-the current period has run:
+A new period defaults to **fun, 24 min, no note**.
+
+**Deadline fill:** when the addition happens at the session's tail — adding while on
+the **last** period, or via the last block's "+" affordance — and the nearest
+deadline (§15) beyond the session's projected end lies further away than the default
+would reach, the new period is instead sized so the session **ends exactly at that
+deadline**. With several deadlines ahead, each addition reaches the _nearest_ one
+beyond the current end, so repeated additions walk deadline to deadline. Gaps the
+default already covers, deadlines inside the session's span, and no deadline at all
+fall back to the 24 min default. (In the insert-before case below, the displaced
+period's planned time counts toward the gap — the session still ends at the
+deadline.)
+
+Where the new period lands depends on how far the current period has run:
 
 - **Current elapsed > 60 s:** insert **after** the current period and immediately move
   to it — the current period completes normally (round-down + remainder carry, §4.3).
@@ -478,7 +490,10 @@ The centerpiece: one horizontal band, one block per period.
 **Geometry — everything is minute-proportional.** The band is divided into one unit
 per whole minute of the session's total duration; each block spans its duration in
 whole minutes (floored), so widths are exact minute counts, not percentages of
-arbitrary size. All fills and markers below snap to the same minute grid.
+arbitrary size. All fills and markers below snap to the same minute grid. When a
+deadline (§15) lies beyond the session's end, the band extends past the last block
+with **bare, period-free track** up to the latest deadline (§15.3) — extra minute
+units holding no period.
 
 **Every block shows:**
 
@@ -806,8 +821,14 @@ run on their own 1 Hz clock — they must fire while the timer is idle too.
 ### 15.3 Display
 
 Each deadline is a **dashed vertical line** over the timeline at its clock
-position (same projection as §9.2's start), clamped to the band's edges so it
-stays visible even when it falls outside the session's span. It carries:
+position (same projection as §9.2's start). A deadline beyond the session's end
+does **not** clamp: the band grows past the last block with bare track up to the
+**latest** deadline (§9.1), so every marker stands at its true clock position —
+the extension is purely visual and changes nothing about the session's end,
+remaining, or projected times. Only a deadline before the session's _start_
+clamps, to the left edge, to stay visible. Marker positions (and the bare
+track's width) must hold perfectly still between ticks, moving only when the
+projection actually shifts by a whole minute. Each marker carries:
 
 - right of the line: the time, a day qualifier when not today, and the label;
 - left of the line, always visible: a **countdown** — `0:01` one minute before

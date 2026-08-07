@@ -5,8 +5,31 @@
  * Modern JS, Baseline 2023 compatible.
  */
 import { format } from 'date-fns'
-import { formatDayMarker } from '../../../lib/format.js'
+import { formatDayMarker, msToMinutes } from '../../../lib/format.js'
 import type { PeriodData } from '../../../lib/period.js'
+
+/**
+ * Grid size of the timeline in minutes: the periods' total, extended past the
+ * session end up to the latest deadline when one lies beyond it. The tail
+ * holds no periods — empty track — so a deadline marker sits at its true
+ * clock position instead of clamping to the last period's edge. Purely
+ * visual: session end, remaining and projected times stay defined by the
+ * periods alone.
+ */
+export const calculateTimelineMinutes = ({
+    durationMs,
+    sessionStart,
+    deadlineTimestamps = [],
+}: {
+    durationMs: number
+    sessionStart: number
+    deadlineTimestamps?: number[]
+}): number => {
+    const base = msToMinutes(durationMs)
+    if (!deadlineTimestamps.length) return base
+    const tailMs = Math.max(...deadlineTimestamps) - (sessionStart + durationMs)
+    return base + Math.max(0, Math.ceil(tailMs / 60000))
+}
 
 /**
  * Calculate formatted end times for all periods.

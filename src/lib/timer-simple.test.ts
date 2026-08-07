@@ -1,14 +1,18 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PERIOD_CONFIG } from './config'
+import { deadlineNow, deadlines } from './deadline'
 import type { PeriodData, PeriodStateData } from './period.js'
 import { Schedule } from './schedule'
 import { getNextMultipleOf3Delta } from './snap'
 import {
+    addPeriod,
+    addPeriodAtIndex,
     adjustableElapsed,
     adjustElapsed,
     handleTimerCompletion,
     initialState,
     moveToNextPeriod,
+    sessionStartTimestamp,
     timerDuration,
     timerDurationElapsed,
     timerHasFinished,
@@ -750,6 +754,179 @@ describe('Timer Logic - Simple Tests', () => {
             // Timer should be in completed state
             expect(Schedule.currentPeriodIndex.value).toBe(null)
             expect(Schedule.timestampStarted.value).toBe(null)
+        })
+    })
+
+    describe('adding a period on the last period fills to the nearest deadline', () => {
+        const MIN = 60 * 1000
+
+        // Two 24m periods, on the last one with `elapsedMs` elapsed — the
+        // session's projected end is now + (24m − elapsedMs).
+        const setupRunningLastPeriod = (now: number, elapsedMs = 2 * MIN): void => {
+            timerState.value = {
+                ...timerState.value,
+                periods: timerState.value.periods.slice(0, 2).map((period, index) => ({
+                    ...period,
+                    config: { ...period.config, userIntendedDuration: 24 * MIN },
+                    state: {
+                        duration: 24 * MIN,
+                        elapsed: index === 0 ? 24 * MIN : elapsedMs,
+                        remaining: index === 0 ? 0 : 24 * MIN - elapsedMs,
+                    },
+                })),
+            }
+            Schedule.setSnapshot({
+                phase: 'running',
+                currentPeriodIndex: 1,
+                timestampStarted: now - elapsedMs,
+                timestampPaused: null,
+            })
+        }
+
+        afterEach(() => {
+            deadlines.value = []
+            deadlineNow.value = Date.now()
+            vi.restoreAllMocks()
+        })
+
+        it('sizes the new period to end exactly at the deadline', () => {
+            const now = Date.now()
+            vi.spyOn(Date, 'now').mockReturnValue(now)
+            setupRunningLastPeriod(now)
+            // Session end is now + 22m; the deadline lies beyond it.
+            deadlines.value = [{ kind: 'absolute', timestamp: now + 60 * MIN, label: '' }]
+
+            addPeriod()
+
+            expect(timerState.value.periods.length).toBe(3)
+            expect(Schedule.currentPeriodIndex.value).toBe(2)
+            expect(timerState.value.periods[2].state.duration).toBe(60 * MIN)
+        })
+
+        it('carries the completed period sub-minute remainder into the fill', () => {
+            const now = Date.now()
+            vi.spyOn(Date, 'now').mockReturnValue(now)
+            setupRunningLastPeriod(now, 2 * MIN + 30000)
+            deadlines.value = [{ kind: 'absolute', timestamp: now + 60 * MIN, label: '' }]
+
+            addPeriod()
+
+            // The new period starts 30s in the past (Schedule.advance carries
+            // the remainder), so its duration is 30s longer — its end still
+            // lands exactly on the deadline.
+            expect(Schedule.timestampStarted.value).toBe(now - 30000)
+            expect(timerState.value.periods[2].state.duration).toBe(60 * MIN + 30000)
+        })
+
+        it('adds the default when the gap to the deadline is smaller', () => {
+            const now = Date.now()
+            vi.spyOn(Date, 'now').mockReturnValue(now)
+            setupRunningLastPeriod(now)
+            // Beyond the end (now + 22m) but under the 24m default.
+            deadlines.value = [{ kind: 'absolute', timestamp: now + 23 * MIN, label: '' }]
+
+            addPeriod()
+
+            expect(timerState.value.periods[2].state.duration).toBe(24 * MIN)
+        })
+
+        it('ignores deadlines the session already covers', () => {
+            const now = Date.now()
+            vi.spyOn(Date, 'now').mockReturnValue(now)
+            setupRunningLastPeriod(now)
+            // Inside the session span (end is now + 22m) — not a fill target.
+            deadlines.value = [{ kind: 'absolute', timestamp: now + 10 * MIN, label: '' }]
+
+            addPeriod()
+
+            expect(timerState.value.periods[2].state.duration).toBe(24 * MIN)
+        })
+
+        it('adds the default when no deadline is set', () => {
+            const now = Date.now()
+            vi.spyOn(Date, 'now').mockReturnValue(now)
+            setupRunningLastPeriod(now)
+
+            addPeriod()
+
+            expect(timerState.value.periods[2].state.duration).toBe(24 * MIN)
+        })
+
+        it('keeps the default when not on the last period', () => {
+            const now = Date.now()
+            vi.spyOn(Date, 'now').mockReturnValue(now)
+            setupRunningLastPeriod(now)
+            Schedule.setSnapshot({
+                phase: 'running',
+                currentPeriodIndex: 0,
+                timestampStarted: now - 2 * MIN,
+                timestampPaused: null,
+            })
+            timerState.value = {
+                ...timerState.value,
+                periods: timerState.value.periods.map((period, index) => ({
+                    ...period,
+                    state: {
+                        ...period.state,
+                        elapsed: index === 0 ? 2 * MIN : 0,
+                        remaining: index === 0 ? 22 * MIN : 24 * MIN,
+                    },
+                })),
+            }
+            deadlines.value = [{ kind: 'absolute', timestamp: now + 300 * MIN, label: '' }]
+
+            addPeriod()
+
+            expect(timerState.value.periods.length).toBe(3)
+            expect(timerState.value.periods[1].state.duration).toBe(24 * MIN)
+        })
+
+        it('sessionStartTimestamp is stored-timestamp-derived while running', () => {
+            const now = Date.now()
+            setupRunningLastPeriod(now)
+            deadlineNow.value = now
+
+            // started (now − 2m) minus the completed period's 24m record.
+            expect(sessionStartTimestamp.value).toBe(now - 26 * MIN)
+
+            // Sub-second phase between the 1 Hz clocks must not move it — this
+            // wobble is what made the deadline tail blink in and out per tick.
+            deadlineNow.value = now + 900
+            expect(sessionStartTimestamp.value).toBe(now - 26 * MIN)
+        })
+
+        it('sessionStartTimestamp slides minute-quantized while paused', () => {
+            const base = new Date(2026, 7, 5, 12, 0, 0, 0).getTime()
+            setupRunningLastPeriod(base)
+            Schedule.setSnapshot({
+                phase: 'paused',
+                currentPeriodIndex: 1,
+                timestampStarted: base - 2 * MIN,
+                timestampPaused: base,
+            })
+
+            deadlineNow.value = base + 20000
+            expect(sessionStartTimestamp.value).toBe(base - 26 * MIN)
+            deadlineNow.value = base + 59000
+            expect(sessionStartTimestamp.value).toBe(base - 26 * MIN)
+            // Only a full minute of clock moves it — and by a full minute.
+            deadlineNow.value = base + 61000
+            expect(sessionStartTimestamp.value).toBe(base + MIN - 26 * MIN)
+        })
+
+        it('timeline hover "+" after the last period fills from the session end', () => {
+            const now = Date.now()
+            vi.spyOn(Date, 'now').mockReturnValue(now)
+            setupRunningLastPeriod(now)
+            deadlines.value = [{ kind: 'absolute', timestamp: now + 60 * MIN, label: '' }]
+
+            addPeriodAtIndex(1)
+
+            // Appended after the last period, it starts at the session end
+            // (now + 22m) and runs to the deadline: 38m.
+            expect(timerState.value.periods.length).toBe(3)
+            expect(Schedule.currentPeriodIndex.value).toBe(1)
+            expect(timerState.value.periods[2].state.duration).toBe(38 * MIN)
         })
     })
 })

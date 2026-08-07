@@ -119,6 +119,17 @@ export const deadlineOccurrences: ReadonlySignal<DeadlineOccurrence[]> = compute
     occurrencesAt(deadlines.value, deadlineNow.value),
 )
 
+// The next occurrence strictly after `timestamp` — what a period added at the
+// session's tail fills up to — or null when none lies beyond it. Peeks: called
+// from event handlers, not reactive contexts.
+export const nearestDeadlineAfter = (timestamp: number): number | null => {
+    const future = deadlineOccurrences
+        .peek()
+        .map(o => o.timestamp)
+        .filter(ts => ts > timestamp)
+    return future.length ? Math.min(...future) : null
+}
+
 // The occurrence whose alarm currently belongs to: the LATEST expired one
 // (max overdue timestamp), silenced or not. Null when nothing is overdue.
 // Earlier overdue deadlines never alarm — the newest expiry always owns it.

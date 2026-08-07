@@ -67,7 +67,9 @@
     --color-icon-special: #da77f2; // Change type - bright purple
 
     // Timeline specific
-    --color-timeline-bg: skyblue;
+    // Only visible as the bare track past the last period (the deadline
+    // tail) — a touch lighter than the body bg, must not read as a period.
+    --color-timeline-bg: #303030;
     --color-elapsed-overlay: rgb(255 212 59 / 40%); // Semi-transparent current-time color
     --color-overrun: #ac0000;
     --color-subinterval-a: rgb(0 0 0 / 12%);
@@ -158,7 +160,9 @@
     --color-icon-special: #b48ead; // nord15 - Change type
 
     // Timeline specific
-    --color-timeline-bg: #5e81ac; // nord10
+    // Only visible as the bare track past the last period (the deadline
+    // tail) — a touch lighter than the body bg, must not read as a period.
+    --color-timeline-bg: #2e3440; // nord0
     --color-elapsed-overlay: rgb(235 203 139 / 40%); // Semi-transparent nord13
     --color-overrun: #bf616a; // nord11
     --color-subinterval-a: rgb(46 52 64 / 30%);

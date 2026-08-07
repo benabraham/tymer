@@ -229,8 +229,26 @@ failed play waits before retrying, so muted/locked audio doesn't busy-spin.
   a plain `setInterval`): the timer's worker tick only runs during a session, and a deadline must
   fire, and its daily resolution must roll over at midnight, while idle too.
 - Markers map each deadline's clock time into the session's start..end span (start =
-  `timestampAnchor ?? now − totalElapsed`) and clamp to the timeline's edges, so a set deadline is
-  always visible; unanchored, they slide as the derived start moves with "now".
+  `sessionStartTimestamp` in `timer.js`: the anchor when pinned; `timestampStarted` minus the
+  completed periods' recorded elapsed while running — plain stored numbers, because `now −
+totalElapsed` wobbles ±1s with the phase between the worker tick and `deadlineNow`, which made
+  every minute-rounded position jitter and the deadline tail blink per tick; a minute-quantized
+  `now − totalElapsed` when paused/idle, so the sliding projection moves in full-minute steps).
+  A set deadline is always visible; unanchored-idle, markers slide as the derived start moves
+  with "now". A deadline beyond the session end does NOT clamp:
+  the timeline grid extends past the end with empty track up to the latest deadline
+  (`calculateTimelineMinutes` in `timeline-logic.ts`, used by both the container's
+  `--total-minutes` and the marker math), so the marker sits at its true clock position. Purely
+  visual — session end, remaining and projected times stay defined by the periods alone. Only a
+  deadline before the session start still clamps (to the left edge).
+- **Adding a period at the session's tail fills up to the nearest deadline beyond the end** instead
+  of the 24 min default, when that gap is larger (`fillToDeadlineDuration` in `timer.js`): the
+  session then ends exactly on the deadline. Applies to "add period"/`A`/`Insert` when on the last
+  period (measured from "now" minus the completed period's sub-minute remainder — in the
+  insert-before branch, i.e. < 1 min elapsed, the displaced period's fresh duration counts as
+  already covered) and to the timeline's hover "+" after the last period (measured from the
+  session end, where the appended period starts). Deadlines the session already covers, and gaps
+  the default already reaches past, keep the 24 min default.
 
 ### Sound System
 

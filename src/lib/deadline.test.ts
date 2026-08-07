@@ -16,6 +16,7 @@ import {
     deadlineNow,
     deadlineOccurrences,
     deadlines,
+    nearestDeadlineAfter,
     resolveParsedDeadline,
     serializeDeadlineLines,
     setDeadlines,
@@ -247,6 +248,30 @@ describe('serializeDeadlineLines', () => {
         deadlines.value = []
         applyDeadlinesFromText(lines.join('\n'), { reference: REF })
         expect(deadlines.value).toEqual(original)
+    })
+})
+
+describe('nearestDeadlineAfter', () => {
+    it('returns the nearest occurrence strictly after the timestamp', () => {
+        deadlines.value = [
+            { kind: 'absolute', timestamp: at(5, 17, 0), label: '' },
+            { kind: 'absolute', timestamp: at(5, 14, 0), label: '' },
+        ]
+        expect(nearestDeadlineAfter(at(5, 13, 0))).toBe(at(5, 14, 0))
+        expect(nearestDeadlineAfter(at(5, 14, 0))).toBe(at(5, 17, 0))
+        expect(nearestDeadlineAfter(at(5, 18, 0))).toBeNull()
+    })
+
+    it('resolves daily deadlines to the current day, past occurrences excluded', () => {
+        deadlines.value = [{ kind: 'daily', minutes: 17 * 60, label: '' }]
+        expect(nearestDeadlineAfter(REF)).toBe(at(5, 17, 0))
+        // 17:00 already resolved for today — nothing lies beyond it until
+        // midnight rolls the occurrence over.
+        expect(nearestDeadlineAfter(at(5, 17, 0))).toBeNull()
+    })
+
+    it('returns null when no deadlines are set', () => {
+        expect(nearestDeadlineAfter(REF)).toBeNull()
     })
 })
 

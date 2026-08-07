@@ -1,6 +1,11 @@
 import { batch, computed, effect, type ReadonlySignal, type Signal, signal } from '@preact/signals'
 import { DURATION_TO_ADD_AUTOMATICALLY, MIN_PERIOD_MS, PERIOD_CONFIG } from './config.js'
-import { applyDeadlinesFromText, serializeDeadlineLines } from './deadline'
+import {
+    applyDeadlinesFromText,
+    deadlineNow,
+    nearestDeadlineAfter,
+    serializeDeadlineLines,
+} from './deadline'
 import {
     hasAnchorLine,
     parseCurrentDurationsText,
@@ -156,6 +161,32 @@ export const timerDurationElapsed: ReadonlySignal<number> = computed(() =>
 export const timerDurationRemaining: ReadonlySignal<number> = computed(() =>
     timerState.value.periods.reduce((sum, period) => sum + period.state.remaining, 0),
 )
+
+// Wall-clock timestamp the timeline's left edge represents. Positions derived
+// from it (deadline markers, the deadline tail) must be stable until a full
+// minute actually passes — `now − totalElapsed` is NOT: the worker tick and
+// deadlineNow are unsynchronized 1 Hz clocks, so their sub-second phase makes
+// that difference wobble ±1s per render, flipping every minute-rounded value
+// that sits near a boundary (the deadline tail blinked in and out each tick).
+// - Anchored: the anchor, verbatim.
+// - Running: timestampStarted minus the completed periods' recorded elapsed —
+//   plain stored numbers, no clock involved, changes only on real state
+//   changes.
+// - Paused/idle: the projection legitimately slides with "now", but quantized
+//   to the whole minute so it moves in full-minute steps instead of drifting.
+export const sessionStartTimestamp: ReadonlySignal<number> = computed(() => {
+    const anchor = Schedule.timestampAnchor.value
+    if (anchor !== null) return anchor
+    const currentIndex = Schedule.currentPeriodIndex.value
+    const started = Schedule.timestampStarted.value
+    if (currentIndex !== null && started !== null && Schedule.timestampPaused.value === null) {
+        const priorElapsed = timerState.value.periods
+            .slice(0, currentIndex)
+            .reduce((sum, period) => sum + period.state.elapsed, 0)
+        return started - priorElapsed
+    }
+    return Math.floor(deadlineNow.value / 60000) * 60000 - timerDurationElapsed.value
+})
 // The elapsed value an `adjustElapsed` delta must be measured against — whatever
 // that adjustment actually moves, floored to a whole minute.
 // - Unanchored: shifting timestampStarted moves the session total 1:1, so the
@@ -1006,16 +1037,59 @@ const writePeriodsState = ({
     })
 }
 
+const DEFAULT_NEW_PERIOD_MS = 24 * 60 * 1000
+
+// The wall-clock moment the session's bar currently ends at: derived start
+// (anchor, or now minus elapsed) plus the periods' total duration.
+const projectedSessionEnd = (): number => {
+    const now = Date.now()
+    return (
+        (Schedule.timestampAnchor.peek() ?? now - timerDurationElapsed.peek())
+        + timerDuration.peek()
+    )
+}
+
+// Duration for a period added at the session's tail: when the nearest deadline
+// beyond the projected session end is further out than the default would
+// reach, the new period fills the whole gap so the session ends exactly at
+// that deadline; otherwise the default. `coveredUntil` is the wall-clock
+// moment the rest of the schedule already covers — the new period spans from
+// there to the deadline.
+const fillToDeadlineDuration = ({ coveredUntil }: { coveredUntil: number }): number => {
+    const next = nearestDeadlineAfter(projectedSessionEnd())
+    if (next === null) return DEFAULT_NEW_PERIOD_MS
+    return Math.max(DEFAULT_NEW_PERIOD_MS, next - coveredUntil)
+}
+
 // add a new period after the current one
 export const addPeriod = (): void => {
     if (Schedule.currentPeriodIndex.value === null) return
 
-    const newPeriod = Period.create({ type: 'fun', note: '', durationMs: 24 * 60 * 1000 })
+    // Ensure elapsed is fresh — the fill below reads it (branch choice and
+    // sub-minute remainder) before moveToNextPeriod refreshes it again.
+    updateCurrentPeriod()
 
     const currentIndex = Schedule.currentPeriodIndex.value
     // currentPeriodIndex !== null (checked above) implies a period exists.
     const current = currentPeriod.value as PeriodData
     const hasElapsedMoreThan60Seconds = current.state.elapsed > 60 * 1000
+
+    // On the last period the added period ends the session, so it fills up to
+    // the nearest deadline beyond the current end when that beats the default.
+    // Covered wall clock differs per branch: moving into the new period,
+    // Schedule.advance starts it at now minus the completed period's
+    // sub-minute remainder; inserting before, the displaced period still runs
+    // after the new one, so its fresh duration counts as already covered.
+    const onLastPeriod = currentIndex === timerState.value.periods.length - 1
+    const durationMs = onLastPeriod
+        ? fillToDeadlineDuration({
+              coveredUntil: hasElapsedMoreThan60Seconds
+                  ? Date.now() - (current.state.elapsed % (60 * 1000))
+                  : Date.now() + current.config.userIntendedDuration,
+          })
+        : DEFAULT_NEW_PERIOD_MS
+
+    const newPeriod = Period.create({ type: 'fun', note: '', durationMs })
 
     if (hasElapsedMoreThan60Seconds) {
         // Insert after current period and move to it.
@@ -1153,17 +1227,20 @@ export const autoEditIndex: Signal<number | null> = signal(null)
 // add a new period at a specific index
 export const addPeriodAtIndex = (
     afterIndex: number,
-    periodConfig: { duration: number; type: PeriodType; note: string } = {
-        duration: 24 * 60 * 1000,
-        type: 'fun',
-        note: '',
-    },
+    periodConfig?: { duration: number; type: PeriodType; note: string },
 ): void => {
-    const newPeriod = Period.create({
-        type: periodConfig.type,
-        note: periodConfig.note,
-        durationMs: periodConfig.duration,
-    })
+    // Appended after the last period the new period ends the session — it
+    // starts at the current end, so that is what the fill measures from.
+    const appendsLast = afterIndex >= timerState.value.periods.length - 1
+    const { duration, type, note } = periodConfig ?? {
+        duration: appendsLast
+            ? fillToDeadlineDuration({ coveredUntil: projectedSessionEnd() })
+            : DEFAULT_NEW_PERIOD_MS,
+        type: 'fun' as PeriodType,
+        note: '',
+    }
+
+    const newPeriod = Period.create({ type, note, durationMs: duration })
 
     const result = Periods.insert({
         periods: timerState.value.periods,
