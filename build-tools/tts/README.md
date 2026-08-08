@@ -18,8 +18,9 @@ Get a key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
 
 ## Use
 
-A set is 33 clips and free-tier quota is ~15/day, so generating one is a
-multi-day job. The tool is built around that: clips accumulate in a **staging
+A set is 33 clips and the free tier meters them per key per day, so generating
+one can span several days — how many depends on how many keys you have, see
+[Quota](#quota). The tool is built around that: clips accumulate in a **staging
 directory** per set, a run generates only what is **still missing**, and nothing
 reaches the app until you have listened to it and promoted it.
 
@@ -233,11 +234,31 @@ non-zero, as it always did; nothing needs noting down either way, since the same
 command later generates whatever is still missing. The offer is skipped when
 stdin is not a terminal, so unattended runs still fail fast.
 
-| Keys | Clips/day | 33-clip set |
-| ---- | --------- | ----------- |
-| 1    | 10        | 4 days      |
-| 3    | 30        | 2 days      |
-| 4    | 40        | one run     |
+### How many keys are there right now
+
+Not written down here — a number in a README is one edit away from being a lie,
+and this one has already been wrong. Ask the tool. Every real run opens with the
+count it is about to round-robin over:
+
+```
+Using <N> API key(s), round-robin
+```
+
+`--dry-run` and an already-complete set both exit before the pool is built, so
+neither prints it. To ask without starting a run:
+
+```bash
+uv run --directory build-tools/tts python -c \
+    'import os, sounds; print(len(sounds.load_api_keys(os.environ)))'
+```
+
+**Counting `.env` by eye is how you get it wrong.** `load_api_keys` splits
+`GEMINI_API_KEYS` on commas, newlines _and_ whitespace, appends
+`GEMINI_API_KEY`, then drops blanks and duplicates — and not every key is an
+`AIza…` string, so grepping for that prefix silently undercounts.
+
+From that count the rest follows: `keys × 10` clips a day, so a 33-clip set takes
+`ceil(33 / (keys × 10))` days — four or more and it fits in a single run.
 
 ## When it isn't the quota
 
