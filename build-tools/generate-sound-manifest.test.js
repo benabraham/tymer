@@ -122,6 +122,32 @@ describe('scanSoundManifest', () => {
         expect(sets).toEqual(['hush'])
     })
 
+    it('maps elapsed/break and remaining/break take-dir files to their _break_ keys', () => {
+        writeFile('elapsed/break/006/tube-1.webm')
+        writeFile('remaining/break/012/tube-1.webm')
+
+        const { variants, sets } = scanSoundManifest(tmpRoot)
+
+        expect(variants).toEqual({
+            elapsed_break_6: [{ src: '/tymer/sounds/elapsed/break/006/tube-1.webm', set: 'tube' }],
+            remaining_break_12: [
+                { src: '/tymer/sounds/remaining/break/012/tube-1.webm', set: 'tube' },
+            ],
+        })
+        expect(sets).toEqual(['tube'])
+    })
+
+    it('maps deadline take-dir files to deadline_N', () => {
+        writeFile('deadline/060/tube-1.webm')
+
+        const { variants, sets } = scanSoundManifest(tmpRoot)
+
+        expect(variants).toEqual({
+            deadline_60: [{ src: '/tymer/sounds/deadline/060/tube-1.webm', set: 'tube' }],
+        })
+        expect(sets).toEqual(['tube'])
+    })
+
     it('maps timesup/work.webm to timesup_work with a null set', () => {
         writeFile('timesup/work.webm')
 

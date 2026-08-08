@@ -23,13 +23,20 @@ const setForTakePath = relativePath => {
 // take-directory, null for every set-less file (flat layouts, notifications,
 // button, timer-end) — those belong to every set.
 const keyForRelativePath = relativePath => {
-    const breakFlat = relativePath.match(/^overtime\/break\/(\d+)\.webm$/)
-    if (breakFlat) return { key: `overtime_break_${parseInt(breakFlat[1], 10)}`, set: null }
+    const breakFlat = relativePath.match(/^(elapsed|remaining|overtime)\/break\/(\d+)\.webm$/)
+    if (breakFlat) return { key: `${breakFlat[1]}_break_${parseInt(breakFlat[2], 10)}`, set: null }
 
-    const breakDir = relativePath.match(/^overtime\/break\/(\d+)\/.+\.webm$/)
+    const breakDir = relativePath.match(/^(elapsed|remaining|overtime)\/break\/(\d+)\/.+\.webm$/)
     if (breakDir)
         return {
-            key: `overtime_break_${parseInt(breakDir[1], 10)}`,
+            key: `${breakDir[1]}_break_${parseInt(breakDir[2], 10)}`,
+            set: setForTakePath(relativePath),
+        }
+
+    const deadlineDir = relativePath.match(/^deadline\/(\d+)\/.+\.webm$/)
+    if (deadlineDir)
+        return {
+            key: `deadline_${parseInt(deadlineDir[1], 10)}`,
             set: setForTakePath(relativePath),
         }
 

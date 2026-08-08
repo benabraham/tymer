@@ -7,7 +7,6 @@ from sounds import (
     build_arg_parser,
     existing_takes,
     promote_staging,
-    set_fully_promoted,
 )
 
 # --- promote_staging ---------------------------------------------------------
@@ -166,6 +165,28 @@ def test_partial_staging_promotes_once_every_event_has_a_take(promote_set):
 
     assert promote_set.run() is None
     assert (promote_set.assets / 'elapsed/006/diva-2.wav').read_bytes() == b'second-batch'
+
+
+def test_staging_only_the_events_new_to_a_promoted_set_is_additive(promote_set):
+    # The set gained an event after its first promote (a new block in the
+    # prompt file). Staging just that event must promote: every OTHER event is
+    # already covered by a promoted take, so nothing can end up half-updated.
+    for event in ('elapsed/006', 'elapsed/012'):
+        write(promote_set.assets / event / 'diva-1.wav', b'first-batch')
+    write(promote_set.staging / 'elapsed/018/diva-1.wav', b'new-event')
+
+    assert promote_set.run() is None
+    assert (promote_set.assets / 'elapsed/018/diva-1.wav').read_bytes() == b'new-event'
+
+
+def test_staging_that_leaves_an_event_with_no_take_anywhere_is_refused(promote_set):
+    # One event promoted, one staged, one with nothing at all — the uncovered
+    # event is what the refusal is about.
+    write(promote_set.assets / 'elapsed/006/diva-1.wav', b'first-batch')
+    write(promote_set.staging / 'elapsed/012/diva-1.wav', b'staged')
+
+    assert promote_set.run() == 1
+    assert not (promote_set.assets / 'elapsed/012/diva-1.wav').exists()
 
 
 # --- what promote does around the copy ---------------------------------------
@@ -393,19 +414,13 @@ def test_fresh_will_not_delete_an_output_directory_the_user_named(tmp_path, caps
     assert '--fresh' in capsys.readouterr().out
 
 
-def test_set_fully_promoted_requires_every_event(tmp_path):
-    _, blocks = mod.parse_set_file(str(write_set(tmp_path)))
-    assets = tmp_path / 'assets'
-    write(assets / 'elapsed/006/diva-1.wav', b'a')
-    write(assets / 'elapsed/012/diva-1.wav', b'b')
+def test_any_take_number_counts_as_coverage_for_the_promote_gate(promote_set):
+    # An earlier promote may have renamed an event's only take to -2; the gate
+    # must still count that event as covered.
+    for event in ('elapsed/006', 'elapsed/012'):
+        write(promote_set.assets / event / 'diva-1.wav', b'first-batch')
+    write(promote_set.assets / 'elapsed/018/diva-2.wav', b'renamed-take')
+    write(promote_set.staging / 'elapsed/006/diva-1.wav', b'second-batch')
 
-    assert not set_fully_promoted(blocks, str(assets))
-
-    write(assets / 'elapsed/018/diva-2.wav', b'c')  # any take number counts
-    assert set_fully_promoted(blocks, str(assets))
-
-
-def write_set(tmp_path):
-    set_file = tmp_path / 'set.txt'
-    set_file.write_text(SET_TEXT)
-    return set_file
+    assert promote_set.run() is None
+    assert (promote_set.assets / 'elapsed/006/diva-2.wav').read_bytes() == b'second-batch'

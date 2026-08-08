@@ -1,3 +1,4 @@
+import glob
 import os
 import re
 
@@ -283,7 +284,7 @@ def test_tymer_sets_round_trip():
     brisk_defaults, brisk = parse_set_file(set_path('tymer-gacrux-brisk.txt'))
 
     assert measured_defaults['voice'] == brisk_defaults['voice'] == 'Gacrux'
-    assert len(measured) == len(brisk) == 33
+    assert len(measured) == len(brisk) == 40
     assert [b['path'] for b in measured] == [b['path'] for b in brisk]
 
     for block in measured + brisk:
@@ -666,15 +667,16 @@ def test_shell_cwd_prefers_init_cwd_because_the_launchers_chdir(tmp_path, monkey
 # sounds.js can only reach a clip through a manifest key.
 RECOGNIZED_BLOCK_PATHS = re.compile(
     r'^(?:'
-    r'overtime/break/\d+'
+    r'(?:elapsed|remaining|overtime)/break/\d+'
     r'|(?:elapsed|remaining|overtime)/\d+'
+    r'|deadline/\d+'
     r'|timesup/[a-zA-Z-]+'
     r')$'
 )
 
 
 @pytest.mark.parametrize(
-    'set_name', ['tymer-gacrux.txt', 'tymer-gacrux-brisk.txt', 'tymer-kore-strict.txt']
+    'set_name', sorted(os.path.basename(p) for p in glob.glob(set_path('tymer-*.txt')))
 )
 def test_every_block_path_reaches_the_app(set_name):
     """No set may contain a block the manifest generator would ignore.

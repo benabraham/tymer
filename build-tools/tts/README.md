@@ -18,7 +18,7 @@ Get a key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
 
 ## Use
 
-A set is 33 clips and the free tier meters them per key per day, so generating
+A set is 40 clips and the free tier meters them per key per day, so generating
 one can span several days — how many depends on how many keys you have, see
 [Quota](#quota). The tool is built around that: clips accumulate in a **staging
 directory** per set, a run generates only what is **still missing**, and nothing
@@ -40,7 +40,7 @@ uv run sounds.py audition tymer-gacrux-brisk
 uv run sounds.py promote tymer-gacrux-brisk
 ```
 
-Step 2 reports `Already generated: 12/33` and stops early with _"This set is
+Step 2 reports `Already generated: 12/40` and stops early with _"This set is
 complete — nothing to generate"_ rather than spending quota re-doing work.
 
 ### From the repo root, without the `cd`
@@ -151,10 +151,11 @@ uv run sounds.py promote tymer-gacrux-brisk --replace # this batch IS the set
 `brisk-1.wav`, `brisk-2.wav` — which is exactly what the app picks between at
 random. Nothing is overwritten. Re-promoting an unchanged set is a no-op (a clip
 identical to _any_ existing take of the set is skipped, even if an earlier
-promote renamed it), so it is safe to repeat. It refuses while anything is
-missing, so the app never plays a half-updated bank — unless every event already
-has a promoted take of this set, in which case a partial staging is purely
-additive and promotes without waiting for the rest.
+promote renamed it), so it is safe to repeat. It refuses while any event would
+end up with no take of this set at all — neither staged nor already promoted —
+so the app never plays a half-updated bank. Otherwise a partial staging is
+purely additive and promotes without waiting for the rest: events new to the
+set land as first takes, already-promoted events gain extras.
 
 **`--replace`.** Every promoted take of this set is deleted first, so the staged
 batch is the whole of it — the way to drop takes rather than accumulate them. It
@@ -197,7 +198,7 @@ none. It regenerates the manifest either way.
 
 The free tier allows **10 requests/day per account for this model** (the 429's
 `QuotaFailure` reports `quotaValue: 10` for `gemini-3.1-flash-tts`) plus a
-per-minute burst limit, and a set is 33 clips — so one key cannot do a whole
+per-minute burst limit, and a set is 40 clips — so one key cannot do a whole
 set in one day.
 
 Two things soften that:
@@ -257,8 +258,8 @@ uv run --directory build-tools/tts python -c \
 `GEMINI_API_KEY`, then drops blanks and duplicates — and not every key is an
 `AIza…` string, so grepping for that prefix silently undercounts.
 
-From that count the rest follows: `keys × 10` clips a day, so a 33-clip set takes
-`ceil(33 / (keys × 10))` days — four or more and it fits in a single run.
+From that count the rest follows: `keys × 10` clips a day, so a 40-clip set takes
+`ceil(40 / (keys × 10))` days — four or more and it fits in a single run.
 
 ## When it isn't the quota
 

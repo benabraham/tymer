@@ -214,16 +214,6 @@ def existing_takes(target):
     ]
 
 
-def set_fully_promoted(blocks, destination):
-    """True when every event already holds at least one promoted take of this set.
-
-    From that point on a further batch is purely additive — some events gaining
-    an extra take while others wait cannot leave the bank half-updated — so the
-    all-clips-staged promote gate no longer serves a purpose and is relaxed.
-    """
-    return all(existing_takes(expected_file(block, destination)) for block in blocks)
-
-
 def promote_staging(staging, destination):
     """Copy a completed set into the real asset tree, merging with what is there.
 
@@ -1236,19 +1226,29 @@ def run_promote(args, blocks, staging):
             f'\nRemoved {len(sources)} promoted take(s) and {len(normalized)} normalized copy(ies).'
         )
     else:
-        if outstanding and not set_fully_promoted(blocks, DEFAULT_OUTPUT_DIR):
+        # An event is covered when a take of this set exists for it somewhere —
+        # staged in this batch, or already promoted. Refusing only on uncovered
+        # events keeps the original guarantee (a brand-new set must be complete)
+        # while letting a batch that only adds NEW events to a promoted set
+        # through: those promote as first takes, everything else as extras.
+        uncovered = [
+            block
+            for block in outstanding
+            if not existing_takes(expected_file(block, DEFAULT_OUTPUT_DIR))
+        ]
+        if uncovered:
             print(
-                f'\nRefusing to promote: {len(outstanding)} of {len(blocks)} clip(s) still missing.'
+                f'\nRefusing to promote: {len(uncovered)} event(s) would have no take of this set at all.'
             )
-            print('Generate the rest first — promoting now would leave the bank half-updated.')
-            for block in outstanding[:10]:
+            print('Generate them first — promoting now would leave the bank half-updated.')
+            for block in uncovered[:10]:
                 print(f'  missing: {block["path"]}')
-            if len(outstanding) > 10:
-                print(f'  ... and {len(outstanding) - 10} more')
+            if len(uncovered) > 10:
+                print(f'  ... and {len(uncovered) - 10} more')
             sys.exit(1)
         if outstanding:
             print(f'\nPartial batch — {len(blocks) - len(outstanding)} of {len(blocks)} staged.')
-            print('Every event already has a take of this set, so promoting these as extras.')
+            print('Every other event already has a take of this set, so promoting these as extras.')
 
     copied, skipped = promote_staging(staging, DEFAULT_OUTPUT_DIR)
     print(f'\nPromoted {len(copied)} clip(s) into {DEFAULT_OUTPUT_DIR}')
