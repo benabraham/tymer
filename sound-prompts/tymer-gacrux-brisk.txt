@@ -79,6 +79,30 @@ the way quickly.
 @text [quietly] Only six minutes left now.
 
 # ---------------------------------------------------------------------------
+# elapsed/break — quick break check-ins: is this actually a break?
+# ---------------------------------------------------------------------------
+
+[elapsed/break/006]
+@style Warm, lightly teasing — a quick check-in, not a speech.
+@text [lightly] Your break started six minutes ago. [teasing] You did actually stop working… didn't you?
+
+[elapsed/break/012]
+@style Warm, a shade more knowing. Still quick.
+@text [lightly] Twelve minutes into your break now. [teasing] You are resting, aren't you?
+
+# ---------------------------------------------------------------------------
+# remaining/break — quick break wind-down, softer than the work notices
+# ---------------------------------------------------------------------------
+
+[remaining/break/012]
+@style Easy and light — no pressure at all.
+@text [warmly] Twelve minutes of your break left. [lightly] No rush yet.
+
+[remaining/break/006]
+@style Quiet and quick — a low aside.
+@text [quietly] Six minutes of break remaining. [gently] Start drifting back.
+
+# ---------------------------------------------------------------------------
 # overtime (work) — escalation carried by intensity, not by slowing down
 # ---------------------------------------------------------------------------
 
@@ -194,4 +218,21 @@ the listener to move right now. Intensity rises and does not release.
 @style Settled and final, but not slow.
 @pace Unhurried only at the very end of the line.
 @text [contented] Nothing more to do. [warmly] Let's finish for today.
+
+# ---------------------------------------------------------------------------
+# deadline — countdown to the nearest deadline. "Next"/"nearest" is required
+# (there can be several). Pressing, never angry — and still quick.
+# ---------------------------------------------------------------------------
+
+[deadline/060]
+@style Calm, informative. In and out.
+@text [briskly] One hour until your next deadline.
+
+[deadline/012]
+@style Focused, quick.
+@text [briskly] Twelve minutes to your nearest deadline. [encouraging] Bring things together.
+
+[deadline/006]
+@style Urgent but composed. Fast, pressing.
+@text [firmly] Six minutes until your next deadline. [pointedly] Finish up now.
 

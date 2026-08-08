@@ -95,6 +95,33 @@ that carries real weight.
 
 
 # ---------------------------------------------------------------------------
+# elapsed/break — break check-ins: is this actually a break? A raised
+# eyebrow, affectionately suspicious — she has seen this episode before.
+# ---------------------------------------------------------------------------
+
+[elapsed/break/006]
+@style Warm, playfully suspicious — a raised eyebrow, not an accusation.
+@text [gently] Six minutes of break, mi amor… [teasing] you ARE resting, ¿verdad?
+
+[elapsed/break/012]
+@style Knowing, affectionately suspicious — she has seen this episode before.
+@text [gently] Twelve minutes of break, cariño. [teasing] Still resting… ¿o no?
+
+
+# ---------------------------------------------------------------------------
+# remaining/break — break wind-down, indulgent and unhurried
+# ---------------------------------------------------------------------------
+
+[remaining/break/012]
+@style Easy, indulgent — reassurance, no pressure.
+@text [warmly] Twelve minutes of break left, mi vida. [gently] Tranquilo — no rush.
+
+[remaining/break/006]
+@style Quiet, coaxing — the intermission is nearly over.
+@text [softly] Six little minutes of break, mi amor. The work, she waits.
+
+
+# ---------------------------------------------------------------------------
 # overtime (work) — the escalation ladder. Patience is spent by 018 and never
 # returns; the voice climbs with it, all the way to full eruption at 048.
 # ---------------------------------------------------------------------------
@@ -213,3 +240,22 @@ rapid-fire exclamations that keep climbing and never release.
 @style Settled and final. The curtain falling on a day well played.
 @pace Slow, unwinding.
 @text [contented] That is everything, mi amor… [warmly] we are done. [dramatic sigh] Qué día tan hermoso.
+
+
+# ---------------------------------------------------------------------------
+# deadline — countdown to the nearest deadline. Always "next"/"nearest" —
+# there can be several. Dramatic tension, not the ladder's fury: the deadline
+# is destiny, and destiny is always on time.
+# ---------------------------------------------------------------------------
+
+[deadline/060]
+@style Composed, a touch ominous — the drama is scheduled.
+@text [measured] One hour to your next deadline, cariño. Tick tock.
+
+[deadline/012]
+@style Building tension — the final act approaches.
+@text [measured] Twelve minutes to the nearest deadline, mi vida. [encouraging] Finish the scene.
+
+[deadline/006]
+@style Urgent, dramatic — fate arriving, not fury.
+@text [urgently] Six minutes, mi amor — the next deadline, she comes! [pointedly] ¡Ándale!

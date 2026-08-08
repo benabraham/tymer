@@ -111,6 +111,33 @@ humour is read exactly like schedule information.
 
 
 # ---------------------------------------------------------------------------
+# elapsed/break — break check-ins, read as a routine audit of the break;
+# the dry wit does the teasing the other sets do with warmth
+# ---------------------------------------------------------------------------
+
+[elapsed/break/006]
+@style Courteous, deadpan — an audit of the break, read as routine.
+@text [clear] Your attention, please. [short pause] [measured] Your break began six minutes ago. [dry] If you are still working, please note that this is not what a break is for.
+
+[elapsed/break/012]
+@style Courteous, drier still — the follow-up audit.
+@text [clear] Progress report. [short pause] [measured] Twelve minutes of break recorded. [dry] Rest is most effective when actually taken. Please verify yours.
+
+
+# ---------------------------------------------------------------------------
+# remaining/break — approach to the end of the break, drily reassuring
+# ---------------------------------------------------------------------------
+
+[remaining/break/012]
+@style Courteous advance notice, drily reassuring.
+@text [clear] Advance notice. [short pause] [measured] Twelve minutes of your break remain. [dry] That is ample time to do absolutely nothing. Please continue.
+
+[remaining/break/006]
+@style Final-approach notice for the break — courteous, a hint of regret.
+@text [clear] Final approach. [short pause] [measured] Six minutes of break remain. [courteous] Please begin your return journey to the working position.
+
+
+# ---------------------------------------------------------------------------
 # overtime (work) — the escalation ladder. Openers still climb: attention
 # please → service announcement → important → urgent → final call → emergency.
 # The first rungs are longer and deadpan; the top stays hard and fast.
@@ -231,3 +258,22 @@ loud, driving, relentless, never releasing. Pressing, not cold.
 @style Settled and final — the end-of-the-line call, closing the day with quiet ceremony and thanks.
 @pace Unwinding, warm, ceremonial but never dragging.
 @text [announcing] End of the line. [short pause] [clear] All change, please — all change. [warmly] The session is complete, and there is nothing further today. Thank you for keeping good time. We look forward to seeing you again.
+
+
+# ---------------------------------------------------------------------------
+# deadline — scheduled arrivals: countdown to the nearest deadline ("next"/
+# "nearest" always — there may be several). Deadpan punctuality jokes on the
+# early rungs; the six-minute call stays hard and clean.
+# ---------------------------------------------------------------------------
+
+[deadline/060]
+@style Routine timetable information, deadpan.
+@text [clear] Timetable notice. [short pause] [measured] Your next deadline is due in one hour. [dry] It is expected to arrive precisely on time. They always do.
+
+[deadline/012]
+@style Pointed timetable information — preparation strongly advised.
+@text [clear] Timetable notice. [short pause] [measured] Twelve minutes until the nearest deadline. [dry] Deadlines are famously punctual. Please prepare.
+
+[deadline/006]
+@style Urgent arrival call — pressing, professional, final.
+@text [firmly] Stand clear. [short pause] [measured] Your next deadline arrives in six minutes. [pointed] Whatever remains, conclude it now.

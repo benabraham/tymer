@@ -10,7 +10,7 @@
 # before the information itself, and the opener escalates with the overtime
 # ladder: "Your attention, please" → "service announcement" → "important
 # announcement" → "urgent announcement" → "final call" → "emergency
-# announcement". Same 33 events as the other sets; generates into the same
+# announcement". Same 40 events as the other sets; generates into the same
 # event directories as interchangeable takes.
 #
 # @name below labels every file in this set `tube-N.wav`, so it never collides
@@ -98,6 +98,34 @@ and breaks.
 [remaining/006]
 @style Clear final approach — the destination is in sight.
 @text [clear] Advance notice. [pause] [measured] Six minutes remain. [courteous] Please prepare to finish.
+
+
+# ---------------------------------------------------------------------------
+# elapsed/break — break check-ins: a courteous inspection that the break is
+# actually being taken. The listener may have set a break and kept working.
+# ---------------------------------------------------------------------------
+
+[elapsed/break/006]
+@style Courteous, with the faintest dry edge — a routine inspection.
+@text [clear] Your attention, please. [pause] [measured] Your break began six minutes ago. [courteous] Please confirm you are, in fact, resting.
+
+[elapsed/break/012]
+@style Courteous, mildly pointed — the second inspection.
+@text [clear] Your attention, please. [pause] [measured] Twelve minutes of your break have now elapsed. [courteous] We trust you are resting, and not quietly working.
+
+
+# ---------------------------------------------------------------------------
+# remaining/break — approach to the end of the break, gentler than the work
+# notices
+# ---------------------------------------------------------------------------
+
+[remaining/break/012]
+@style Courteous advance notice — informative, unhurried.
+@text [clear] Advance notice. [pause] [measured] Twelve minutes of your break remain. [courteous] No action is required yet.
+
+[remaining/break/006]
+@style Clear final approach — the break is nearly over.
+@text [clear] Advance notice. [pause] [measured] Six minutes of your break remain. [courteous] Please begin making your way back.
 
 
 # ---------------------------------------------------------------------------
@@ -221,3 +249,22 @@ loud, driving, relentless, never releasing. Pressing, not cold.
 @style Settled and final — the end-of-the-line call, closing the day properly.
 @pace Slow, unwinding, ceremonial.
 @text [announcing] End of the line. [pause] [warmly] The session is complete. We are done for today.
+
+
+# ---------------------------------------------------------------------------
+# deadline — scheduled arrivals: countdown to the nearest deadline, of which
+# there may be several — every line says "next" or "nearest". Escalates from
+# routine timetable information to a stand-clear call; urgency without anger.
+# ---------------------------------------------------------------------------
+
+[deadline/060]
+@style Routine timetable information — calm, no pressure.
+@text [clear] Timetable notice. [pause] [measured] Your next deadline arrives in one hour.
+
+[deadline/012]
+@style Pointed timetable information — time to prepare.
+@text [clear] Timetable notice. [pause] [measured] The nearest deadline arrives in twelve minutes. [courteous] Please begin bringing your work together.
+
+[deadline/006]
+@style Urgent arrival call — pressing, still professional.
+@text [firmly] Stand clear. [pause] [measured] Your next deadline arrives in six minutes. [pointed] Please conclude immediately.

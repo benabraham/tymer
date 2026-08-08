@@ -333,7 +333,7 @@ would otherwise shadow the dev shell's command with the wrong tool directory. Cl
 `.staging/<set>/` and reach the app only via `promote`:
 
 - **`generate`** fills in clips with no file yet — the resumable everyday run, since free-tier quota
-  makes a 33-clip set a multi-day job. **`regenerate`** redoes every clip over the set's take `-1`;
+  makes a 40-clip set a multi-day job. **`regenerate`** redoes every clip over the set's take `-1`;
   **`regenerate --fresh`** deletes the staged set first, so takes from an earlier, longer batch do
   not survive. `--fresh` confirms before deleting and only ever clears a directory under `.staging/`.
 - **`audition`** (and `--audition each|end` during a run) plays clips through mpv. Listening time is

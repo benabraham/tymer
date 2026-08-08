@@ -91,6 +91,29 @@ does not nag — so when it does harden, that carries real weight.
 
 
 # ---------------------------------------------------------------------------
+# elapsed/break — break check-ins: is that break actually bein' taken?
+# Teasing, sweet as pie — she knows exactly what you're up to.
+# ---------------------------------------------------------------------------
+
+[elapsed/break/006]
+@text [gently] Six minutes into your break, sugar… [teasing] you did quit workin', didn't you?
+
+[elapsed/break/012]
+@text [gently] Twelve minutes restin' now, hon… [teasing] or are you still peckin' away at it?
+
+
+# ---------------------------------------------------------------------------
+# remaining/break — break wind-down, all molasses, no vinegar
+# ---------------------------------------------------------------------------
+
+[remaining/break/012]
+@text [warmly] Twelve minutes of break left, darlin'. [gently] No hurry at all.
+
+[remaining/break/006]
+@text [softly] Six little minutes of break, sugar… start moseyin' on back.
+
+
+# ---------------------------------------------------------------------------
 # overtime (work) — the escalation ladder. Patience is spent by 018 and never
 # returns. Wording, tags, pauses and shrinking line length carry it; the
 # whisper holds all the way to 048.
@@ -165,3 +188,18 @@ does not nag — so when it does harden, that carries real weight.
 
 [timesup/finish]
 @text [contented] That's everythin'… [warmly] we're done for today. [smiling] Y'all come back now.
+
+
+# ---------------------------------------------------------------------------
+# deadline — countdown to the nearest deadline. Always "next"/"nearest" —
+# there can be more than one. Pressing but never mad; a deadline ain't sin.
+# ---------------------------------------------------------------------------
+
+[deadline/060]
+@text [calm] One hour till your next deadline, hon.
+
+[deadline/012]
+@text [measured] Twelve minutes to the nearest deadline, darlin'… [encouraging] bring it on home.
+
+[deadline/006]
+@text [firmly] Six minutes to your next deadline, sugar. [pointedly] Land it now.

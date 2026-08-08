@@ -78,6 +78,33 @@ carries weight.
 
 
 # ---------------------------------------------------------------------------
+# elapsed/break — break check-ins: is this actually a break? Gently teasing —
+# the listener may have set a break and kept right on working.
+# ---------------------------------------------------------------------------
+
+[elapsed/break/006]
+@style Warm, lightly teasing — checking in, not checking up.
+@text [gently] Your break started six minutes ago. [teasing] You did actually stop working… didn't you?
+
+[elapsed/break/012]
+@style Warm, a shade more knowing — the second gentle check.
+@text [gently] Twelve minutes into your break now. [teasing] You are resting, aren't you?
+
+
+# ---------------------------------------------------------------------------
+# remaining/break — break wind-down, softer than the work notices
+# ---------------------------------------------------------------------------
+
+[remaining/break/012]
+@style Easy, reassuring — informative, no pressure at all.
+@text [warmly] Twelve minutes of your break left. [gently] No rush yet.
+
+[remaining/break/006]
+@style Quiet, kind — easing the listener back toward work.
+@text [softly] Six minutes of break remaining. [gently] Start drifting back.
+
+
+# ---------------------------------------------------------------------------
 # overtime (work) — the escalation ladder.
 # 006 gentle → 048 cold. Style and Pace tighten one rung at a time.
 # ---------------------------------------------------------------------------
@@ -196,5 +223,24 @@ Insistent rather than cold; intensity keeps rising and never releases.
 @style Settled and final. The day closing properly, with satisfaction.
 @pace Slow, unwinding.
 @text [contented] Nothing more to do. [warmly] Let's finish for today.
+
+
+# ---------------------------------------------------------------------------
+# deadline — countdown to the nearest wall-clock deadline. There can be
+# several set, so every line says "next" or "nearest". Informative urgency,
+# never the overtime ladder's anger — a deadline is fate, not misbehavior.
+# ---------------------------------------------------------------------------
+
+[deadline/060]
+@style Calm and clear — a planning horizon, not an alarm.
+@text [measured] One hour until your next deadline.
+
+[deadline/012]
+@style Focused, leaning forward.
+@text [measured] Twelve minutes to your nearest deadline. [encouraging] Bring things together.
+
+[deadline/006]
+@style Urgent but composed — pressing, never panicked.
+@text [firmly] Six minutes until your next deadline. [pointedly] Finish up now.
 
 

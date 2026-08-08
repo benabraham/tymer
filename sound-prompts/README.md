@@ -9,13 +9,13 @@ means adding another file, not editing this one.
 
 | File                         | Voice                         | Covers                                                                                                    |
 | ---------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `tymer-gacrux.txt`           | Gacrux (mature, middle pitch) | all 33 speech events                                                                                      |
-| `tymer-gacrux-brisk.txt`     | Gacrux                        | same 33, same words, delivered fast                                                                       |
-| `tymer-kore-strict.txt`      | Kore                          | same 33, reworded, harsher overtime ladder                                                                |
-| `tymer-leda-whisper.txt`     | Leda                          | same 33, whispered, broad Southern, edge of parody                                                        |
+| `tymer-gacrux.txt`           | Gacrux (mature, middle pitch) | all 40 speech events                                                                                      |
+| `tymer-gacrux-brisk.txt`     | Gacrux                        | same 40, same words, delivered fast                                                                       |
+| `tymer-kore-strict.txt`      | Kore                          | same 40, reworded, harsher overtime ladder                                                                |
+| `tymer-leda-whisper.txt`     | Leda                          | same 40, whispered, broad Southern, edge of parody                                                        |
 | `tymer-leda-hush.txt`        | Leda                          | same words as the whisper set, voiced murmur instead of a whisper                                         |
-| `tymer-laomedeia-diva.txt`   | Laomedeia                     | same 33, telenovela diva — Spanish-seasoned English, volcanic top of the ladder                           |
-| `tymer-despina-tube.txt`     | Despina                       | same 33, London Underground announcer — RP, tannoy PA style, escalating attention-openers                 |
+| `tymer-laomedeia-diva.txt`   | Laomedeia                     | same 40, telenovela diva — Spanish-seasoned English, volcanic top of the ladder                           |
+| `tymer-despina-tube.txt`     | Despina                       | same 40, London Underground announcer — RP, tannoy PA style, escalating attention-openers                 |
 | `tymer-despina-tube-alt.txt` | Despina                       | alternative takes for the SAME `tube` set — reworded, breath-length pauses, longer deadpan boundary calls |
 
 All sets land in the same event directories, so they merge as interchangeable
@@ -31,6 +31,65 @@ voice set from the filename stem (minus the trailing `-N` take suffix), so
 `@name` is what lets the user pick that set alone in the top-left switcher. A set
 without one gets text-derived filenames and every clip becomes its own pseudo-set;
 `src/lib/sounds.test.js` fails on that rather than shipping it.
+
+## The 40 events — what each one is for
+
+Every set speaks the same 40 events. The wording is the set's own; the _job_ of
+each event is fixed and voice-independent. Minute counts are the payload and must
+survive every rewording, spoken in the set's idiom but instantly parseable.
+
+(The break banks and the deadline warnings are newer than the rest: the clips
+are generated ahead of their app-side scheduling, so where this section says
+when one "fires", it describes the intended scheduler behavior.)
+
+### `elapsed/006–108` (10) — work progress markers
+
+Fire during **work** periods only (fun counts as work — it is work-shaped, just
+unpaid). Neutral, quietly encouraging progress marks at 6, 12, 24, 36, 48, 60,
+72, 84, 96, 108 minutes; only the first half of a period gets them. `060` is the
+one small ceremony — a full hour, worth a warmer beat.
+
+### `remaining/006–024` (3) — work wind-down
+
+Second half of a work period: 24 = start wrapping up, 12 = home stretch, 6 =
+quiet final notice, close and confidential. Forward lean, never pressure — the
+overtime ladder handles pressure.
+
+### `elapsed/break/006–012` (2) — break check-ins
+
+A different job than the work markers: **verification, not progress**. The
+listener sets a break, then remembers one more thing and keeps working — these
+check that the break is actually being taken. Gently teasing, "you did stop
+working… didn't you?" at 6, a more knowing second nudge at 12. Never scolding;
+the listener being caught working is treated with affection.
+
+### `remaining/break/006–012` (2) — break wind-down
+
+Softer than the work versions — a break needs easing out of, not wrapping up.
+12 = "no rush yet" reassurance (the scheduler only plays it on breaks of 48
+minutes and up), 6 = "start drifting back". No pressure anywhere; pressure
+during rest defeats the rest.
+
+### `deadline/006, 012, 060` (3) — wall-clock deadline warnings
+
+Countdown to the **nearest upcoming deadline** — wall-clock commitments
+independent of the periods, and there can be several, so the wording must say
+"next" or "nearest", never "the deadline". A different flavor of urgency than
+overtime: the deadline is fate, not misbehavior — informative and pressing,
+never angry. 60 = planning horizon, 12 = bring it together, 6 = conclude now.
+
+### `overtime/006–048` (8) and `overtime/break/006–048` (8) — the escalation ladder
+
+The same information delivered with less patience each rung — see
+[the escalation ladder](#the-escalation-ladder) below. The break flavor pushes
+back **toward** work ("the break is over") where the work flavor pushes work to
+**stop**.
+
+### `timesup/work|break|fun|finish` (4) — period boundaries
+
+The boundary itself, named for what comes **next**: a rousing call to start
+working, warm permission to break, bright send-off to fun, and a settled
+end-of-day close for finish.
 
 ## Format
 
@@ -114,7 +173,7 @@ cd ../.. && ./normalize_audio.sh
 That also regenerates `src/lib/sound-manifest.js`, so new takes become playable
 without a further step.
 
-Free-tier quota is 10 requests/day per account against 33 clips per set,
+Free-tier quota is 10 requests/day per account against 40 clips per set,
 so add keys from other Google accounts to generate more in one day — the tool
 switches keys automatically when one runs dry.
 

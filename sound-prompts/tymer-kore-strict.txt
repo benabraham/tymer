@@ -86,6 +86,33 @@ carries real weight.
 
 
 # ---------------------------------------------------------------------------
+# elapsed/break — break check-ins: is this actually a break? Teasing, never
+# scolding — being caught working gets affection, not a telling-off.
+# ---------------------------------------------------------------------------
+
+[elapsed/break/006]
+@style Warm, lightly teasing — checking in, not checking up.
+@text [gently] That break of yours started six minutes ago. [teasing] You did take it… right?
+
+[elapsed/break/012]
+@style Warm, a shade more knowing — the second nudge.
+@text [gently] Twelve minutes of break so far. [teasing] And you're actually resting, aren't you?
+
+
+# ---------------------------------------------------------------------------
+# remaining/break — break wind-down, softer than the work notices
+# ---------------------------------------------------------------------------
+
+[remaining/break/012]
+@style Easy, unhurried — reassurance, not a warning.
+@text [warmly] Twelve minutes of break to go. [gently] Plenty left.
+
+[remaining/break/006]
+@style Quiet, kind — easing back toward work.
+@text [softly] Six minutes of break left. [gently] Start easing back.
+
+
+# ---------------------------------------------------------------------------
 # overtime (work) — the escalation ladder, one rung harsher than the measured
 # set. Patience is spent by 018 and never returns.
 # ---------------------------------------------------------------------------
@@ -204,5 +231,23 @@ hard. Driving rather than cold; intensity keeps climbing and never releases.
 @style Settled and final. The day closing properly, with satisfaction.
 @pace Slow, unwinding.
 @text [contented] That's everything. [warmly] We're done for today.
+
+
+# ---------------------------------------------------------------------------
+# deadline — countdown to the nearest wall-clock deadline. Always "next" or
+# "nearest" (there can be several). Level urgency, never the ladder's anger.
+# ---------------------------------------------------------------------------
+
+[deadline/060]
+@style Calm, matter-of-fact — a heads-up, not an alarm.
+@text [measured] One hour to your next deadline.
+
+[deadline/012]
+@style Focused. The clock is real now.
+@text [measured] Twelve minutes to the nearest deadline. [encouraging] Pull it together.
+
+[deadline/006]
+@style Urgent but level — pressing without panic.
+@text [firmly] Six minutes until your next deadline. [pointedly] Land it.
 
 
