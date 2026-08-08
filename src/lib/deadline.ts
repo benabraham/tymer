@@ -19,7 +19,8 @@ import { batch, computed, effect, type ReadonlySignal, type Signal, signal } fro
 import { differenceInCalendarDays, format } from 'date-fns'
 import type { ParsedDeadline } from './durations-format'
 import { hasDeadlineLine, parseDeadlineLines } from './durations-format'
-import { pickRandomNotificationKey, playNotification } from './sounds'
+import { DEADLINE_WARNING_MINUTES } from './sound-discovery'
+import { pickRandomNotificationKey, playNotification, playPeriodSound } from './sounds'
 
 export type Deadline =
     | { kind: 'absolute'; timestamp: number; label: string }
@@ -311,5 +312,53 @@ const runAlarmLoop = async (): Promise<void> => {
 if (typeof window !== 'undefined') {
     effect(() => {
         if (deadlineAlarmActive.value) void runAlarmLoop()
+    })
+}
+
+// Spoken pre-warnings, independent of the overdue alarm above: a clip plays
+// once when the wall clock LIVE-crosses 60/12/6 minutes before the nearest
+// upcoming occurrence. Only the nearest occurrence counts — an occurrence
+// that already went overdue is the alarm's business, not a warning's.
+// Exported for tests; also driven by the effect below off the real clock.
+export const deadlineWarningKey = ({
+    occurrences,
+    previousNow,
+    now,
+}: {
+    occurrences: DeadlineOccurrence[]
+    previousNow: number
+    now: number
+}): 'deadline_60' | 'deadline_12' | 'deadline_6' | null => {
+    const upcoming = occurrences.map(o => o.timestamp).filter(ts => ts > now)
+    if (!upcoming.length) return null
+    const nearest = Math.min(...upcoming)
+    // A single gap (device sleep, suspended tab) can span several warning
+    // moments at once — only the smallest offset (closest to the deadline)
+    // fires, so a wake-up never stacks three clips.
+    const crossed = DEADLINE_WARNING_MINUTES.filter(minutes => {
+        const moment = nearest - minutes * 60000
+        return previousNow < moment && moment <= now
+    })
+    if (!crossed.length) return null
+    return `deadline_${Math.min(...crossed)}` as 'deadline_60' | 'deadline_12' | 'deadline_6'
+}
+
+// Bookkeeping only (never rendered) — the previous tick's `deadlineNow`, so
+// the effect below can tell a LIVE crossing from a value that was already
+// past when the page loaded.
+let previousDeadlineNow = deadlineNow.peek()
+
+if (typeof window !== 'undefined') {
+    effect(() => {
+        const now = deadlineNow.value
+        // .peek(): only the clock should retrigger this effect — editing the
+        // deadline list itself must not re-evaluate a warning.
+        const key = deadlineWarningKey({
+            occurrences: deadlineOccurrences.peek(),
+            previousNow: previousDeadlineNow,
+            now,
+        })
+        previousDeadlineNow = now
+        if (key) void playPeriodSound(key)
     })
 }

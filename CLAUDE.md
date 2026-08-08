@@ -224,6 +224,13 @@ failed play waits before retrying, so muted/locked audio doesn't busy-spin.
   list write with that silencing so the alarm effect never sees the intermediate state. The loop
   (`playNotification` of the owner's fixed chime) re-checks `deadlineAlarmActive` each round, so
   silence/supersede/clear/mute stops it at the next clip boundary.
+- **Spoken pre-warnings** (`deadlineWarningKey` + an effect on `deadlineNow`): a clip
+  (`deadline_60`/`deadline_12`/`deadline_6`, chime-then-speech via `playPeriodSound`) plays when the
+  clock LIVE-crosses 60/12/6 minutes before the **nearest upcoming** occurrence — fires while idle
+  too, since it rides the module's own clock. Live crossing only: nothing back-fires on reload, and
+  typing a deadline whose warning moments are already past stays quiet (same philosophy as the
+  starts-silenced rule). A gap spanning several warning moments (device sleep) fires only the
+  smallest offset. Silencing does not apply — it is an overdue-alarm concept.
 - Deadline state persists under its own localStorage keys (`deadlines`, `deadlineSilenced`), NOT in
   the `timerState` blob — it outlives sessions. The module runs its own 1 Hz clock (`deadlineNow`,
   a plain `setInterval`): the timer's worker tick only runs during a session, and a deadline must
@@ -304,14 +311,25 @@ trap rather than a safety net: the flat paths it fell back to (`elapsed/006.webm
 restructured into take directories, so a missing key produced a `Howl` on a 404 that sat in
 `state === 'loading'` forever, in silence. An empty list instead reaches `playByKey`'s existing
 not-found branch, which logs and records a failed `soundPlaybackLog` entry. `REQUIRED_SOUND_KEYS`
-(derived from `AVAILABLE_SOUNDS` + the 78 notifications + `button`/`timerFinished`/`timesup_*`) is
+(derived from `AVAILABLE_SOUNDS` + `DEADLINE_WARNING_MINUTES` + the 78 notifications +
+`button`/`timerFinished`/`timesup_*`) is
 what `buildSoundConfig` iterates, and `src/lib/sounds.test.js` guards it three ways: every required
 key has a manifest entry, every manifest path exists on disk, and every set in `SOUND_SETS` covers
 every speech key. The second assertion is the one that catches a bank restructure; the third catches
-a half-promoted set and a prompt file that forgot its `@name`.
+a half-promoted set and a prompt file that forgot its `@name`. (The seven newest keys —
+`elapsed_break_*`, `remaining_break_*`, `deadline_*` — sit in a documented `PENDING_MULTI_SET_KEYS`
+exclusion in that test while their takes are still being generated set by set; only `tube` has them
+so far, and the other sets fall back to the full pool for those keys. Delete the exclusion once
+every set is promoted.)
 
-`AVAILABLE_SOUNDS` in `src/lib/sound-discovery.js` defines which minute marks exist per bank
-(`elapsed`, `remaining`, `overtime`, `overtimeBreak`) and is what `SoundScheduler` schedules from.
+`AVAILABLE_SOUNDS` in `src/lib/sound-discovery.ts` defines which minute marks exist per bank
+(`elapsed`, `remaining`, `overtime`, `overtimeBreak`, and the break-specific `elapsedBreak` /
+`remainingBreak`, both `[6, 12]`) and is what `SoundScheduler` schedules from. Break periods use
+the break banks — check-in wording at 6/12 elapsed, wind-down at 12/6 remaining — with the
+elapsed↔remaining threshold computed from the break bank's max (12 min, vs 24 for work), and
+`remaining_break_12` hard-gated to breaks of 48 min and up; work and fun periods keep the work
+banks throughout. Scheduler windows carry canonical manifest keys (`timesup_work`,
+`overtime_break_12`, …) that `timer.ts` plays directly — there is no path→key derivation anymore.
 The overtime ladder ends at 48 — the old 60-minute buzz was retired.
 
 **Spoken text is generated, not recorded.** The words live in `sound-prompts/*.txt`, one file per

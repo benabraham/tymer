@@ -3,7 +3,7 @@ import { Howl, Howler } from 'howler'
 import { log } from './log.js'
 import type { PeriodData, PeriodType } from './period.js'
 import { pickVariant } from './pick-variant.js'
-import { AVAILABLE_SOUNDS } from './sound-discovery.js'
+import { AVAILABLE_SOUNDS, DEADLINE_WARNING_MINUTES } from './sound-discovery.js'
 import { SOUND_VARIANTS, type SoundVariant } from './sound-manifest.js'
 import { ALL_SETS, activeSoundSet } from './sound-set.js'
 
@@ -59,6 +59,9 @@ export const REQUIRED_SOUND_KEYS: string[] = [
     ...AVAILABLE_SOUNDS.remaining.map(min => `remaining_${min}`),
     ...AVAILABLE_SOUNDS.overtime.map(min => `overtime_${min}`),
     ...AVAILABLE_SOUNDS.overtimeBreak.map(min => `overtime_break_${min}`),
+    ...AVAILABLE_SOUNDS.elapsedBreak.map(min => `elapsed_break_${min}`),
+    ...AVAILABLE_SOUNDS.remainingBreak.map(min => `remaining_break_${min}`),
+    ...DEADLINE_WARNING_MINUTES.map(min => `deadline_${min}`),
     ...Array.from({ length: 78 }, (_, i) => `notification_${i + 1}`),
     'button',
     'timerFinished',
@@ -245,6 +248,18 @@ export const soundConfig = {
         acc[`${min}min`] = getVariantPaths(`overtime_break_${min}`)
         return acc
     }, {}),
+    elapsedBreak: AVAILABLE_SOUNDS.elapsedBreak.reduce<Record<string, string[]>>((acc, min) => {
+        acc[`${min}min`] = getVariantPaths(`elapsed_break_${min}`)
+        return acc
+    }, {}),
+    remainingBreak: AVAILABLE_SOUNDS.remainingBreak.reduce<Record<string, string[]>>((acc, min) => {
+        acc[`${min}min`] = getVariantPaths(`remaining_break_${min}`)
+        return acc
+    }, {}),
+    deadline: DEADLINE_WARNING_MINUTES.reduce<Record<string, string[]>>((acc, min) => {
+        acc[`${min}min`] = getVariantPaths(`deadline_${min}`)
+        return acc
+    }, {}),
     general: {
         button: getVariantPaths('button'),
         timerFinished: getVariantPaths('timerFinished'),
@@ -415,24 +430,4 @@ export const playPeriodSound = async (soundKey: string): Promise<boolean> => {
     await playRandomNotification()
     log('🔊 Playing period sound', soundKey, 10)
     return playByKey(soundKey)
-}
-
-// Helper to get sound key from sound path (for SoundScheduler integration)
-export const getSoundKeyFromPath = (soundPath: string): string => {
-    // Convert path like 'sounds/elapsed/006.webm' to key like 'elapsed_6'
-    const pathParts = soundPath.split('/')
-    const filename = pathParts[pathParts.length - 1] // '006.webm'
-    const folder = pathParts[pathParts.length - 2] // 'elapsed'
-    const subfolder = pathParts.length > 3 ? pathParts[pathParts.length - 3] : null // 'break' for overtime
-
-    const minutes = parseInt(filename.replace('.webm', ''))
-
-    if (folder === 'timesup') {
-        const periodType = filename.replace('.webm', '') // 'work', 'break', 'fun', 'finish'
-        return `timesup_${periodType}`
-    } else if (folder === 'break' && subfolder === 'overtime') {
-        return `overtime_break_${minutes}`
-    } else {
-        return `${folder}_${minutes}`
-    }
 }

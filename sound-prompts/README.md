@@ -38,9 +38,10 @@ Every set speaks the same 40 events. The wording is the set's own; the _job_ of
 each event is fixed and voice-independent. Minute counts are the payload and must
 survive every rewording, spoken in the set's idiom but instantly parseable.
 
-(The break banks and the deadline warnings are newer than the rest: the clips
-are generated ahead of their app-side scheduling, so where this section says
-when one "fires", it describes the intended scheduler behavior.)
+(The break banks and the deadline warnings are the newest events: the app-side
+scheduling is in place, but their takes are still being generated set by set —
+until a set's takes are promoted, those seven keys fall back to the voices that
+already have them.)
 
 ### `elapsed/006–108` (10) — work progress markers
 

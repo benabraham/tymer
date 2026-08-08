@@ -29,7 +29,7 @@ import { Schedule } from './schedule'
 import type { ScheduleSnapshot } from './schedule.js'
 import { AVAILABLE_SOUNDS } from './sound-discovery'
 import { SoundScheduler } from './sound-scheduler'
-import { getSoundKeyFromPath, playPeriodSound, playSound, playTimerFinishedSound } from './sounds'
+import { playPeriodSound, playSound, playTimerFinishedSound } from './sounds'
 import { loadState, saveState } from './storage'
 
 // The { periods, types } shape owned by the timerState signal — Schedule owns
@@ -1296,8 +1296,7 @@ const tick = (): void => {
         )
 
         if (soundToPlay) {
-            const soundKey = getSoundKeyFromPath(soundToPlay.soundPath)
-            playPeriodSound(soundKey)
+            playPeriodSound(soundToPlay.key)
         }
     }
 

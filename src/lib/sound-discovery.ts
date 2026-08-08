@@ -6,6 +6,8 @@ export type AvailableSounds = {
     remaining: number[]
     overtime: number[]
     overtimeBreak: number[]
+    elapsedBreak: number[]
+    remainingBreak: number[]
 }
 
 export const AVAILABLE_SOUNDS: AvailableSounds = {
@@ -20,7 +22,16 @@ export const AVAILABLE_SOUNDS: AvailableSounds = {
 
     // Break-specific overtime announcements
     overtimeBreak: [6, 12, 18, 24, 30, 36, 42, 48],
+
+    // Break-specific elapsed time announcements
+    elapsedBreak: [6, 12],
+
+    // Break-specific remaining time warnings
+    remainingBreak: [6, 12],
 }
+
+// Minutes before a deadline at which a spoken warning plays.
+export const DEADLINE_WARNING_MINUTES: number[] = [60, 12, 6]
 
 // Helper to get the maximum remaining sound available
 export const getMaxRemainingMinutes = (): number => Math.max(...AVAILABLE_SOUNDS.remaining)

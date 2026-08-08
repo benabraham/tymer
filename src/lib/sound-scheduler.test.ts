@@ -52,6 +52,8 @@ describe('SoundScheduler', () => {
                 remaining: [6, 12], // No 24-minute warning!
                 overtime: [6, 12],
                 overtimeBreak: [6, 12],
+                elapsedBreak: [6, 12],
+                remainingBreak: [6, 12],
             })
 
             // 90-minute period: threshold at 78 min (12 min remaining, not 24)
@@ -63,6 +65,8 @@ describe('SoundScheduler', () => {
                 remaining: [6, 12, 24, 36], // Added 36-minute warning!
                 overtime: [6, 12],
                 overtimeBreak: [6, 12],
+                elapsedBreak: [6, 12],
+                remainingBreak: [6, 12],
             })
 
             // 90-minute period: threshold at 54 min (36 min remaining)
@@ -82,10 +86,10 @@ describe('SoundScheduler', () => {
     describe('priority system', () => {
         it('prioritizes overtime > timesup > remaining > elapsed', () => {
             const windows: SoundWindow[] = [
-                { type: 'elapsed', priority: 1, key: 'elapsed_48', targetMs: 0, soundPath: '' },
-                { type: 'remaining', priority: 2, key: 'remaining_6', targetMs: 0, soundPath: '' },
-                { type: 'timesup', priority: 3, key: 'timesup', targetMs: 0, soundPath: '' },
-                { type: 'overtime', priority: 4, key: 'overtime_6', targetMs: 0, soundPath: '' },
+                { type: 'elapsed', priority: 1, key: 'elapsed_48', targetMs: 0 },
+                { type: 'remaining', priority: 2, key: 'remaining_6', targetMs: 0 },
+                { type: 'timesup', priority: 3, key: 'timesup_finish', targetMs: 0 },
+                { type: 'overtime', priority: 4, key: 'overtime_6', targetMs: 0 },
             ]
 
             const winner = scheduler.selectHighestPriority(windows)
@@ -138,7 +142,7 @@ describe('SoundScheduler', () => {
 
             expect(overtimeWindows.length).toBeGreaterThan(0)
             overtimeWindows.forEach(w => {
-                expect(w.soundPath).toContain('overtime/break/')
+                expect(w.key).toMatch(/^overtime_break_/)
             })
         })
 
@@ -148,8 +152,7 @@ describe('SoundScheduler', () => {
 
             expect(overtimeWindows.length).toBeGreaterThan(0)
             overtimeWindows.forEach(w => {
-                expect(w.soundPath).toContain('overtime/')
-                expect(w.soundPath).not.toContain('break')
+                expect(w.key).toMatch(/^overtime_\d+$/)
             })
         })
 
@@ -157,22 +160,22 @@ describe('SoundScheduler', () => {
             // When next period is work
             const workWindows = scheduler.getAllPossibleWindows(48 * 60000, 'break', 'work')
             const workTimesup = workWindows.find(w => w.type === 'timesup')
-            expect(workTimesup!.soundPath).toBe('sounds/timesup/work.webm')
+            expect(workTimesup!.key).toBe('timesup_work')
 
             // When next period is break
             const breakWindows = scheduler.getAllPossibleWindows(48 * 60000, 'work', 'break')
             const breakTimesup = breakWindows.find(w => w.type === 'timesup')
-            expect(breakTimesup!.soundPath).toBe('sounds/timesup/break.webm')
+            expect(breakTimesup!.key).toBe('timesup_break')
 
             // When next period is fun
             const funWindows = scheduler.getAllPossibleWindows(12 * 60000, 'work', 'fun')
             const funTimesup = funWindows.find(w => w.type === 'timesup')
-            expect(funTimesup!.soundPath).toBe('sounds/timesup/fun.webm')
+            expect(funTimesup!.key).toBe('timesup_fun')
 
             // When there is no next period (timer finish)
             const finishWindows = scheduler.getAllPossibleWindows(48 * 60000, 'work', null)
             const finishTimesup = finishWindows.find(w => w.type === 'timesup')
-            expect(finishTimesup!.soundPath).toBe('sounds/timesup/finish.webm')
+            expect(finishTimesup!.key).toBe('timesup_finish')
         })
     })
 
@@ -303,7 +306,7 @@ describe('SoundScheduler', () => {
                 { time: 24 * 60000, expected: 'remaining_24' }, // At threshold (remaining wins)
                 { time: 36 * 60000, expected: 'remaining_12' },
                 { time: 42 * 60000, expected: 'remaining_6' },
-                { time: 48 * 60000, expected: 'timesup' },
+                { time: 48 * 60000, expected: 'timesup_finish' },
                 { time: 54 * 60000, expected: 'overtime_6' },
             ]
 
@@ -327,10 +330,10 @@ describe('SoundScheduler', () => {
         it('handles a 12-minute break period', () => {
             const played = []
             const testPoints = [
-                { time: 6 * 60000, expected: 'remaining_6' }, // At 50% threshold (remaining wins)
+                { time: 6 * 60000, expected: 'remaining_break_6' }, // At 50% threshold (remaining wins)
                 { time: 9 * 60000, expected: null }, // No remaining_3 available
-                { time: 12 * 60000, expected: 'timesup' },
-                { time: 18 * 60000, expected: 'overtime_6' },
+                { time: 12 * 60000, expected: 'timesup_finish' },
+                { time: 18 * 60000, expected: 'overtime_break_6' },
             ]
 
             for (const point of testPoints) {
@@ -448,29 +451,29 @@ describe('SoundScheduler', () => {
 
         // 3-minute period (threshold at 1.5 min)
         testPeriod(3, [
-            { time: 3, expected: 'timesup' },
+            { time: 3, expected: 'timesup_finish' },
             { time: 6, expected: null }, // No 6-min sounds for 3-min period
         ])
 
         // 5-minute period (threshold at 2.5 min)
-        testPeriod(5, [{ time: 5, expected: 'timesup' }])
+        testPeriod(5, [{ time: 5, expected: 'timesup_finish' }])
 
         // 6-minute period (threshold at 3 min)
         testPeriod(6, [
-            { time: 6, expected: 'timesup' },
+            { time: 6, expected: 'timesup_finish' },
             { time: 12, expected: 'overtime_6' },
         ])
 
         // 8-minute period (threshold at 4 min)
         testPeriod(8, [
-            { time: 8, expected: 'timesup' },
+            { time: 8, expected: 'timesup_finish' },
             { time: 14, expected: 'overtime_6' },
         ])
 
         // 12-minute period (threshold at 6 min)
         testPeriod(12, [
             { time: 6, expected: 'remaining_6' }, // At threshold, remaining wins
-            { time: 12, expected: 'timesup' },
+            { time: 12, expected: 'timesup_finish' },
             { time: 18, expected: 'overtime_6' },
         ])
 
@@ -478,7 +481,7 @@ describe('SoundScheduler', () => {
         testPeriod(15, [
             { time: 6, expected: 'elapsed_6' },
             { time: 9, expected: 'remaining_6' }, // After threshold
-            { time: 15, expected: 'timesup' },
+            { time: 15, expected: 'timesup_finish' },
             { time: 21, expected: 'overtime_6' },
         ])
 
@@ -486,7 +489,7 @@ describe('SoundScheduler', () => {
         testPeriod(18, [
             { time: 6, expected: 'elapsed_6' },
             { time: 12, expected: 'remaining_6' }, // After threshold
-            { time: 18, expected: 'timesup' },
+            { time: 18, expected: 'timesup_finish' },
             { time: 24, expected: 'overtime_6' },
         ])
 
@@ -495,7 +498,7 @@ describe('SoundScheduler', () => {
             { time: 6, expected: 'elapsed_6' },
             { time: 12, expected: 'remaining_12' }, // At threshold, remaining wins
             { time: 18, expected: 'remaining_6' },
-            { time: 24, expected: 'timesup' },
+            { time: 24, expected: 'timesup_finish' },
             { time: 30, expected: 'overtime_6' },
         ])
 
@@ -505,7 +508,7 @@ describe('SoundScheduler', () => {
             { time: 12, expected: 'elapsed_12' },
             { time: 14, expected: 'remaining_12' }, // After threshold
             { time: 20, expected: 'remaining_6' },
-            { time: 26, expected: 'timesup' },
+            { time: 26, expected: 'timesup_finish' },
         ])
 
         // 30-minute period (threshold at 15 min)
@@ -514,7 +517,7 @@ describe('SoundScheduler', () => {
             { time: 12, expected: 'elapsed_12' },
             { time: 18, expected: 'remaining_12' }, // After threshold
             { time: 24, expected: 'remaining_6' },
-            { time: 30, expected: 'timesup' },
+            { time: 30, expected: 'timesup_finish' },
             { time: 36, expected: 'overtime_6' },
         ])
 
@@ -524,7 +527,7 @@ describe('SoundScheduler', () => {
             { time: 12, expected: 'elapsed_12' }, // Before threshold (this was the bug!)
             { time: 24, expected: 'remaining_12' }, // After threshold
             { time: 30, expected: 'remaining_6' },
-            { time: 36, expected: 'timesup' },
+            { time: 36, expected: 'timesup_finish' },
             { time: 42, expected: 'overtime_6' },
         ])
 
@@ -535,7 +538,7 @@ describe('SoundScheduler', () => {
             // No sound at 18 (no elapsed_18, and remaining_24 blocked by threshold)
             { time: 30, expected: 'remaining_12' }, // After threshold
             { time: 36, expected: 'remaining_6' },
-            { time: 42, expected: 'timesup' },
+            { time: 42, expected: 'timesup_finish' },
             { time: 48, expected: 'overtime_6' },
         ])
 
@@ -546,7 +549,7 @@ describe('SoundScheduler', () => {
             // No sound at 22 (no elapsed sound, remaining_24 blocked by threshold)
             { time: 34, expected: 'remaining_12' }, // After threshold
             { time: 40, expected: 'remaining_6' },
-            { time: 46, expected: 'timesup' },
+            { time: 46, expected: 'timesup_finish' },
         ])
 
         // 48-minute period (threshold at 24 min)
@@ -556,7 +559,7 @@ describe('SoundScheduler', () => {
             { time: 24, expected: 'remaining_24' }, // At threshold, remaining wins
             { time: 36, expected: 'remaining_12' },
             { time: 42, expected: 'remaining_6' },
-            { time: 48, expected: 'timesup' },
+            { time: 48, expected: 'timesup_finish' },
             { time: 54, expected: 'overtime_6' },
         ])
 
@@ -571,7 +574,7 @@ describe('SoundScheduler', () => {
             { time: 66, expected: 'remaining_24' }, // At threshold, remaining wins
             { time: 78, expected: 'remaining_12' },
             { time: 84, expected: 'remaining_6' },
-            { time: 90, expected: 'timesup' },
+            { time: 90, expected: 'timesup_finish' },
             { time: 96, expected: 'overtime_6' },
         ])
 
@@ -588,7 +591,7 @@ describe('SoundScheduler', () => {
             { time: 96, expected: 'remaining_24' }, // At threshold, remaining wins
             { time: 108, expected: 'remaining_12' },
             { time: 114, expected: 'remaining_6' },
-            { time: 120, expected: 'timesup' },
+            { time: 120, expected: 'timesup_finish' },
         ])
 
         // 150-minute period (threshold at 126 min = 150-24)
@@ -602,7 +605,138 @@ describe('SoundScheduler', () => {
             { time: 126, expected: 'remaining_24' }, // At threshold, remaining wins
             { time: 138, expected: 'remaining_12' },
             { time: 144, expected: 'remaining_6' },
-            { time: 150, expected: 'timesup' },
+            { time: 150, expected: 'timesup_finish' },
         ])
+    })
+
+    describe('break periods use break-specific banks', () => {
+        const testBreakPeriod = (
+            minutes: number,
+            expectedSounds: { time: number; expected: string | null }[],
+        ) => {
+            it(`handles ${minutes}-minute break period correctly`, () => {
+                const scheduler = new SoundScheduler(2000)
+                const intendedMs = minutes * 60000
+
+                expectedSounds.forEach(({ time, expected }) => {
+                    const timeMs = time * 60000
+
+                    scheduler.checkSounds(timeMs - 1000, intendedMs, 'break', false)
+                    const sound = scheduler.checkSounds(timeMs + 2001, intendedMs, 'break', false)
+
+                    if (expected) {
+                        expect(sound).toBeDefined()
+                        expect(sound!.key).toBe(expected)
+                        scheduler.onElapsedAdjustment(timeMs + 3000, timeMs)
+                    } else {
+                        expect(sound).toBeNull()
+                    }
+                })
+            })
+        }
+
+        // 6m -> none before timesup (elapsed_break_6 coincides with timesup, timesup wins)
+        testBreakPeriod(6, [{ time: 6, expected: 'timesup_finish' }])
+
+        // 12m -> remaining_break_6 at 6:00
+        testBreakPeriod(12, [
+            { time: 6, expected: 'remaining_break_6' },
+            { time: 12, expected: 'timesup_finish' },
+        ])
+
+        // 18m -> elapsed_break_6 @6, remaining_break_6 @12
+        testBreakPeriod(18, [
+            { time: 6, expected: 'elapsed_break_6' },
+            { time: 12, expected: 'remaining_break_6' },
+            { time: 18, expected: 'timesup_finish' },
+        ])
+
+        // 24m -> elapsed_break_6 @6, remaining_break_6 @18 - elapsed_break_12 must NOT fire
+        // (threshold lands exactly on 12:00, so elapsed_break_12 is filtered out)
+        testBreakPeriod(24, [
+            { time: 6, expected: 'elapsed_break_6' },
+            { time: 18, expected: 'remaining_break_6' },
+            { time: 24, expected: 'timesup_finish' },
+        ])
+
+        // 30m -> elapsed_break_6 @6, elapsed_break_12 @12, remaining_break_6 @24
+        // (remaining_break_12 gated off: 30 < 48)
+        testBreakPeriod(30, [
+            { time: 6, expected: 'elapsed_break_6' },
+            { time: 12, expected: 'elapsed_break_12' },
+            { time: 24, expected: 'remaining_break_6' },
+            { time: 30, expected: 'timesup_finish' },
+        ])
+
+        // 36m -> e_b_6 @6, e_b_12 @12, remaining_break_6 @30
+        testBreakPeriod(36, [
+            { time: 6, expected: 'elapsed_break_6' },
+            { time: 12, expected: 'elapsed_break_12' },
+            { time: 30, expected: 'remaining_break_6' },
+            { time: 36, expected: 'timesup_finish' },
+        ])
+
+        // 48m -> e_b_6, e_b_12, remaining_break_12 @36, remaining_break_6 @42
+        testBreakPeriod(48, [
+            { time: 6, expected: 'elapsed_break_6' },
+            { time: 12, expected: 'elapsed_break_12' },
+            { time: 36, expected: 'remaining_break_12' },
+            { time: 42, expected: 'remaining_break_6' },
+            { time: 48, expected: 'timesup_finish' },
+        ])
+
+        // 60m -> e_b_6, e_b_12, remaining_break_12 @48, remaining_break_6 @54
+        testBreakPeriod(60, [
+            { time: 6, expected: 'elapsed_break_6' },
+            { time: 12, expected: 'elapsed_break_12' },
+            { time: 48, expected: 'remaining_break_12' },
+            { time: 54, expected: 'remaining_break_6' },
+            { time: 60, expected: 'timesup_finish' },
+        ])
+    })
+
+    describe('work and fun periods behave byte-identically to before break banks existed', () => {
+        it('work period: same keys and threshold as before', () => {
+            const scheduler = new SoundScheduler(2000)
+            const intendedMs = 48 * 60000
+            expect(scheduler.getThreshold(intendedMs, 'work')).toBe(24 * 60000)
+
+            scheduler.checkSounds(6 * 60000 - 1000, intendedMs, 'work', false)
+            const sound = scheduler.checkSounds(6 * 60000 + 2001, intendedMs, 'work', false)
+            expect(sound!.key).toBe('elapsed_6')
+        })
+
+        it('fun period: same keys and threshold as before (uses work banks)', () => {
+            const scheduler = new SoundScheduler(2000)
+            const intendedMs = 48 * 60000
+            expect(scheduler.getThreshold(intendedMs, 'fun')).toBe(24 * 60000)
+
+            scheduler.checkSounds(6 * 60000 - 1000, intendedMs, 'fun', false)
+            const sound = scheduler.checkSounds(6 * 60000 + 2001, intendedMs, 'fun', false)
+            expect(sound!.key).toBe('elapsed_6')
+        })
+
+        it('break period: threshold uses the break remaining bank (max 12 min)', () => {
+            const scheduler = new SoundScheduler(2000)
+            const intendedMs = 90 * 60000
+            // max(45, 90-12) = 78
+            expect(scheduler.getThreshold(intendedMs, 'break')).toBe(78 * 60000)
+        })
+    })
+
+    describe('timesup canonical keys', () => {
+        it('carries timesup_work/timesup_break/timesup_fun/timesup_finish keys', () => {
+            const workWindows = scheduler.getAllPossibleWindows(48 * 60000, 'break', 'work')
+            expect(workWindows.find(w => w.type === 'timesup')!.key).toBe('timesup_work')
+
+            const breakWindows = scheduler.getAllPossibleWindows(48 * 60000, 'work', 'break')
+            expect(breakWindows.find(w => w.type === 'timesup')!.key).toBe('timesup_break')
+
+            const funWindows = scheduler.getAllPossibleWindows(12 * 60000, 'work', 'fun')
+            expect(funWindows.find(w => w.type === 'timesup')!.key).toBe('timesup_fun')
+
+            const finishWindows = scheduler.getAllPossibleWindows(48 * 60000, 'work', null)
+            expect(finishWindows.find(w => w.type === 'timesup')!.key).toBe('timesup_finish')
+        })
     })
 })

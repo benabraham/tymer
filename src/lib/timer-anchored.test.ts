@@ -65,7 +65,6 @@ vi.mock('./sounds', () => ({
     playSound: vi.fn(),
     playTimerFinishedSound: vi.fn(),
     playPeriodSound: vi.fn(),
-    getSoundKeyFromPath: vi.fn(() => 'key'),
     // Reached through timer.ts → deadline.ts: an overdue deadline starts the
     // alarm loop, which must not touch Howler in jsdom.
     pickRandomNotificationKey: vi.fn(() => 'notification_1'),

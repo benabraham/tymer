@@ -8,7 +8,6 @@ export type SoundWindow = {
     type: SoundWindowType
     minutes?: number
     targetMs: number
-    soundPath: string
     key: string
     priority: number
 }
@@ -19,6 +18,7 @@ export class SoundScheduler {
     activeWindows: Set<string> // Set of window keys currently active
     availableSounds: AvailableSounds
     maxRemainingMinutes: number
+    maxRemainingBreakMinutes: number
 
     constructor(windowSize: number = 2000, availableSounds: AvailableSounds | null = null) {
         this.WINDOW_SIZE = windowSize
@@ -30,12 +30,16 @@ export class SoundScheduler {
 
         // Calculate max remaining minutes for dynamic threshold
         this.maxRemainingMinutes = Math.max(...this.availableSounds.remaining)
+        this.maxRemainingBreakMinutes = Math.max(...this.availableSounds.remainingBreak)
     }
 
-    // Calculate the threshold for switching from elapsed to remaining sounds
-    getThreshold(intendedDuration: number): number {
-        // Dynamic threshold based on largest available remaining sound
-        const remainingThreshold = intendedDuration - this.maxRemainingMinutes * 60000
+    // Calculate the threshold for switching from elapsed to remaining sounds.
+    // Break periods use the break remaining bank (max 12 min) instead of the
+    // work/fun bank (max 24 min) — their remaining windows top out earlier.
+    getThreshold(intendedDuration: number, periodType: PeriodType = 'work'): number {
+        const maxRemaining =
+            periodType === 'break' ? this.maxRemainingBreakMinutes : this.maxRemainingMinutes
+        const remainingThreshold = intendedDuration - maxRemaining * 60000
         return Math.max(intendedDuration / 2, remainingThreshold)
     }
 
@@ -46,21 +50,34 @@ export class SoundScheduler {
         nextPeriodType: PeriodType | 'finish' | null = null,
     ): SoundWindow[] {
         const windows: SoundWindow[] = []
+        const isBreak = periodType === 'break'
 
-        // Add elapsed sound windows
-        this.availableSounds.elapsed.forEach(minutes => {
+        // Add elapsed sound windows — break periods use the break-specific
+        // bank (elapsed/break/…) with elapsed_break_N keys; work/fun keep
+        // the original bank and keys.
+        const elapsedMinutes = isBreak
+            ? this.availableSounds.elapsedBreak
+            : this.availableSounds.elapsed
+        elapsedMinutes.forEach(minutes => {
             windows.push({
                 type: 'elapsed',
                 minutes,
                 targetMs: minutes * 60000,
-                soundPath: `sounds/elapsed/${String(minutes).padStart(3, '0')}.webm`,
-                key: `elapsed_${minutes}`,
+                key: isBreak ? `elapsed_break_${minutes}` : `elapsed_${minutes}`,
                 priority: 1,
             })
         })
 
-        // Add remaining sound windows
-        this.availableSounds.remaining.forEach(minutes => {
+        // Add remaining sound windows — break periods use the break-specific
+        // bank (remaining/break/…) with remaining_break_N keys. The 12-minute
+        // break warning only makes sense for breaks long enough to still be
+        // running at the 48-minute mark — an explicit, non-derivable gate.
+        const remainingMinutes = isBreak
+            ? this.availableSounds.remainingBreak
+            : this.availableSounds.remaining
+        remainingMinutes.forEach(minutes => {
+            if (isBreak && minutes === 12 && intendedDuration < 48 * 60000) return
+
             const targetMs = intendedDuration - minutes * 60000
             if (targetMs >= 0) {
                 // Only add if it makes sense for this duration
@@ -68,20 +85,19 @@ export class SoundScheduler {
                     type: 'remaining',
                     minutes,
                     targetMs,
-                    soundPath: `sounds/remaining/${String(minutes).padStart(3, '0')}.webm`,
-                    key: `remaining_${minutes}`,
+                    key: isBreak ? `remaining_break_${minutes}` : `remaining_${minutes}`,
                     priority: 2,
                 })
             }
         })
 
-        // Add timesup window - sound based on next period type
+        // Add timesup window - sound based on next period type. Key is the
+        // canonical manifest key so callers can play it directly.
         const timesupSoundType = nextPeriodType || 'finish'
         windows.push({
             type: 'timesup',
             targetMs: intendedDuration,
-            soundPath: `sounds/timesup/${timesupSoundType}.webm`,
-            key: 'timesup',
+            key: `timesup_${timesupSoundType}`,
             priority: 4,
         })
 
@@ -96,11 +112,7 @@ export class SoundScheduler {
                 type: 'overtime',
                 minutes,
                 targetMs: intendedDuration + minutes * 60000,
-                soundPath:
-                    periodType === 'break'
-                        ? `sounds/overtime/break/${String(minutes).padStart(3, '0')}.webm`
-                        : `sounds/overtime/${String(minutes).padStart(3, '0')}.webm`,
-                key: `overtime_${minutes}`,
+                key: isBreak ? `overtime_break_${minutes}` : `overtime_${minutes}`,
                 priority: 3,
             })
         })
@@ -177,7 +189,7 @@ export class SoundScheduler {
         // Only trigger when ALL overlapping windows have ended
         if (this.overlappingGroup.size > 0 && stillActiveInGroup.length === 0) {
             // All windows in the group have ended - filter by threshold at trigger time
-            const threshold = this.getThreshold(intendedDuration)
+            const threshold = this.getThreshold(intendedDuration, periodType)
             const candidateWindows = Array.from(this.overlappingGroup.values()).filter(window => {
                 // Apply threshold rules at trigger time (not entry time)
                 if (window.type === 'elapsed' && elapsedMs >= threshold) {

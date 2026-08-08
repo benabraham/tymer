@@ -5,17 +5,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('./sounds', () => ({
     pickRandomNotificationKey: vi.fn(() => 'notification_1'),
     playNotification: vi.fn(() => Promise.resolve(false)),
+    playPeriodSound: vi.fn(() => Promise.resolve(true)),
 }))
 
 import {
     applyDeadlinesFromText,
     type Deadline,
+    type DeadlineOccurrence,
     deadlineAlarmActive,
     deadlineAlarmTimestamp,
     deadlineDayMarker,
     deadlineNow,
     deadlineOccurrences,
     deadlines,
+    deadlineWarningKey,
     nearestDeadlineAfter,
     resolveParsedDeadline,
     serializeDeadlineLines,
@@ -23,6 +26,7 @@ import {
     silenceDeadlineAlarm,
     silencedDeadlines,
 } from './deadline'
+import { playPeriodSound } from './sounds'
 
 // A fixed reference: Wed 2026-08-05 12:00 local time.
 const REF = new Date(2026, 7, 5, 12, 0, 0, 0).getTime()
@@ -281,5 +285,143 @@ describe('deadlineDayMarker', () => {
         expect(deadlineDayMarker(at(6, 9, 0), REF)).toBe('tomorrow')
         expect(deadlineDayMarker(at(4, 9, 0), REF)).toBe('yesterday')
         expect(deadlineDayMarker(new Date(2026, 11, 30).getTime(), REF)).toBe('30 Dec')
+    })
+})
+
+describe('deadlineWarningKey', () => {
+    const occurrenceAt = (timestamp: number): DeadlineOccurrence[] => [
+        { deadline: { kind: 'absolute', timestamp, label: '' }, timestamp },
+    ]
+
+    it('fires deadline_60/deadline_12/deadline_6 on a live crossing of each warning moment', () => {
+        const deadline = at(5, 17, 0)
+        const occurrences = occurrenceAt(deadline)
+        expect(
+            deadlineWarningKey({
+                occurrences,
+                previousNow: at(5, 15, 59),
+                now: at(5, 16, 0),
+            }),
+        ).toBe('deadline_60')
+        expect(
+            deadlineWarningKey({
+                occurrences,
+                previousNow: at(5, 16, 47),
+                now: at(5, 16, 48),
+            }),
+        ).toBe('deadline_12')
+        expect(
+            deadlineWarningKey({
+                occurrences,
+                previousNow: at(5, 16, 53),
+                now: at(5, 16, 54),
+            }),
+        ).toBe('deadline_6')
+    })
+
+    it('returns null when no warning moment was crossed in the gap', () => {
+        const occurrences = occurrenceAt(at(5, 17, 0))
+        expect(
+            deadlineWarningKey({
+                occurrences,
+                previousNow: at(5, 15, 0),
+                now: at(5, 15, 30),
+            }),
+        ).toBeNull()
+    })
+
+    it('picks only the smallest offset when a gap spans several warning moments', () => {
+        const occurrences = occurrenceAt(at(5, 17, 0))
+        // A sleeping tab wakes up after 16:00 (60m) AND 16:48 (12m) both passed.
+        expect(
+            deadlineWarningKey({
+                occurrences,
+                previousNow: at(5, 15, 0),
+                now: at(5, 16, 50),
+            }),
+        ).toBe('deadline_12')
+    })
+
+    it('never fires when the warning moment is already past on first sight', () => {
+        const occurrences = occurrenceAt(at(5, 17, 0))
+        // previousNow already at/after the 60m mark when the deadline appears.
+        expect(
+            deadlineWarningKey({
+                occurrences,
+                previousNow: at(5, 16, 0),
+                now: at(5, 16, 1),
+            }),
+        ).toBeNull()
+    })
+
+    it('tracks the nearest upcoming occurrence across two deadlines', () => {
+        const occurrences: DeadlineOccurrence[] = [
+            {
+                deadline: { kind: 'absolute', timestamp: at(5, 17, 0), label: 'a' },
+                timestamp: at(5, 17, 0),
+            },
+            {
+                deadline: { kind: 'absolute', timestamp: at(5, 18, 0), label: 'b' },
+                timestamp: at(5, 18, 0),
+            },
+        ]
+        // 60m before the nearest (17:00) is 16:00 — crosses it.
+        expect(
+            deadlineWarningKey({
+                occurrences,
+                previousNow: at(5, 15, 59),
+                now: at(5, 16, 0),
+            }),
+        ).toBe('deadline_60')
+        // Once 17:00 has passed, the nearest upcoming is 18:00 — 60m before it
+        // is 17:00, which now crosses too.
+        expect(
+            deadlineWarningKey({
+                occurrences,
+                previousNow: at(5, 16, 59),
+                now: at(5, 17, 0),
+            }),
+        ).toBe('deadline_60')
+    })
+
+    it('returns null when there is no upcoming occurrence', () => {
+        expect(
+            deadlineWarningKey({ occurrences: [], previousNow: at(5, 15, 0), now: at(5, 16, 0) }),
+        ).toBeNull()
+        const overdue = occurrenceAt(at(5, 10, 0))
+        expect(
+            deadlineWarningKey({
+                occurrences: overdue,
+                previousNow: at(5, 15, 0),
+                now: at(5, 16, 0),
+            }),
+        ).toBeNull()
+    })
+
+    it('warns for a daily deadline resolved through occurrenceTimestamp like an absolute one', () => {
+        deadlines.value = [{ kind: 'daily', minutes: 17 * 60, label: '' }]
+        deadlineNow.value = at(5, 16, 47)
+        const before = deadlineOccurrences.value
+        deadlineNow.value = at(5, 16, 48)
+        expect(
+            deadlineWarningKey({
+                occurrences: before,
+                previousNow: at(5, 16, 47),
+                now: at(5, 16, 48),
+            }),
+        ).toBe('deadline_12')
+    })
+})
+
+describe('deadline warning effect', () => {
+    it('plays the crossed warning clip exactly once and does not re-fire the next tick', () => {
+        deadlines.value = [{ kind: 'absolute', timestamp: at(5, 17, 0), label: '' }]
+        deadlineNow.value = at(5, 16, 47)
+        vi.mocked(playPeriodSound).mockClear()
+        deadlineNow.value = at(5, 16, 48)
+        expect(playPeriodSound).toHaveBeenCalledTimes(1)
+        expect(playPeriodSound).toHaveBeenCalledWith('deadline_12')
+        deadlineNow.value = at(5, 16, 49)
+        expect(playPeriodSound).toHaveBeenCalledTimes(1)
     })
 })
