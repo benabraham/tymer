@@ -78,6 +78,24 @@ jobs:
         with:
           enable-cache: true
 
+      # `--frozen-lockfile` below is deliberately never used for resolution — it
+      # only compares the lockfile against package.json and installs exactly
+      # what is pinned, so it never runs the `minimumReleaseAge` supply-chain
+      # check. That check only fires during real resolution, which is why
+      # unbash@4.0.10 (build 957f431) rode in on an unrelated Dependabot bump,
+      # passed CI, and auto-merged: Dependabot's own `cooldown` in
+      # dependabot.yml only vets the packages it directly proposes, not
+      # transitive versions that shift as a side effect of regenerating the
+      # lockfile. This step is the actual gate for that: `--lockfile-only`
+      # does full resolution (so it hits the policy check) without downloading
+      # packages or touching node_modules, and the diff after it catches the
+      # same drift `--frozen-lockfile` would — just before merge instead of on
+      # some contributor's machine days later.
+      - name: Verify lockfile policy
+        run: |
+          pnpm install --lockfile-only
+          git diff --exit-code pnpm-lock.yaml
+
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
