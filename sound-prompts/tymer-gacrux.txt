@@ -5,8 +5,13 @@
 # Text was recovered from the original clips by transcription; edit freely.
 #
 # Regenerate: see sound-prompts/README.md
+#
+# @name below labels every file in this set `gacrux-N.wav` — required, per
+# sound-prompts/README.md, so the app can derive a selectable voice set from
+# the filename stem instead of one pseudo-set per clip.
 
 @voice Gacrux
+@name gacrux
 @profile Tymer — the timekeeper
 @scene
 A quiet home workspace in the late afternoon. One person, deep in a focus
