@@ -1,0 +1,241 @@
+.sound-preview {
+    max-width: 100rem;
+    margin: 0 auto 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+
+    &__header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: var(--color-bg-body);
+        padding-block: 0.5rem;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    &__header-titles {
+        h1 {
+            margin: 0;
+            font-size: 1.4rem;
+        }
+    }
+
+    &__summary {
+        margin: 0.15rem 0 0;
+        color: var(--color-text-subtle);
+    }
+
+    &__header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    &__bank-title {
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+    }
+}
+
+// One grid for the entire matrix (every bank), so the sticky voice header
+// stays aligned with every bank's columns below it — separate per-bank
+// grids would each size their own columns independently.
+.sound-preview__grid {
+    display: grid;
+    grid-template-columns: minmax(10rem, 1fr) repeat(
+            var(--sound-preview-columns),
+            minmax(7rem, 1fr)
+        );
+    gap: 0.25rem;
+}
+
+.sound-preview__row {
+    display: contents;
+}
+
+// Full-width divider between banks — a plain grid item, not a section
+// wrapper, since the whole matrix is one grid.
+.sound-preview__bank-title-row {
+    grid-column: 1 / -1;
+    font-size: 1.05rem;
+    font-weight: 700;
+    padding: 0.75rem 0.25rem 0.25rem;
+}
+
+.sound-preview__row-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.25rem;
+    font-size: 0.9rem;
+}
+
+// The voice names appear exactly once, in this sticky header row — corner
+// "play everything" cell plus one button per voice — so it must stay
+// visible while the (long) matrix below scrolls.
+.sound-preview__row--header {
+    display: contents;
+
+    .sound-preview__corner,
+    .sound-preview__column-header {
+        position: sticky;
+        top: 4.5rem;
+        background-color: var(--color-bg-body);
+        z-index: 5;
+        font-weight: 600;
+    }
+
+    // Sits above the voice header cells in the same sticky row so nothing
+    // it might visually overlap during scroll reads on top of it.
+    .sound-preview__corner {
+        z-index: 6;
+    }
+}
+
+.sound-preview__corner,
+.sound-preview__column-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-width: 0;
+    padding: 0.4rem 0.5rem;
+}
+
+.sound-preview__row-play,
+.sound-preview__cell-play {
+    flex-shrink: 0;
+}
+
+.sound-preview__cell {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    padding: 0.25rem;
+    border-radius: 0.4rem;
+    background-color: var(--color-bg-button);
+}
+
+// Whole-row / whole-column context while a take somewhere in it is
+// sounding — a tint behind every cell in the row and, separately, every
+// cell in the column, so the eye finds the active area of a big grid
+// without hunting for the one lit chip.
+.sound-preview__cell--row-active,
+.sound-preview__cell--column-active {
+    background-color: var(--color-bg-button-semiactive);
+}
+
+.sound-preview__row-label--active {
+    background-color: var(--color-bg-button-semiactive);
+    border-radius: 0.4rem;
+}
+
+.sound-preview__column-header--active {
+    background-color: var(--color-bg-button-semiactive) !important;
+}
+
+.sound-preview__cell--empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-subtle);
+    background-color: transparent;
+}
+
+.sound-preview__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+// Three states, distinguished by fill + shape, never by a hairline border
+// alone: unplayed (neutral chip), heard (solid success tint + check),
+// playing (solid, high-contrast, pulsing — same idiom as the deadline
+// marker / build-info update button).
+.sound-preview__chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.85rem;
+    min-height: 1.5rem;
+    padding: 0.15rem 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 999px;
+    background-color: var(--color-bg-button-inactive);
+    color: var(--color-text-button-inactive);
+}
+
+.sound-preview__chip--heard {
+    background-color: var(--color-success);
+    color: var(--color-text-on-bg);
+}
+
+.sound-preview__chip-check {
+    font-size: 0.7rem;
+}
+
+.sound-preview__chip--playing,
+.sound-preview__cell-play--playing,
+.sound-preview__row-play--playing,
+.sound-preview__column-header--playing,
+.sound-preview__corner--playing {
+    background-color: var(--color-current-time) !important;
+    color: #000 !important;
+    animation: sound-preview-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes sound-preview-pulse {
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.6;
+        transform: scale(1.12);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sound-preview__chip--playing,
+    .sound-preview__cell-play--playing,
+    .sound-preview__row-play--playing,
+    .sound-preview__column-header--playing,
+    .sound-preview__corner--playing {
+        animation: none;
+    }
+}
+
+.sound-preview__shared {
+    border-top: 1px solid var(--color-border);
+    padding-top: 1rem;
+}
+
+.sound-preview__shared-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.sound-preview__shared-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.5rem;
+    border-radius: 0.4rem;
+    background-color: var(--color-bg-button);
+}
+
+.sound-preview__shared-label {
+    font-size: 0.75rem;
+    color: var(--color-text-subtle);
+}

@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { soundConfig } from '../src/lib/sounds.ts'
 
 /**
@@ -34,11 +35,24 @@ export function generateSoundPreloads() {
  * Vite plugin to inject sound preloads into HTML
  */
 export function soundPreloadPlugin() {
+    // Resolved from the Vite config so the main entry can be identified by
+    // absolute path — `ctx.path` is a request URL in dev (base-prefixed) and a
+    // root-relative path in build, so it is not comparable across both.
+    let mainEntry = ''
+
     return {
         name: 'sound-preload',
+        configResolved(config) {
+            mainEntry = path.resolve(config.root, 'index.html')
+        },
         transformIndexHtml: {
             order: 'pre',
-            handler(html) {
+            handler(html, ctx) {
+                // The app entry only. The sound-preview page (sounds/index.html)
+                // auditions the whole bank on demand — preloading 480 clips
+                // there would download the entire bank on open.
+                if (path.resolve(ctx.filename) !== mainEntry) return html
+
                 const { html: preloadHtml } = generateSoundPreloads()
 
                 // Find the position to insert preloads (after fonts, before icons)

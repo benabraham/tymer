@@ -395,3 +395,31 @@ in lockstep — the count is not derived from the manifest, and the sounds test 
 
 PWA precaching uses recursive globs (`sounds/**/*.webm`, `sounds/**/*.ogg`) in `vite.config.js` —
 single-`*` globs silently missed `overtime/break/` and every notification.
+
+#### The sound-preview page (`/tymer/sounds/`)
+
+Auditions the whole bank in one place — every event × every voice × every take — so a set can be
+compared against the others and a half-promoted one is visible at a glance.
+
+- **A second Vite page, not a route.** `sounds/index.html` lives at the repo ROOT and is the second
+  `build.rollupOptions.input` entry, so it builds to `dist/sounds/index.html` and GitHub Pages
+  serves the directory URL with no SPA fallback. It lands _inside_ the directory `public/sounds/`
+  is copied to; the names don't collide, and the SW precaches the page like any other HTML.
+  `src/sound-preview/` is its own little app: `initTheme()` and nothing else from the timer — no
+  timer state, no service-worker registration, and plain `new Audio` rather than Howler, since
+  eagerly building 480 Howls to preview them is the opposite of what the page is for.
+- **`soundPreloadPlugin` is gated to the app entry** (`config.root/index.html`, compared as an
+  absolute path — `ctx.path` is a base-prefixed request URL in dev and a root-relative path in
+  build, so it is not comparable across both). Ungated, `transformIndexHtml` ran for every entry
+  and put all 402 preload links on the preview page, downloading the bank on open.
+- `preview-model.ts` turns the flat manifest into the matrix: 8 banks × the voice columns, plus the
+  set-less events (the 78 chimes collapse into ONE row of 78 takes, since they are one sound with
+  many variants). Rows are guaranteed rectangular — one cell per set, empty or not — because the
+  sticky voice header is one shared CSS grid with the bank rows and would otherwise drift out of
+  alignment. `totals.events` counts real manifest keys (120), not display rows.
+- Playback state lives in `playback.ts` signals. A take chip's playing state keys off
+  `playingSrc` (the take that is sounding), NOT the group that started the queue — otherwise a
+  chip only lights up when clicked directly and stays dark for the whole of a row/voice/all run,
+  which is exactly when the highlight is needed.
+- **knip cannot trace the second HTML entry**, so `src/sound-preview/main.tsx` is listed in
+  `knip.json`'s `entry` array directly, the same workaround `src/lib/timer-worker.ts` already uses.

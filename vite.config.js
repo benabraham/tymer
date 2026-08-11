@@ -166,6 +166,18 @@ export default defineConfig({
     cors: true,
   },
   base: '/tymer/',
+  build: {
+    rollupOptions: {
+      // Two pages: the app, and the sound-preview page at /tymer/sounds/.
+      // The second entry emits dist/sounds/index.html, which coexists with the
+      // audio files copied there from public/sounds/ — GitHub Pages then serves
+      // the directory URL with no SPA fallback.
+      input: {
+        main: 'index.html',
+        sounds: 'sounds/index.html',
+      },
+    },
+  },
   css: {
     preprocessorOptions: {
       sass: {
