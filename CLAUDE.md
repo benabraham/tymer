@@ -316,11 +316,7 @@ not-found branch, which logs and records a failed `soundPlaybackLog` entry. `REQ
 what `buildSoundConfig` iterates, and `src/lib/sounds.test.js` guards it three ways: every required
 key has a manifest entry, every manifest path exists on disk, and every set in `SOUND_SETS` covers
 every speech key. The second assertion is the one that catches a bank restructure; the third catches
-a half-promoted set and a prompt file that forgot its `@name`. (The seven newest keys —
-`elapsed_break_*`, `remaining_break_*`, `deadline_*` — sit in a documented `PENDING_MULTI_SET_KEYS`
-exclusion in that test while their takes are still being generated set by set; only `tube` has them
-so far, and the other sets fall back to the full pool for those keys. Delete the exclusion once
-every set is promoted.)
+a half-promoted set and a prompt file that forgot its `@name`.
 
 `AVAILABLE_SOUNDS` in `src/lib/sound-discovery.ts` defines which minute marks exist per bank
 (`elapsed`, `remaining`, `overtime`, `overtimeBreak`, and the break-specific `elapsedBreak` /
