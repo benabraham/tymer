@@ -1,0 +1,260 @@
+# Tymer voice set — Erinome, MISSION CONTROL ("nasa")
+#
+# A flight-controller set: every line is delivered like a control-room voice
+# loop — the style, not the vocabulary. Procedure idiom applied to time itself
+# is welcome ("T-plus six minutes, mark", "nominal", "advisory", "warning",
+# "master alarm", "go for break", "acknowledge", "standby", "closeout");
+# literal spaceflight nouns are not (launch, orbit, spacecraft, rocket, crew,
+# astronaut, docking, re-entry, trajectory, Houston, countdown-to-launch).
+# The content is always time, work and breaks.
+#
+# DOSAGE: the idiom is seasoning, not the dish — at most ONE control-room
+# flourish per line; the rest is plain time/work language. A line that is all
+# jargon is a failed line.
+#
+# The escalation ladder maps to ALERT LEVELS: nominal → advisory → caution →
+# warning → alert → master alarm. Delivery stays controlled-professional the
+# whole way — under pressure the voice gets faster, tighter and more clipped,
+# never shouty. Control does not panic; that is the menace.
+#
+# The radio distortion is NOT generated — it is applied when the WAVs are
+# converted for the app, by the `apollo` preset mapped to this set in
+# build-tools/audio-presets.conf. The staged/promoted WAVs stay clean.
+#
+# @name below labels every file in this set `nasa-N.wav`, so it never
+# collides with the other sets' filenames.
+#
+# Regenerate: see sound-prompts/README.md
+
+@voice Erinome
+@name nasa
+@profile Tymer — the flight controller
+@scene
+A mission control room, lights low, rows of consoles. The controller speaks
+into a headset on the voice loop — close-miked, calm, addressing one operator
+who is mid-shift. It is hour six of the shift and this is the hundredth
+callout of the day: pure routine. Every callout is brief, precise, and ends
+cleanly; dead air is normal between calls.
+@style
+Flat, procedural control-room delivery — cold, detached, unemotional. Reading
+telemetry, not talking to a friend: minimal inflection, no performance, no
+smile in the voice, no reassurance. Clear, supported tone at a steady medium
+pitch — never breathy, never creaky, absolutely no vocal fry; every word ends
+clean and full, nothing trails off.
+@pace
+Clipped and even, with clean stops. Short sentences — voice-loop cadence, not
+conversation. Pauses are tight: a [beat] is half a second at most, a breath on
+the loop, never a long dramatic gap.
+@accent Neutral American broadcast English, crisp consonants.
+@context
+The flight controller calls out the passage of a work or break period on the
+loop. The voice is trusted because it is never dramatic — so when the alert
+level rises, that carries real weight.
+
+
+# ---------------------------------------------------------------------------
+# elapsed — progress callouts, status nominal
+# ---------------------------------------------------------------------------
+
+[elapsed/006]
+@text [flat, routine] T-plus six minutes, mark. [beat] Status nominal.
+
+[elapsed/012]
+@text [flat, routine] T-plus twelve minutes. [beat] All parameters steady.
+
+[elapsed/024]
+@text [flat, routine] Twenty-four minutes on the clock, mark. [beat] Holding steady.
+
+[elapsed/036]
+@text [flat, routine] T-plus thirty-six minutes. [beat] Status nominal.
+
+[elapsed/048]
+@text [flat, routine] Forty-eight minutes elapsed, mark. [beat] All quiet.
+
+[elapsed/060]
+@style Still flat and procedural — the good news is the number, not the tone.
+@text [even, factual] One hour on the clock, mark. [beat] Sixty minutes, steady the whole way. Nicely held.
+
+[elapsed/072]
+@text [flat, routine] T-plus seventy-two minutes. [beat] Holding steady.
+
+[elapsed/084]
+@text [flat, routine] Eighty-four minutes on the clock. [beat] No anomalies. Carry on.
+
+[elapsed/096]
+@text [flat, routine] T-plus ninety-six minutes, mark. [beat] Green across the board.
+
+[elapsed/108]
+@text [flat, routine] One hundred and eight minutes elapsed. [beat] Status remains nominal.
+
+# ---------------------------------------------------------------------------
+# remaining — wind-down, information not pressure
+# ---------------------------------------------------------------------------
+
+[remaining/024]
+@style Neutral, forward-leaning — information, not pressure.
+@text [even] Twenty-four minutes remaining. [beat] Plan your closeout.
+
+[remaining/012]
+@style Neutral, forward-leaning — information, not pressure.
+@text [even] Twelve minutes remaining. [beat] Closeout phase — bring it home.
+
+[remaining/006]
+@style Quieter, but still procedural — a routine callout at lower volume, not intimacy.
+@text [low, even] Final six minutes. [beat] Begin closeout — bring it to a stopping point.
+
+# ---------------------------------------------------------------------------
+# elapsed/break — break check-ins: verification, not progress
+# ---------------------------------------------------------------------------
+
+[elapsed/break/006]
+@style Deadpan — the tease lives in the words alone; the read stays flat and procedural.
+@text [deadpan] Break status, six minutes in. [beat] Verify you're off the clock. [dry] I'll wait.
+
+[elapsed/break/012]
+@style Deadpan — the tease lives in the words alone; the read stays flat and procedural.
+@text [deadpan] Break status, twelve minutes. [beat] Telemetry still shows work at your station. [dry] Verify again.
+
+# ---------------------------------------------------------------------------
+# remaining/break — break wind-down, no pressure anywhere
+# ---------------------------------------------------------------------------
+
+[remaining/break/012]
+@style Soft-edged for a break — still procedural, but nothing to comply with.
+@text [even, unhurried] Twelve minutes of break remaining. [beat] No action required.
+
+[remaining/break/006]
+@style Soft-edged for a break — still procedural, but nothing to comply with.
+@text [even] Six minutes of break remaining. [beat] Begin drifting back when ready.
+
+# ---------------------------------------------------------------------------
+# deadline — countdown to the nearest deadline: fate, not misbehavior
+# ---------------------------------------------------------------------------
+
+[deadline/060]
+@style Informative and forward — the deadline is a fixed fact, not a reprimand.
+@text [even] Sixty minutes to your next deadline. [beat] Factor it in.
+
+[deadline/012]
+@style Pressing but controlled — the clock is the authority here, not the voice.
+@pace Brisk, even.
+@text [level, pressing] Twelve minutes to the nearest deadline. [beat] Bring it together now.
+
+[deadline/006]
+@style Tight, urgent, still perfectly controlled.
+@pace Fast, clipped.
+@text [tight, controlled] Six minutes to the nearest deadline. [beat] Conclude now.
+
+# ---------------------------------------------------------------------------
+# overtime — the alert ladder: advisory → caution → warning → alert → master alarm
+# ---------------------------------------------------------------------------
+
+[overtime/006]
+@style Neutral, informational — an advisory, nothing more.
+@pace Unhurried, even.
+@text [flat] Advisory: you are six minutes over schedule. [beat] Stop at the next clean point.
+
+[overtime/012]
+@style Matter-of-fact — a second advisory, still no heat.
+@pace Steady.
+@text [flat] Second advisory: twelve minutes over schedule. [beat] Take the next stopping point.
+
+[overtime/018]
+@style Caution level — firmer, still polite.
+@pace Slightly clipped.
+@text [firm] Caution. Eighteen minutes over schedule. [beat] Begin your stop sequence.
+
+[overtime/024]
+@style Insistent — warning level. Tighter, faster, still perfectly controlled.
+@pace Brisk, clipped.
+@text [firm, pressing] Warning. Twenty-four minutes over schedule. [beat] You are go for break. Acknowledge.
+
+[overtime/030]
+@style Stern and cold — the patience is gone; the volume is not.
+@pace Deliberate.
+@text [cold, deliberate] Thirty minutes over schedule. [beat] You are well past the window. Stop work.
+
+[overtime/036]
+@style Urgent, commanding — alert level.
+@pace Fast, forceful.
+@text [urgent] Alert. Thirty-six minutes over schedule. [beat] Terminate the task. Acknowledge.
+
+[overtime/042]
+@style Sharp, absolute.
+@pace Clipped, staccato.
+@text [sharp, clipped] Forty-two minutes over. [beat] Abort criteria met. Stop. Now.
+
+[overtime/048]
+@style
+Maximum urgency, pressing hard — master alarm. Fast, hard consonants, every
+word a command, and still never a shout: the control never breaks.
+@pace Driving, staccato, no releases.
+@text [hard, rapid, cold] Master alarm. Forty-eight minutes over schedule. [tight] This is your stop call. Hands off.
+
+# ---------------------------------------------------------------------------
+# overtime/break — same ladder, pushing back TOWARD work
+# ---------------------------------------------------------------------------
+
+[overtime/break/006]
+@style Neutral, informational — an advisory, nothing more.
+@pace Unhurried, even.
+@text [flat] Advisory: your break is six minutes over. [beat] The work window is open.
+
+[overtime/break/012]
+@style Matter-of-fact — a second advisory, still no heat.
+@pace Steady.
+@text [flat] Twelve minutes past end of break. [beat] Resume at the next clean point.
+
+[overtime/break/018]
+@style Caution level — firmer, still polite.
+@pace Slightly clipped.
+@text [firm] Caution. Break exceeded by eighteen minutes. [beat] Time to return.
+
+[overtime/break/024]
+@style Insistent — warning level. Tighter, faster, still perfectly controlled.
+@pace Brisk, clipped.
+@text [firm, pressing] Warning. Twenty-four minutes of break overrun. [beat] You are go for work. Acknowledge.
+
+[overtime/break/030]
+@style Stern and cold — the patience is gone; the volume is not.
+@pace Deliberate.
+@text [cold, deliberate] Thirty minutes past the break. [beat] The rest window is closed. Return to work.
+
+[overtime/break/036]
+@style Urgent, commanding — alert level.
+@pace Fast, forceful.
+@text [urgent] Alert. Break overrun: thirty-six minutes. [beat] Resume work now. Acknowledge.
+
+[overtime/break/042]
+@style Sharp, absolute.
+@pace Clipped, staccato.
+@text [sharp, clipped] Forty-two minutes over. [beat] Rest period terminated. Move.
+
+[overtime/break/048]
+@style
+Maximum urgency, pressing hard — master alarm. Fast, hard consonants, every
+word a command, and still never a shout: the control never breaks.
+@pace Driving, staccato, no releases.
+@text [hard, rapid, cold] Master alarm. Break exceeded by forty-eight minutes. [tight] Return to work. Final call.
+
+# ---------------------------------------------------------------------------
+# timesup — period boundaries, named for what comes next
+# ---------------------------------------------------------------------------
+
+[timesup/work]
+@style Energy through tempo only — a clean, quick go call, zero enthusiasm in the tone.
+@pace Crisp, quick.
+@text [crisp, decisive] Mark. [beat] You are go for work. Begin.
+
+[timesup/break]
+@style Level, a fraction lighter — permission, coldly granted.
+@text [even] Time. [beat] Work period complete. You are go for break.
+
+[timesup/fun]
+@style The send-off — as bright as this voice gets, which is not very.
+@text [even, lighter] Time. [beat] All duties complete. You are cleared for fun.
+
+[timesup/finish]
+@style Settled and final — end of shift, the board is closed.
+@pace Unhurried, clean stops.
+@text [low, even] Time. [beat] Final period complete. You are released. Good work today.

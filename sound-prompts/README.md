@@ -7,19 +7,20 @@ character, and one block per sound event. Regenerating a set reproduces the
 whole sound bank; adding a second set (different voice, different language)
 means adding another file, not editing this one.
 
-| File                         | Voice                         | Covers                                                                                                    |
-| ---------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `tymer-gacrux.txt`           | Gacrux (mature, middle pitch) | all 40 speech events                                                                                      |
-| `tymer-gacrux-brisk.txt`     | Gacrux                        | same 40, same words, delivered fast                                                                       |
-| `tymer-kore-strict.txt`      | Kore                          | same 40, reworded, harsher overtime ladder                                                                |
-| `tymer-leda-whisper.txt`     | Leda                          | same 40, whispered, broad Southern, edge of parody                                                        |
-| `tymer-leda-hush.txt`        | Leda                          | same words as the whisper set, voiced murmur instead of a whisper                                         |
-| `tymer-laomedeia-diva.txt`   | Laomedeia                     | same 40, telenovela diva — Spanish-seasoned English, volcanic top of the ladder                           |
-| `tymer-despina-tube.txt`     | Despina                       | same 40, London Underground announcer — RP, tannoy PA style, escalating attention-openers                 |
-| `tymer-despina-tube-alt.txt` | Despina                       | alternative takes for the SAME `tube` set — reworded, breath-length pauses, longer deadpan boundary calls |
+| File                         | Voice                         | Covers                                                                                                                                                                        |
+| ---------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tymer-gacrux.txt`           | Gacrux (mature, middle pitch) | all 40 speech events                                                                                                                                                          |
+| `tymer-gacrux-brisk.txt`     | Gacrux                        | same 40, same words, delivered fast                                                                                                                                           |
+| `tymer-kore-strict.txt`      | Kore                          | same 40, reworded, harsher overtime ladder                                                                                                                                    |
+| `tymer-leda-whisper.txt`     | Leda                          | same 40, whispered, broad Southern, edge of parody                                                                                                                            |
+| `tymer-leda-hush.txt`        | Leda                          | same words as the whisper set, voiced murmur instead of a whisper                                                                                                             |
+| `tymer-laomedeia-diva.txt`   | Laomedeia                     | same 40, telenovela diva — Spanish-seasoned English, volcanic top of the ladder                                                                                               |
+| `tymer-despina-tube.txt`     | Despina                       | same 40, London Underground announcer — RP, tannoy PA style, escalating attention-openers                                                                                     |
+| `tymer-despina-tube-alt.txt` | Despina                       | alternative takes for the SAME `tube` set — reworded, breath-length pauses, longer deadpan boundary calls                                                                     |
+| `tymer-erinome-nasa.txt`     | Erinome                       | same 40, mission-control flight controller — cold procedural voice-loop, alert-level ladder; Apollo radio distortion applied at conversion (`build-tools/audio-presets.conf`) |
 
 All sets land in the same event directories, so they merge as interchangeable
-takes. Each carries a distinct `@name` (`brisk`, `strict`, `whisper`, `hush`, `diva`, `tube`) so
+takes. Each carries a distinct `@name` (`brisk`, `strict`, `whisper`, `hush`, `diva`, `tube`, `nasa`) so
 filenames never collide. The one deliberate exception: `tymer-despina-tube-alt.txt`
 shares `@name tube`, so its clips promote as extra takes of the existing tube set
 (`tube-2.wav`, …) instead of forming a new voice. Because both files share the
