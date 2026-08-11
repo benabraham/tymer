@@ -265,6 +265,23 @@ absolute `/tymer/sounds/...` URLs. It takes optional file/directory arguments in
 `src/assets/sounds/` and converts the whole bank when given none; `sounds.py promote` passes it just
 the clips it copied, since re-encoding 230-odd files for a handful of new takes is minutes of ffmpeg.
 
+**Per-set filter presets.** A voice can carry an effect — radio distortion, intercom band-limiting —
+that the TTS cannot produce. `build-tools/audio-presets.sh` defines named ffmpeg `filter_complex`
+chains (`apollo`, `headset`) and `build-tools/audio-presets.conf` maps `<set> <preset>`, one per
+line (`nasa apollo`). `normalize_audio.sh` sources both and, when a file's set is mapped, runs the
+chain **before** its loudnorm — so the effect is measured and levelled like any other take.
+The set is derived from the WAV stem minus the `-N` take suffix, the same rule
+`generate-sound-manifest.js` uses, so a mapping applies to every take of the set with no bookkeeping.
+
+**The effect lives only in the encoded output.** The WAVs under `src/assets/sounds/` are never
+touched, so tweaking a preset and re-running the conversion regenerates everything from the clean
+originals — the alternative, baking the effect into the sources at promote time, makes every
+adjustment a full regeneration through the TTS quota. Audition a chain over staged or promoted WAVs
+with `build-tools/preview-audio-preset.sh <preset> <wav-or-dir>` (renders through the same
+preset + loudnorm into a temp dir, plays via mpv). Chains that synthesize audio (noise, tones) build
+it at 24 kHz mono and condition the input to match: a sample-rate mismatch inside `concat` silently
+mangles the synthesized segments. `lint:sh` runs shellcheck with `-x` so it follows the `source`.
+
 **Events, takes, and the manifest.** A sound event is a directory of interchangeable takes, and one
 is chosen at random per play. A browser cannot list a directory, so `build-tools/generate-sound-manifest.js`
 scans `public/sounds/` and writes `src/lib/sound-manifest.js` — `SOUND_VARIANTS`, keyed

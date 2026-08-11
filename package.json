@@ -26,7 +26,7 @@
     "lint:fix": "biome check --write .",
     "lint:css": "stylelint 'src/**/*.scss'",
     "lint:css:fix": "stylelint 'src/**/*.scss' --fix",
-    "lint:sh": "shellcheck combine_all_sounds.sh normalize_audio.sh build-tools/tts/completions/*.bash",
+    "lint:sh": "shellcheck -x combine_all_sounds.sh normalize_audio.sh build-tools/audio-presets.sh build-tools/preview-audio-preset.sh build-tools/tts/completions/*.bash",
     "lint:py": "uv run --directory build-tools/tts ruff check",
     "format:py": "uv run --directory build-tools/tts ruff format",
     "format:py:check": "uv run --directory build-tools/tts ruff format --check",
