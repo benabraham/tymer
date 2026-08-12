@@ -37,14 +37,14 @@
     "@fortawesome/fontawesome-svg-core": "^7.3.1",
     "@fortawesome/free-solid-svg-icons": "^7.3.1",
     "@fortawesome/react-fontawesome": "^3.5.0",
-    "@preact/signals": "^2.10.1",
+    "@preact/signals": "^2.11.0",
     "date-fns": "^4.4.0",
     "howler": "^2.2.4",
     "preact": "^10.29.8",
     "preact-router": "^4.1.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.6",
+    "@biomejs/biome": "2.5.7",
     "@preact/preset-vite": "^2.10.6",
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/preact": "^3.2.4",
