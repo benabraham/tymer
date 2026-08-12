@@ -133,17 +133,17 @@ level rises, that carries real weight.
 
 [deadline/060]
 @style Informative and forward — the deadline is a fixed fact, not a reprimand.
-@text [even] Sixty minutes to your next deadline. [beat] Factor it in.
+@text [even] Sixty minutes to your next deadline. [beat] Out.
 
 [deadline/012]
 @style Pressing but controlled — the clock is the authority here, not the voice.
 @pace Brisk, even.
-@text [level, pressing] Twelve minutes to the nearest deadline. [beat] Bring it together now.
+@text [level, pressing] Be advised — twelve minutes to the nearest deadline. [beat] Get ready.
 
 [deadline/006]
 @style Tight, urgent, still perfectly controlled.
 @pace Fast, clipped.
-@text [tight, controlled] Six minutes to the nearest deadline. [beat] Conclude now.
+@text [tight, controlled] Deadline: T-minus six minutes. Eyes on the clock. [beat] There will be no further warnings.
 
 # ---------------------------------------------------------------------------
 # overtime — the alert ladder: advisory → caution → warning → alert → master alarm
