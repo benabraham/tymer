@@ -52,7 +52,7 @@
     "@types/node": "^26.1.2",
     "autoprefixer": "^10.5.4",
     "jsdom": "^30.0.1",
-    "knip": "6.31.0",
+    "knip": "6.32.0",
     "lint-staged": "17.3.0",
     "postcss": "^8.5.25",
     "postcss-csso": "^6.0.1",
