@@ -65,7 +65,7 @@ jobs:
       # carries on, after which `--frozen-lockfile` compares against the repaired
       # file and passes. The gate would still be there, just unable to fail.
       - name: Setup pnpm
-        uses: pnpm/setup@v2.0.0
+        uses: pnpm/setup@v2.0.1
         with:
           install: false
 
