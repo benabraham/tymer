@@ -8,3 +8,17 @@ allowBuilds:
   # something this repo asks for explicitly rather than something a transitive
   # dependency does behind pnpm's back. Same outcome, visible in one place.
   simple-git-hooks: false
+
+# Seven days, the install-time half of the pair `.github/dependabot.yml`
+# describes. It has to live HERE and not only in a developer's
+# `~/.config/pnpm/config.yaml`: pnpm verifies the committed lockfile against
+# this policy, but the machine that WRITES that lockfile is usually
+# Dependabot's, which reads only the repo. Authoring under a looser policy
+# than the one enforcing it is what made `pnpm ci` fail twice — see 22cdabf.
+#
+# Dependabot's own `cooldown` cannot cover this alone: it gates the direct
+# dependency being proposed, while the `pnpm install` that regenerates the
+# lockfile re-resolves the whole transitive tree unconstrained. Both times the
+# offender arrived that way — `rolldown` five days old, riding in on a
+# `@types/node` bump. Set here, that re-resolution obeys the cutoff too.
+minimumReleaseAge: 10080
