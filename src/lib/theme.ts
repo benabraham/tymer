@@ -7,7 +7,7 @@ const AVAILABLE_THEMES = ['default', 'nord']
 
 export const getTheme = (): string => localStorage.getItem(THEME_KEY) || DEFAULT_THEME
 
-export const setTheme = (theme: string): void => {
+const setTheme = (theme: string): void => {
     const safeTheme = AVAILABLE_THEMES.includes(theme) ? theme : DEFAULT_THEME
     if (safeTheme !== theme) {
         console.warn(`Unknown theme: ${theme}, falling back to default`)
@@ -19,8 +19,6 @@ export const setTheme = (theme: string): void => {
 export const initTheme = (): void => {
     setTheme(getTheme())
 }
-
-export const getAvailableThemes = (): string[] => AVAILABLE_THEMES
 
 export const cycleTheme = (): string => {
     const currentTheme = getTheme()

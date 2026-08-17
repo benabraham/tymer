@@ -8,6 +8,6 @@
         "build-tools/sound-preloader.js"
     ],
     "project": ["src/**/*.{ts,tsx}", "build-tools/**/*.js"],
-    "ignoreBinaries": ["uv"],
+    "ignoreBinaries": ["uv", "shellcheck"],
     "ignoreDependencies": []
 }

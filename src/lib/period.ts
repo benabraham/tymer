@@ -8,7 +8,7 @@ import { MIN_PERIOD_MS } from './config.js'
 // The three kinds of Period a session can contain — work / break / fun.
 export type PeriodType = 'work' | 'break' | 'fun'
 
-export type PeriodConfigData = {
+type PeriodConfigData = {
     type: PeriodType
     note: string
     userIntendedDuration: number

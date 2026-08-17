@@ -32,14 +32,3 @@ export const AVAILABLE_SOUNDS: AvailableSounds = {
 
 // Minutes before a deadline at which a spoken warning plays.
 export const DEADLINE_WARNING_MINUTES: number[] = [60, 12, 6]
-
-// Helper to get the maximum remaining sound available
-export const getMaxRemainingMinutes = (): number => Math.max(...AVAILABLE_SOUNDS.remaining)
-
-// Helper to discover sounds (future enhancement)
-export const discoverAvailableSounds = (): AvailableSounds => {
-    // In a real implementation, this could scan the file system
-    // or load from a configuration file
-    // For now, return the static configuration
-    return AVAILABLE_SOUNDS
-}

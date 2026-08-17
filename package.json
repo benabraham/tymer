@@ -40,14 +40,12 @@
     "@preact/signals": "^2.11.0",
     "date-fns": "^4.4.0",
     "howler": "^2.2.4",
-    "preact": "^10.29.8",
-    "preact-router": "^4.1.2"
+    "preact": "^10.29.8"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.7",
     "@preact/preset-vite": "^2.10.6",
     "@testing-library/jest-dom": "^7.0.1",
-    "@testing-library/preact": "^3.2.4",
     "@types/howler": "^2.2.13",
     "@types/node": "^26.2.0",
     "autoprefixer": "^10.5.4",

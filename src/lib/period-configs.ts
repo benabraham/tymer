@@ -120,7 +120,7 @@ const loadConfigs = (): NamedPeriodConfig[] => {
     }
 }
 
-export const configs: Signal<NamedPeriodConfig[]> = signal(loadConfigs())
+const configs: Signal<NamedPeriodConfig[]> = signal(loadConfigs())
 export const activeConfigId: Signal<string> = signal(
     localStorage.getItem(ACTIVE_KEY) || BUILTIN_CONFIG.id,
 )
@@ -140,9 +140,6 @@ export const activeConfig: ReadonlySignal<NamedPeriodConfig> = computed(
 // --- panel visibility ------------------------------------------------------
 
 export const configPanelOpen: Signal<boolean> = signal(false)
-export const toggleConfigPanel = (): void => {
-    configPanelOpen.value = !configPanelOpen.value
-}
 
 // --- CRUD ------------------------------------------------------------------
 

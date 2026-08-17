@@ -25,7 +25,7 @@ declare global {
 // Resolves the variants (objects) for a sound key from the generated manifest.
 // A key absent from the manifest resolves to no variants — callers (playByKey,
 // playNotification) already treat an empty list as "sound not found".
-export const getVariants = (key: string): SoundVariant[] => SOUND_VARIANTS[key] ?? []
+const getVariants = (key: string): SoundVariant[] => SOUND_VARIANTS[key] ?? []
 
 // Resolves just the variant paths — consumed by soundConfig (build-time
 // preload export) and by tests that guard the full pool regardless of the

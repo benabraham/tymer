@@ -1,8 +1,6 @@
 // Timer configuration constants
-export const UI_UPDATE_INTERVAL = 1000 // time between timer updates in milliseconds
 export const DURATION_TO_ADD_AUTOMATICALLY = 1 * 60 * 1000
 export const MIN_PERIOD_MS = 60 * 1000 // periods cannot be shorter than this
-export const SOUND_WINDOW_SIZE = 2000 // ±2 seconds window for sound triggering
 
 export type PeriodConfigEntry = {
     duration: number

@@ -138,9 +138,11 @@ Every gate is CI-enforced in `.github/workflows/deploy.yml`, running the same
 
 ### Testing
 
-- Test files use `.test.js` or `.test.jsx` extensions
-- Tests located in `src/lib/timer.test.js` and `src/components/timer/timer.test.jsx`
-- Test setup in `src/test/setup.js`
+- Test files use the `.test.ts` extension, beside the module they cover
+- Every suite is a unit test over `src/lib/**` (plus `timeline-logic` and `preview-model`);
+  there are no component tests, so `@testing-library/preact` is deliberately NOT a dependency —
+  adding one means adding it back. `@testing-library/jest-dom` stays because `setup.ts` imports it.
+- Test setup in `src/test/setup.ts`, wired via `test.setupFiles` in `vite.config.js`
 - Testing library: Vitest with jsdom environment
 
 ### PWA Features

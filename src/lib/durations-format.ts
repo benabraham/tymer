@@ -28,7 +28,7 @@ export type ParsedCurrentDurationsLine = {
 // The day qualifier resolved from an "@..." anchor header line — see
 // `parseDurationsAnchor`. `null` means a plain "@h:mm" (today); resolving
 // day+minutes to a timestamp is the caller's job.
-export type DurationsAnchorDay = 'yesterday' | { day: number; monthIndex: number } | null
+type DurationsAnchorDay = 'yesterday' | { day: number; monthIndex: number } | null
 
 export type ParsedDurationsAnchor = {
     minutes: number

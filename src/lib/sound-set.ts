@@ -6,13 +6,12 @@ export const ALL_SETS = 'all'
 
 export const soundSetOptions = [ALL_SETS, ...SOUND_SETS]
 
-const {
-    value: activeSoundSet,
-    set: setSoundSet,
-    cycle: cycleSoundSet,
-} = createChoicePreference('soundSet', { options: soundSetOptions, defaultValue: ALL_SETS })
+const { value: activeSoundSet, cycle: cycleSoundSet } = createChoicePreference('soundSet', {
+    options: soundSetOptions,
+    defaultValue: ALL_SETS,
+})
 
-export { activeSoundSet, cycleSoundSet, setSoundSet }
+export { activeSoundSet, cycleSoundSet }
 
 // Capitalize-first-letter display label, computed rather than a hand-maintained
 // map so a fifth voice promoted later appears with no code edit.
