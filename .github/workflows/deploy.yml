@@ -65,7 +65,7 @@ jobs:
       # carries on, after which `--frozen-lockfile` compares against the repaired
       # file and passes. The gate would still be there, just unable to fail.
       - name: Setup pnpm
-        uses: pnpm/setup@v2.0.1
+        uses: pnpm/setup@v2.0.2
         with:
           install: false
 
@@ -141,7 +141,7 @@ jobs:
       # published, so a PR can never overwrite the live site.
       - name: Deploy
         if: github.event_name == 'push'
-        uses: JamesIves/github-pages-deploy-action@v4.8.0
+        uses: JamesIves/github-pages-deploy-action@v4.9.0
         with:
           folder: dist
           branch: gh-pages
