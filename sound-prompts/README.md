@@ -18,14 +18,18 @@ means adding another file, not editing this one.
 | `tymer-despina-tube.txt`     | Despina                       | same 40, London Underground announcer — RP, tannoy PA style, escalating attention-openers                                                                                     |
 | `tymer-despina-tube-alt.txt` | Despina                       | alternative takes for the SAME `tube` set — reworded, breath-length pauses, longer deadpan boundary calls                                                                     |
 | `tymer-erinome-nasa.txt`     | Erinome                       | same 40, mission-control flight controller — cold procedural voice-loop, alert-level ladder; Apollo radio distortion applied at conversion (`build-tools/audio-presets.conf`) |
+| `tymer-iapetus-nasa.txt`     | Iapetus                       | alternative takes for the SAME `nasa` set — reworded, lower voice, same alert ladder verbatim                                                                                 |
 
 All sets land in the same event directories, so they merge as interchangeable
 takes. Each carries a distinct `@name` (`brisk`, `strict`, `whisper`, `hush`, `diva`, `tube`, `nasa`) so
-filenames never collide. The one deliberate exception: `tymer-despina-tube-alt.txt`
-shares `@name tube`, so its clips promote as extra takes of the existing tube set
-(`tube-2.wav`, …) instead of forming a new voice. Because both files share the
-stem, `promote --replace` of either one clears the promoted takes of both —
-promote the alt file additively.
+filenames never collide. The deliberate exceptions are the two `-alt` files:
+`tymer-despina-tube-alt.txt` shares `@name tube` and `tymer-iapetus-nasa.txt`
+shares `@name nasa`, so their clips promote as extra takes of the existing set
+(`tube-2.wav`, `nasa-2.wav`, …) instead of forming a new voice. Because the pair
+shares the stem, `promote --replace` of either one clears the promoted takes of
+both — promote the alt file additively. A per-set filter preset is keyed by the
+same set name, so the alt file inherits it with no config change (`nasa` →
+`apollo`).
 
 **`@name` is required.** It is not just collision avoidance — the app derives the
 voice set from the filename stem (minus the trailing `-N` take suffix), so
