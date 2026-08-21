@@ -74,7 +74,7 @@ jobs:
       # so there is no setup-python step and no second place to bump it.
       # shellcheck needs nothing: it is preinstalled on the ubuntu runners.
       - name: Setup uv
-        uses: astral-sh/setup-uv@v10.0.0
+        uses: astral-sh/setup-uv@v10.0.1
         with:
           enable-cache: true
 
