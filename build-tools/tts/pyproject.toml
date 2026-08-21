@@ -27,7 +27,7 @@ dev = [
     # I001 where 0.15 did not — so a floating version would quietly change what
     # CI rejects. The explicit `select` below exists for the same reason, and is
     # why crossing that 0.15 → 0.16 boundary landed as a no-op diff.
-    "ruff==0.16.2",
+    "ruff==0.16.3",
 ]
 
 [tool.pytest.ini_options]
