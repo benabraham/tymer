@@ -48,6 +48,6 @@ describe('sound-set', () => {
 
         expect(soundSetLabel('all')).toBe('All')
         expect(soundSetLabel('brisk')).toBe('Brisk')
-        expect(soundSetLabel('whisper')).toBe('Whisper')
+        expect(soundSetLabel('strict')).toBe('Strict')
     })
 })

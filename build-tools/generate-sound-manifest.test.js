@@ -110,16 +110,16 @@ describe('scanSoundManifest', () => {
     })
 
     it('derives a set for overtime/break take-dir files', () => {
-        writeFile('overtime/break/012/hush-1.webm')
+        writeFile('overtime/break/012/tube-1.webm')
 
         const { variants, sets } = scanSoundManifest(tmpRoot)
 
         expect(variants).toEqual({
             overtime_break_12: [
-                { src: '/tymer/sounds/overtime/break/012/hush-1.webm', set: 'hush' },
+                { src: '/tymer/sounds/overtime/break/012/tube-1.webm', set: 'tube' },
             ],
         })
-        expect(sets).toEqual(['hush'])
+        expect(sets).toEqual(['tube'])
     })
 
     it('maps elapsed/break and remaining/break take-dir files to their _break_ keys', () => {
@@ -208,7 +208,7 @@ describe('scanSoundManifest', () => {
     it('scans a mixed flat + directory layout across events, collecting all sets found', () => {
         writeFile('elapsed/006.webm')
         writeFile('remaining/012/brisk-1.webm')
-        writeFile('remaining/012/hush-1.webm')
+        writeFile('remaining/012/tube-1.webm')
         writeFile('overtime/break/018.webm')
         writeFile('button.webm')
 
@@ -218,11 +218,11 @@ describe('scanSoundManifest', () => {
             elapsed_6: [{ src: '/tymer/sounds/elapsed/006.webm', set: null }],
             remaining_12: [
                 { src: '/tymer/sounds/remaining/012/brisk-1.webm', set: 'brisk' },
-                { src: '/tymer/sounds/remaining/012/hush-1.webm', set: 'hush' },
+                { src: '/tymer/sounds/remaining/012/tube-1.webm', set: 'tube' },
             ],
             overtime_break_18: [{ src: '/tymer/sounds/overtime/break/018.webm', set: null }],
             button: [{ src: '/tymer/sounds/button.webm', set: null }],
         })
-        expect(sets).toEqual(['brisk', 'hush'])
+        expect(sets).toEqual(['brisk', 'tube'])
     })
 })

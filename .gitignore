@@ -39,3 +39,6 @@ build-tools/tts/.staging/
 
 # Claude Code working notes
 plans/
+
+# Retired sound sets (hush, whisper) — moved out of the bank, kept locally
+_sound_archive/

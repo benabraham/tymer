@@ -90,7 +90,7 @@ describe('SOUND_VARIANTS regression guard', () => {
 describe('pickCandidates', () => {
     const variants = [
         { src: 'a.webm', set: 'brisk' },
-        { src: 'b.webm', set: 'hush' },
+        { src: 'b.webm', set: 'tube' },
         { src: 'c.webm', set: null },
     ]
 

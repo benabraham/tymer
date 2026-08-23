@@ -12,8 +12,6 @@ means adding another file, not editing this one.
 | `tymer-gacrux.txt`           | Gacrux (mature, middle pitch) | all 40 speech events                                                                                                                                                          |
 | `tymer-gacrux-brisk.txt`     | Gacrux                        | same 40, same words, delivered fast                                                                                                                                           |
 | `tymer-kore-strict.txt`      | Kore                          | same 40, reworded, harsher overtime ladder                                                                                                                                    |
-| `tymer-leda-whisper.txt`     | Leda                          | same 40, whispered, broad Southern, edge of parody                                                                                                                            |
-| `tymer-leda-hush.txt`        | Leda                          | same words as the whisper set, voiced murmur instead of a whisper                                                                                                             |
 | `tymer-laomedeia-diva.txt`   | Laomedeia                     | same 40, telenovela diva — Spanish-seasoned English, volcanic top of the ladder                                                                                               |
 | `tymer-despina-tube.txt`     | Despina                       | same 40, London Underground announcer — RP, tannoy PA style, escalating attention-openers                                                                                     |
 | `tymer-despina-tube-alt.txt` | Despina                       | alternative takes for the SAME `tube` set — reworded, breath-length pauses, longer deadpan boundary calls                                                                     |
@@ -21,7 +19,7 @@ means adding another file, not editing this one.
 | `tymer-iapetus-nasa.txt`     | Iapetus                       | alternative takes for the SAME `nasa` set — reworded, lower voice, same alert ladder verbatim                                                                                 |
 
 All sets land in the same event directories, so they merge as interchangeable
-takes. Each carries a distinct `@name` (`brisk`, `strict`, `whisper`, `hush`, `diva`, `tube`, `nasa`) so
+takes. Each carries a distinct `@name` (`gacrux`, `brisk`, `strict`, `diva`, `tube`, `nasa`) so
 filenames never collide. The deliberate exceptions are the two `-alt` files:
 `tymer-despina-tube-alt.txt` shares `@name tube` and `tymer-iapetus-nasa.txt`
 shares `@name nasa`, so their clips promote as extra takes of the existing set
