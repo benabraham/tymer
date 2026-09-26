@@ -376,8 +376,14 @@ export const initializeTimer = (): void => {
 const initializeTimerState = (): void => {
     stopTick()
 
-    // Reset only runtime properties, preserve existing periods
-    Schedule.reset()
+    // Reset only runtime properties, preserve existing periods — and the
+    // anchor: an armed (or past-anchored) idle session must survive a reload,
+    // otherwise the auto-start effect below never sees it.
+    const anchor = Schedule.timestampAnchor.value
+    batch(() => {
+        Schedule.reset()
+        if (anchor != null) Schedule.pin(anchor)
+    })
 
     console.clear()
     log('timer initialized (periods preserved)', logSnapshot(), 7)

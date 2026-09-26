@@ -24,6 +24,7 @@ import {
     currentDurationsText,
     currentPeriod,
     editingCurrentDurations,
+    initializeTimer,
     initialState,
     moveElapsedTimeToPreviousPeriod,
     moveToPreviousPeriod,
@@ -1179,6 +1180,32 @@ describe('Timer anchor lifecycle', () => {
 
             vi.advanceTimersByTime(60_000)
 
+            expect(Schedule.phase.value).toBe('idle')
+        })
+
+        it('keeps an armed anchor across boot (initializeTimer while idle)', () => {
+            vi.useFakeTimers()
+            vi.setSystemTime(1_000_000)
+            Schedule.reset()
+            Schedule.pin(1_000_000 + 30_000)
+
+            initializeTimer() // what the Timer component does on mount after a reload
+
+            expect(Schedule.timestampAnchor.value).toBe(1_000_000 + 30_000)
+            vi.advanceTimersByTime(30_000)
+            expect(Schedule.phase.value).toBe('running')
+        })
+
+        it('keeps a past anchor across boot without auto-starting', () => {
+            vi.useFakeTimers()
+            vi.setSystemTime(1_000_000)
+            Schedule.reset()
+            Schedule.pin(1_000_000 - 5_000)
+
+            initializeTimer()
+
+            expect(Schedule.timestampAnchor.value).toBe(1_000_000 - 5_000)
+            vi.advanceTimersByTime(60_000)
             expect(Schedule.phase.value).toBe('idle')
         })
 
