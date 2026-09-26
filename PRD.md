@@ -126,9 +126,10 @@ The built-in, read-only "Default" config: 18 work periods of 24 min alternating 
 
 - Allowed once a current period exists **and total elapsed ≥ 1 min** (before that the
   session is considered not-meaningfully-started).
-- Completes the current period (round-down rule, §4.3), then **drops every period with
-  elapsed < 1 min from the record** — untouched future periods vanish; what remains is
-  the historical record of the session.
+- Completes the current period (the §4.3 rule, snap-up included — finishing 30 s into a
+  period records it as 1 min), then **drops every period with elapsed < 1 min from the
+  record** — since completion never leaves a sub-minute record, that is exactly the
+  untouched future periods; what remains is the historical record of the session.
 - Phase becomes `completed`, position cleared. The finish sound plays once.
 - A finished session shows its historical clock times (projected backward from now,
   §9.2) and can only be Reset.
@@ -179,6 +180,10 @@ When the user leaves a period forward (next-period, finish, or add-after-current
   credited time is "borrowed": the next period's start is pushed into the future by
   the credit, and its elapsed reads 0 until the wall clock repays it.
 - Past periods always show whole-minute records with `remaining = 0`.
+- The completed period's plan (`userIntendedDuration`) and `duration` are both set to
+  the record — once a period is done, its plan is what actually happened. A later
+  revisit (§4.4) and relaxation (§5) therefore measure against the record, not the
+  original plan.
 
 ### 4.4 Moving to the previous period
 
@@ -763,8 +768,9 @@ Scenarios a port must reproduce exactly:
     line unpins.
 11. **Armed auto-start**: fires at the anchor moment; survives restarts as armed but
     never auto-starts retroactively.
-12. **Finish filtering**: sub-minute periods vanish from the final record; the
-    finished timeline projects its clock times backward from now.
+12. **Finish filtering**: the current period completes with the §4.3 rule (a
+    sub-minute one snaps up to 1 min and stays); untouched future periods vanish from
+    the final record; the finished timeline projects its clock times backward from now.
 13. **Sound dedup at boundaries**: overlapping windows resolve to a single
     highest-priority announcement; backward adjustments clear pending sounds; paused
     sessions are silent.
