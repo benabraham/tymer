@@ -8,6 +8,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `.claude/rules/debugging.md` — reproduce reported bugs through the real UI control path before diagnosing
 - `.claude/skills/tymer-preact/SKILL.md` — full rationale and Tymer-specific signals examples; load via the Skill tool when depth is needed
 
+## Work in progress
+
+- `plans/storage-sync.md` (gitignored, local only) — web ↔ tymer-cli shared live session. At the
+  start of a session, if the file exists, read its "Resume here" section and offer to continue
+  from the next step it names. Do not start on your own; the owner decides.
+
 ## Project Overview
 
 This is a countdown timer web application built with Preact and Vite called "Tymer". It's a Pomodoro-style timer that supports multiple periods with customizable durations and automatic time tracking persistence via localStorage.
