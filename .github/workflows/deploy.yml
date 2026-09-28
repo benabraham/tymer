@@ -65,7 +65,7 @@ jobs:
       # carries on, after which `--frozen-lockfile` compares against the repaired
       # file and passes. The gate would still be there, just unable to fail.
       - name: Setup pnpm
-        uses: pnpm/setup@v2.1.0
+        uses: pnpm/setup@v3.0.0
         with:
           install: false
 
@@ -74,7 +74,7 @@ jobs:
       # so there is no setup-python step and no second place to bump it.
       # shellcheck needs nothing: it is preinstalled on the ubuntu runners.
       - name: Setup uv
-        uses: astral-sh/setup-uv@v10.1.0
+        uses: astral-sh/setup-uv@v10.2.0
         with:
           enable-cache: true
 
