@@ -38,7 +38,7 @@ jobs:
       # v6 narrowed that to npm only — so with pnpm nothing is cached here and
       # this step does not need to run after the pnpm setup below.
       - name: Setup Node.js
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@v7.1.0
         with:
           node-version-file: '.nvmrc'
 
