@@ -1,4 +1,4 @@
-import type { JSX } from 'preact'
+import type { JSX, TargetedEvent } from 'preact'
 import { useLayoutEffect, useRef } from 'preact/hooks'
 
 type AutoTextareaProps = {
@@ -38,7 +38,7 @@ export const AutoTextarea = ({
         el.setSelectionRange(end, end)
     }, [])
 
-    const handleInput = (e: JSX.TargetedEvent<HTMLTextAreaElement>) => {
+    const handleInput = (e: TargetedEvent<HTMLTextAreaElement>) => {
         if (onInput) onInput(e.currentTarget.value)
         resize()
     }

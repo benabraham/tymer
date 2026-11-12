@@ -10,10 +10,10 @@ const localStorageMock = {
     key: vi.fn(),
     removeItem: vi.fn(),
 }
-// The mock only covers Storage's own methods, not its string index signature.
-// `globalThis` (not `global`) — this file has no Node types, and `globalThis`
-// is the standard cross-environment global, resolved by the `dom` lib.
-globalThis.localStorage = localStorageMock as unknown as Storage
+// `stubGlobal`, not assignment: jsdom defines `window.localStorage` as a
+// getter-only accessor, which Vitest 5 no longer papers over, so a plain
+// `globalThis.localStorage = …` throws before any suite loads.
+vi.stubGlobal('localStorage', localStorageMock)
 
 // Mock intervals/timeouts
 globalThis.setInterval = vi.fn() as unknown as typeof setInterval

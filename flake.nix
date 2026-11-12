@@ -12,7 +12,7 @@
       # SSOT: the Node major comes from .nvmrc, which CI also reads via
       # actions/setup-node's `node-version-file`. One file to bump, and the Nix
       # shell can't silently drift from CI.
-      #   .nvmrc "24" -> pkgs.nodejs_24
+      #   .nvmrc "26" -> pkgs.nodejs_26
       nodeMajor = lib.removeSuffix "\n" (lib.fileContents ./.nvmrc);
 
       forAllSystems = f:

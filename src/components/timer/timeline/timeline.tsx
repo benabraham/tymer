@@ -4,7 +4,7 @@
  * Defensive against missing/empty periods.
  */
 
-import type { JSX } from 'preact'
+import type { TargetedKeyboardEvent } from 'preact'
 import { useEffect, useMemo, useRef } from 'preact/hooks'
 import { clocksVisible } from '../../../lib/clocks'
 import { compactMode } from '../../../lib/compact'
@@ -25,7 +25,7 @@ export const Timeline = () => {
     }, [])
 
     // Handle Enter key when timeline is focused
-    const handleKeyDown = (event: JSX.TargetedKeyboardEvent<HTMLDivElement>) => {
+    const handleKeyDown = (event: TargetedKeyboardEvent<HTMLDivElement>) => {
         if (event.key === 'Enter' && Schedule.currentPeriodIndex.value !== null) {
             event.preventDefault()
             autoEditIndex.value = Schedule.currentPeriodIndex.value

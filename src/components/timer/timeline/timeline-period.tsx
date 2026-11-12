@@ -1,6 +1,6 @@
 import { faCircleMinus, faPlus, faThumbtack } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import type { JSX } from 'preact'
+import type { TargetedEvent, TargetedMouseEvent } from 'preact'
 import { useCallback, useEffect, useRef, useState } from 'preact/hooks'
 import { clocksVisible } from '../../../lib/clocks'
 import { formatTime, msToMinutes } from '../../../lib/format'
@@ -125,7 +125,7 @@ export const TimelinePeriod = ({
         }
     }
 
-    const handleAddPeriod = (event: JSX.TargetedMouseEvent<HTMLElement>) => {
+    const handleAddPeriod = (event: TargetedMouseEvent<HTMLElement>) => {
         event.stopPropagation()
         addPeriodAtIndex(index)
         // The new period at index + 1 will automatically open for editing
@@ -219,7 +219,7 @@ export const TimelinePeriod = ({
                             type="number"
                             tabIndex={4}
                             value={Math.round(period.state.duration / (60 * 1000))}
-                            onChange={(e: JSX.TargetedEvent<HTMLInputElement>) =>
+                            onChange={(e: TargetedEvent<HTMLInputElement>) =>
                                 handleDurationChange(
                                     parseInt(e.currentTarget.value)
                                         || Math.max(
@@ -314,7 +314,7 @@ export const TimelinePeriod = ({
                             type="text"
                             tabIndex={5}
                             value={period.config.note || ''}
-                            onChange={(e: JSX.TargetedEvent<HTMLInputElement>) =>
+                            onChange={(e: TargetedEvent<HTMLInputElement>) =>
                                 handleNoteChange(e.currentTarget.value)
                             }
                             placeholder="Note…"

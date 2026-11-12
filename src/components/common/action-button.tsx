@@ -5,11 +5,11 @@
 // It plays no sound: button sounds were switched off deliberately in a76e832.
 // The remaining click sounds live in src/lib/timer.js (start/resume/pause/pin).
 
-import type { ComponentChildren, JSX } from 'preact'
+import type { ComponentChildren, JSX, TargetedMouseEvent } from 'preact'
 import { h } from 'preact'
 
 type ActionButtonProps<T extends keyof JSX.IntrinsicElements = 'button'> = {
-    onClick?: (e: JSX.TargetedMouseEvent<HTMLElement>) => void
+    onClick?: (e: TargetedMouseEvent<HTMLElement>) => void
     children?: ComponentChildren
     as?: T
 } & Omit<JSX.IntrinsicElements[T], 'onClick' | 'children' | 'as'>
@@ -36,7 +36,7 @@ export const ActionButton = <T extends keyof JSX.IntrinsicElements = 'button'>({
 }: ActionButtonProps<T>) => {
     const tagName = as ?? 'button'
 
-    const handleClick = (e: JSX.TargetedMouseEvent<HTMLElement>) => {
+    const handleClick = (e: TargetedMouseEvent<HTMLElement>) => {
         if (onClick) onClick(e)
         if (tagName === 'button') {
             lastClickedButton = e.currentTarget
