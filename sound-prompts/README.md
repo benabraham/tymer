@@ -7,25 +7,26 @@ character, and one block per sound event. Regenerating a set reproduces the
 whole sound bank; adding a second set (different voice, different language)
 means adding another file, not editing this one.
 
-| File                         | Voice                         | Covers                                                                                                                                                                        |
-| ---------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tymer-gacrux.txt`           | Gacrux (mature, middle pitch) | all 40 speech events                                                                                                                                                          |
-| `tymer-gacrux-brisk.txt`     | Gacrux                        | same 40, same words, delivered fast                                                                                                                                           |
-| `tymer-kore-strict.txt`      | Kore                          | same 40, reworded, harsher overtime ladder                                                                                                                                    |
-| `tymer-laomedeia-diva.txt`   | Laomedeia                     | same 40, telenovela diva — Spanish-seasoned English, volcanic top of the ladder                                                                                               |
-| `tymer-despina-tube.txt`     | Despina                       | same 40, London Underground announcer — RP, tannoy PA style, escalating attention-openers                                                                                     |
-| `tymer-despina-tube-alt.txt` | Despina                       | alternative takes for the SAME `tube` set — reworded, breath-length pauses, longer deadpan boundary calls                                                                     |
-| `tymer-erinome-nasa.txt`     | Erinome                       | same 40, mission-control flight controller — cold procedural voice-loop, alert-level ladder; Apollo radio distortion applied at conversion (`build-tools/audio-presets.conf`) |
-| `tymer-iapetus-nasa.txt`     | Iapetus                       | alternative takes for the SAME `nasa` set — reworded, lower voice, same alert ladder verbatim                                                                                 |
+| File                          | Voice                         | Covers                                                                                                                                                                        |
+| ----------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tymer-gacrux.txt`            | Gacrux (mature, middle pitch) | all 40 speech events                                                                                                                                                          |
+| `tymer-gacrux-brisk.txt`      | Gacrux                        | same 40, same words, delivered fast                                                                                                                                           |
+| `tymer-kore-strict.txt`       | Kore                          | same 40, reworded, harsher overtime ladder                                                                                                                                    |
+| `tymer-laomedeia-diva.txt`    | Laomedeia                     | same 40, telenovela diva — Spanish-seasoned English, volcanic top of the ladder                                                                                               |
+| `tymer-despina-tube.txt`      | Despina                       | same 40, London Underground announcer — RP, tannoy PA style, escalating attention-openers                                                                                     |
+| `tymer-despina-tube-alt.txt`  | Despina                       | alternative takes for the SAME `tube` set — reworded, breath-length pauses, longer deadpan boundary calls                                                                     |
+| `tymer-despina-tube-alt2.txt` | Despina                       | second alternative takes for the SAME `tube` set — the alt file reworded again, same lengths, new jokes on the longer lines                                                   |
+| `tymer-erinome-nasa.txt`      | Erinome                       | same 40, mission-control flight controller — cold procedural voice-loop, alert-level ladder; Apollo radio distortion applied at conversion (`build-tools/audio-presets.conf`) |
+| `tymer-iapetus-nasa.txt`      | Iapetus                       | alternative takes for the SAME `nasa` set — reworded, lower voice, same alert ladder verbatim                                                                                 |
 
 All sets land in the same event directories, so they merge as interchangeable
 takes. Each carries a distinct `@name` (`gacrux`, `brisk`, `strict`, `diva`, `tube`, `nasa`) so
-filenames never collide. The deliberate exceptions are the two `-alt` files:
-`tymer-despina-tube-alt.txt` shares `@name tube` and `tymer-iapetus-nasa.txt`
+filenames never collide. The deliberate exceptions are the `-alt` files:
+`tymer-despina-tube-alt.txt` and `tymer-despina-tube-alt2.txt` share `@name tube` and `tymer-iapetus-nasa.txt`
 shares `@name nasa`, so their clips promote as extra takes of the existing set
-(`tube-2.wav`, `nasa-2.wav`, …) instead of forming a new voice. Because the pair
-shares the stem, `promote --replace` of either one clears the promoted takes of
-both — promote the alt file additively. A per-set filter preset is keyed by the
+(`tube-2.wav`, `nasa-2.wav`, …) instead of forming a new voice. Because such files
+share the stem, `promote --replace` of any one clears the promoted takes of
+all of them — promote the alt file additively. A per-set filter preset is keyed by the
 same set name, so the alt file inherits it with no config change (`nasa` →
 `apollo`).
 
