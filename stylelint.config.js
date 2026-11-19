@@ -21,13 +21,20 @@ export default {
         // `user-select` and `resize` both fail this gate — not because they're new,
         // but because they've never reached Baseline (blocked by iOS Safari support
         // gaps since ~2020, per web-features data). Both are already used
-        // deliberately (drag-to-select prevention on buttons/labels, a resizable
+        // deliberately (drag-to-select prevention on buttons/labels, a non-resizable
         // textarea) and this app's own browserslist targets iOS >= 12, so there is
-        // no CSS change that fixes this — it's a real, permanent gap to accept
-        // knowingly rather than silence. Kept as `warning` (not disabled) so new
-        // genuinely-too-new features still surface as errors; see the report for
-        // the individual findings.
-        'plugin/use-baseline': [true, { available: 2024, severity: 'warning' }],
+        // no CSS change that fixes this — it's a real, permanent gap to accept.
+        // Exactly those property/value pairs are exempt, and the rule stays at
+        // error severity so any other too-new feature fails lint. (It used to be
+        // `severity: 'warning'` for the whole rule, which let every new finding
+        // through as a warning too.)
+        'plugin/use-baseline': [
+            true,
+            {
+                available: 2024,
+                ignoreProperties: { 'user-select': ['none'], resize: ['none'] },
+            },
+        ],
         // src/app/_themes.scss groups custom properties into blank-line-separated
         // blocks (background colors, then button group colors, then text colors, ...).
         // The standard config would flatten those groupings away.
